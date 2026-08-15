@@ -59,9 +59,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "1.00"
+APP_VERSION = "1.01"
 SETTINGS_SCHEMA_VERSION = 37
-APP_TITLE = "GBFR_CooldownIndicator_V100"
+APP_TITLE = "GBFR_CooldownIndicator_V101"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
@@ -2483,10 +2483,10 @@ class GBFROverlayQt(QWidget):
 
         # 颜色
         base_color_hex = anim_color if anim_color else self.settings.get("skill_cd_color", "#55aaff")
-        base_opacity = self._effective_opacity("skill_cd_color") if not anim_color else 100
+        base_opacity = self._effective_opacity("skill_cd_color") if not anim_color else 1.0
 
         painter.save()
-        painter.setOpacity(base_opacity / 100.0)
+        painter.setOpacity(base_opacity)
 
         # 缩放
         if anim_scale != 1.0:
@@ -2543,7 +2543,7 @@ class GBFROverlayQt(QWidget):
         painter.setPen(QPen(cap_border, 1))
         painter.setBrush(cap_bg)
         painter.drawRoundedRect(cap_rect, 4, 4)
-        painter.setOpacity(self._effective_opacity("skill_cd_text_color") / 100.0)
+        painter.setOpacity(self._effective_opacity("skill_cd_text_color"))
         text_color_hex = self.settings.get("skill_cd_text_color", "#ffffff")
         if cd_val < 3 and not ready:
             text_color_hex = "#ff4444"
