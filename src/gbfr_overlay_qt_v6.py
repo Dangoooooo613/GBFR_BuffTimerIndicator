@@ -59,9 +59,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "0.98"
-SETTINGS_SCHEMA_VERSION = 35
-APP_TITLE = "GBFR_BuffTimer_V098"
+APP_VERSION = "0.99"
+SETTINGS_SCHEMA_VERSION = 36
+APP_TITLE = "GBFR_CooldownIndicator_V099"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
@@ -120,6 +120,90 @@ def _buff_name(buff, lang="zh"):
     if lang == "zh_tw":
         return buff.get("zh_tw", buff.get("zh", ""))
     return buff.get("zh", "")
+
+# ============================ GBFR XXHash32 ============================
+_P1, _P2, _P3, _P4, _P5 = 0x9E3779B1, 0x85EBCA77, 0xC2B2AE3D, 0x27D4EB2F, 0x165667B1
+
+def _xx_m(a, b): return (a * b) & 0xFFFFFFFF
+def _xx_r(x, r): return ((x << r) | (x >> (32 - r))) & 0xFFFFFFFF
+def _xx_u32(b, p): return b[p] | (b[p+1] << 8) | (b[p+2] << 16) | (b[p+3] << 24)
+
+def game_xxhash32(text):
+    data = text.encode("utf-8") if isinstance(text, str) else text
+    n, p, h = len(data), 0, 0x178A54A4
+    if n >= 16:
+        V = [0x2557311B, 0x871FB76A, 0x0133ECF3, 0x62FC7342]
+        while True:
+            for k in range(4):
+                V[k] = _xx_m(_xx_r((V[k] + _xx_m(_xx_u32(data, p + 4*k), _P2)) & 0xFFFFFFFF, 13), _P1)
+            p += 16
+            if n - p <= 16:
+                break
+        h = (_xx_r(V[0], 1) + _xx_r(V[1], 7) + _xx_r(V[2], 12) + _xx_r(V[3], 18)) & 0xFFFFFFFF
+    h = (h + n) & 0xFFFFFFFF
+    while n - p >= 4:
+        h = _xx_m(_xx_r((h + _xx_m(_xx_u32(data, p), _P3)) & 0xFFFFFFFF, 17), _P4); p += 4
+    while p < n:
+        h = _xx_m(_xx_r((h + _xx_m(data[p], _P5)) & 0xFFFFFFFF, 11), _P1); p += 1
+    h = (h ^ (h >> 15)) & 0xFFFFFFFF; h = _xx_m(h, _P2)
+    h = (h ^ (h >> 13)) & 0xFFFFFFFF; h = _xx_m(h, _P3)
+    return (h ^ (h >> 16)) & 0xFFFFFFFF
+
+# ============================ 角色能力数据库 ============================
+_char_db = {}
+_ab_hash_map = {}
+_pl_hash_map = {}
+
+def load_char_db():
+    global _char_db, _ab_hash_map, _pl_hash_map
+    path = ""
+    for c in [CHAR_DB_PATH, CHAR_DB_FALLBACK]:
+        if c and os.path.isfile(c):
+            path = c
+            break
+    if not path:
+        return
+    try:
+        raw = json.load(open(path, "r", encoding="utf-8"))
+    except Exception:
+        return
+    db, ab_hash, pl_hash = {}, {}, {}
+    for pl_id, info in raw.get("角色", {}).items():
+        try:
+            pl_hash[game_xxhash32(pl_id)] = pl_id
+        except Exception:
+            pass
+        nm = info.get("角色名", {})
+        abilities = []
+        for ab in info.get("能力", []):
+            aid = ab.get("能力ID", "")
+            an = ab.get("能力名", {})
+            name_zh = an.get("简体中文", "") or aid
+            name_en = an.get("英文", "") or name_zh
+            name_tw = an.get("繁体中文", "") or name_zh
+            abilities.append({"id": aid, "zh": name_zh, "zh_tw": name_tw, "en": name_en})
+            if aid:
+                try:
+                    ab_hash[game_xxhash32(aid)] = {"pl": pl_id, "id": aid, "zh": name_zh, "zh_tw": name_tw, "en": name_en}
+                except Exception:
+                    pass
+        db[pl_id] = {"name_zh": nm.get("简体中文", "") or pl_id,
+                     "name_en": nm.get("英文", "") or pl_id,
+                     "name_tw": nm.get("繁体中文", "") or nm.get("简体中文", "") or pl_id,
+                     "abilities": abilities}
+    _char_db = db
+    _ab_hash_map = ab_hash
+    _pl_hash_map = pl_hash
+
+def _skill_name(ab_hash_val, lang="zh"):
+    g = _ab_hash_map.get(ab_hash_val)
+    if not g:
+        return ""
+    if lang == "en":
+        return g.get("en", g.get("zh", ""))
+    if lang == "zh_tw":
+        return g.get("zh_tw", g.get("zh", ""))
+    return g.get("zh", "")
 
 # BUFF_PROFILES: 每个角色可配置多个 buff（列表）
 # 每个 buff 条目: zh(简中), zh_tw(繁中), en(英文), stack_status_id, timer_status_id, timer_display
@@ -223,6 +307,16 @@ STATUS_INITIAL_DUR = 0x7C    # StatusBase → 初始持续时间 (f32) — timer
 STATUS_REMAINING_DUR = 0x80  # StatusBase → 剩余时间 (f32) — 实时倒计时
 STATUS_MAX_STACKS = 0xB0     # StatusBase → 上限层数 (i32)
 EX_STATUS_PTR_SLOTS = 16     # 指针数组扫描槽位数
+
+# 技能冷却偏移（来自 GBFR_SkillCooldown 验证）
+SKILL_SLOT_OFFSETS = [0x330C, 0x335C, 0x33AC, 0x33FC]
+ABILITY_HASH_OFFSET = 0x1AA24
+CHARID_HASH_OFFSET = 0x1AB40
+SKILL_READY_THRESHOLD = 0.05
+
+# 角色能力数据库路径
+CHAR_DB_PATH = os.path.join(_BUNDLE_DIR, "GBFR_Character_Skills_Buffs.json")
+CHAR_DB_FALLBACK = os.path.join(EXE_DIR, "GBFR_Character_Skills_Buffs.json")
 
 # ------------------------- Windows API -------------------------
 kernel32 = ctypes.windll.kernel32
@@ -522,6 +616,26 @@ def read_overlay_data(handle, pptr):
 
     return {"status": "ok", "dodge": dodge or 0, "char_type": char_type, "buffs": buffs_out}
 
+def read_skill_cooldowns(handle, char_base):
+    if not char_base:
+        return []
+    ab_bytes = rpm(handle, char_base + ABILITY_HASH_OFFSET, 16)
+    if not ab_bytes or len(ab_bytes) < 16:
+        return []
+    ab_hashes = list(struct.unpack("<4I", ab_bytes))
+    skills = []
+    for i in range(4):
+        cd_val = read_f32(handle, char_base + SKILL_SLOT_OFFSETS[i])
+        if cd_val is None or cd_val < 0 or cd_val > 9999 or cd_val != cd_val:
+            cd_val = 0.0
+        skills.append({
+            "slot": i,
+            "ability_hash": ab_hashes[i],
+            "cd": cd_val,
+            "ready": cd_val <= SKILL_READY_THRESHOLD,
+        })
+    return skills
+
 
 # ============================ Color fields (ordered for settings dialog) ============================
 COLOR_FIELDS = [
@@ -540,6 +654,10 @@ COLOR_FIELDS = [
     ("indicator_outline_color", "外描边色:"),
     ("icon_color", "标题UI色:"),
     ("buff_name_color", "Buff名色:"),
+    ("skill_cd_color", "技能扇形色:"),
+    ("skill_cd_ready_color", "技能完成色:"),
+    ("skill_cd_text_color", "技能倒计时色:"),
+    ("skill_cd_name_color", "技能名色:"),
 ]
 
 # 锁定时需要减半不透明度的颜色键（仅标题栏、背景、图标；层数UI和翻滚UI不受影响）
@@ -647,6 +765,28 @@ DEFAULT_SETTINGS = {
     "buff_name_bg_width": -4,
     "buff_name_color": "#ff0000",
     "buff_name_color_opacity": 80,
+    # ── 技能冷却 (Cooldown Indicator) ──
+    "show_skill_cd": True,
+    "skill_cd_size": 28,
+    "skill_cd_spread": 55,
+    "skill_cd_offset_x": 0,
+    "skill_cd_offset_y": 0,
+    "skill_cd_color": "#55aaff",
+    "skill_cd_color_opacity": 70,
+    "skill_cd_ready_color": "#ffffff",
+    "skill_cd_ready_scale": 140,
+    "skill_cd_ready_duration_ms": 400,
+    "skill_cd_capsule_bg": "#0a0e1a",
+    "skill_cd_capsule_border": "#55aaff",
+    "skill_cd_text_color": "#ffffff",
+    "skill_cd_text_color_opacity": 100,
+    "skill_cd_show_name": True,
+    "skill_cd_name_font_size": 7,
+    "skill_cd_name_offset_y": 0,
+    "skill_cd_name_bg_width": 0,
+    "skill_cd_name_color": "#aaccff",
+    "skill_cd_name_color_opacity": 80,
+    "skill_cooldown_max": {},
 }
 
 
@@ -759,6 +899,7 @@ class SettingsDialog(QDialog):
         form_buff_name = make_tab("Buff名字")
         form_multi = make_tab("多buff差异化")
         form_roll = make_tab("翻滚")
+        form_skill_cd = make_tab("技能冷却")
         form_buff_cfg = make_tab("Buff启用/禁用")
         form = form_global
         layout.addWidget(self.settings_tabs)
@@ -795,6 +936,64 @@ class SettingsDialog(QDialog):
         cf.addRow("标题栏状态文字:", self.show_titlebar_status)
         self._add_color_row(cf, "title_bar_color", "标题栏色:")
         self._add_color_row(cf, "icon_color", "标题UI色:")
+        form.addRow(card)
+
+        # ── 技能冷却 ──
+        form = form_skill_cd
+        card, cf = make_card(form, "── 技能冷却 ──")
+        self.skill_cd_show_chk = QCheckBox("显示技能冷却")
+        self.skill_cd_show_chk.setChecked(bool(self.settings.get("show_skill_cd", True)))
+        cf.addRow(self.skill_cd_show_chk)
+        self.skill_cd_size_spn = QSpinBox()
+        self.skill_cd_size_spn.setRange(10, 80)
+        self.skill_cd_size_spn.setValue(int(self.settings.get("skill_cd_size", 28)))
+        cf.addRow("方形大小:", self.skill_cd_size_spn)
+        self.skill_cd_spread_spn = QSpinBox()
+        self.skill_cd_spread_spn.setRange(20, 200)
+        self.skill_cd_spread_spn.setValue(int(self.settings.get("skill_cd_spread", 55)))
+        cf.addRow("聚散距离:", self.skill_cd_spread_spn)
+        self.skill_cd_offx_spn = QSpinBox()
+        self.skill_cd_offx_spn.setRange(-300, 300)
+        self.skill_cd_offx_spn.setValue(int(self.settings.get("skill_cd_offset_x", 0)))
+        cf.addRow("位置偏移X:", self.skill_cd_offx_spn)
+        self.skill_cd_offy_spn = QSpinBox()
+        self.skill_cd_offy_spn.setRange(-300, 300)
+        self.skill_cd_offy_spn.setValue(int(self.settings.get("skill_cd_offset_y", 0)))
+        cf.addRow("位置偏移Y:", self.skill_cd_offy_spn)
+        self._add_color_row(cf, "skill_cd_color", "扇形颜色:", with_opacity=True)
+        self._add_color_row(cf, "skill_cd_text_color", "倒计时文字色:", with_opacity=True)
+        form.addRow(card)
+        # 完成动画
+        card, cf = make_card(form, "── 冷却完成动画 ──")
+        self._add_color_row(cf, "skill_cd_ready_color", "完成色:")
+        self.skill_cd_ready_scale_spn = QSpinBox()
+        self.skill_cd_ready_scale_spn.setRange(100, 300)
+        self.skill_cd_ready_scale_spn.setValue(int(self.settings.get("skill_cd_ready_scale", 140)))
+        cf.addRow("放大比例%:", self.skill_cd_ready_scale_spn)
+        self.skill_cd_ready_dur_spn = QSpinBox()
+        self.skill_cd_ready_dur_spn.setRange(100, 2000)
+        self.skill_cd_ready_dur_spn.setSingleStep(50)
+        self.skill_cd_ready_dur_spn.setValue(int(self.settings.get("skill_cd_ready_duration_ms", 400)))
+        cf.addRow("动画时长ms:", self.skill_cd_ready_dur_spn)
+        form.addRow(card)
+        # 技能名称
+        card, cf = make_card(form, "── 技能名称 ──")
+        self.skill_cd_name_chk = QCheckBox("显示技能名称")
+        self.skill_cd_name_chk.setChecked(bool(self.settings.get("skill_cd_show_name", True)))
+        cf.addRow(self.skill_cd_name_chk)
+        self.skill_cd_name_font_spn = QSpinBox()
+        self.skill_cd_name_font_spn.setRange(1, 48)
+        self.skill_cd_name_font_spn.setValue(int(self.settings.get("skill_cd_name_font_size", 7)))
+        cf.addRow("字号:", self.skill_cd_name_font_spn)
+        self.skill_cd_name_offy_spn = QSpinBox()
+        self.skill_cd_name_offy_spn.setRange(-200, 200)
+        self.skill_cd_name_offy_spn.setValue(int(self.settings.get("skill_cd_name_offset_y", 0)))
+        cf.addRow("Y偏移:", self.skill_cd_name_offy_spn)
+        self.skill_cd_name_bgw_spn = QSpinBox()
+        self.skill_cd_name_bgw_spn.setRange(-100, 100)
+        self.skill_cd_name_bgw_spn.setValue(int(self.settings.get("skill_cd_name_bg_width", 0)))
+        cf.addRow("衬色块宽微调:", self.skill_cd_name_bgw_spn)
+        self._add_color_row(cf, "skill_cd_name_color", "技能名色:", with_opacity=True)
         form.addRow(card)
 
         form = form_global
@@ -1363,6 +1562,24 @@ class SettingsDialog(QDialog):
             "Buff名字体大小:": "Buff name font size:",
             "Buff名位置:": "Buff name position:",
             "Buff名衬色块宽度微调:": "Buff name bg width adjust:",
+            "── 技能冷却 ──": "── Skill Cooldown ──",
+            "显示技能冷却": "Show Skill Cooldowns",
+            "方形大小:": "Square Size:",
+            "聚散距离:": "Spread Distance:",
+            "位置偏移X:": "Position Offset X:",
+            "位置偏移Y:": "Position Offset Y:",
+            "扇形颜色:": "Sector Color:",
+            "倒计时文字色:": "Timer Text Color:",
+            "── 冷却完成动画 ──": "── Cooldown Complete Animation ──",
+            "完成色:": "Ready Color:",
+            "放大比例%:": "Scale Up %:",
+            "动画时长ms:": "Animation Duration ms:",
+            "── 技能名称 ──": "── Skill Name ──",
+            "显示技能名称": "Show Skill Name",
+            "字号:": "Font Size:",
+            "Y偏移:": "Y Offset:",
+            "衬色块宽微调:": "BG Width Adjust:",
+            "技能名色:": "Skill Name Color:",
             "恢复默认": "Reset",
             "确定": "OK",
             "取消": "Cancel",
@@ -1469,6 +1686,24 @@ class SettingsDialog(QDialog):
             "Buff名字体大小:": "Buff名字體大小:",
             "Buff名位置:": "Buff名位置:",
             "Buff名衬色块宽度微调:": "Buff名襯色塊寬度微調:",
+            "── 技能冷却 ──": "── 技能冷卻 ──",
+            "显示技能冷却": "顯示技能冷卻",
+            "方形大小:": "方形大小:",
+            "聚散距离:": "聚散距離:",
+            "位置偏移X:": "位置偏移X:",
+            "位置偏移Y:": "位置偏移Y:",
+            "扇形颜色:": "扇形顏色:",
+            "倒计时文字色:": "倒計時文字色:",
+            "── 冷却完成动画 ──": "── 冷卻完成動畫 ──",
+            "完成色:": "完成色:",
+            "放大比例%:": "放大比例%:",
+            "动画时长ms:": "動畫時長ms:",
+            "── 技能名称 ──": "── 技能名稱 ──",
+            "显示技能名称": "顯示技能名稱",
+            "字号:": "字號:",
+            "Y偏移:": "Y偏移:",
+            "衬色块宽微调:": "襯色塊寬微調:",
+            "技能名色:": "技能名色:",
             "恢复默认": "恢復預設",
             "确定": "確定",
             "取消": "取消",
@@ -1492,9 +1727,9 @@ class SettingsDialog(QDialog):
 
         self.setWindowTitle(_translate_text("Overlay 设置"))
         if hasattr(self, "settings_tabs"):
-            tab_names_zh = ["全局", "背景与标题", "Buff外层", "层数数字", "倒计时", "Buff名字", "多buff差异化", "翻滚", "Buff启用/禁用"]
-            tab_names_tw = ["全域", "背景與標題", "Buff外層", "層數數字", "倒計時", "Buff名字", "多buff差異化", "翻滾", "Buff啟用/禁用"]
-            tab_names_en = ["Global", "Background & Title", "Buff Outer", "Stack Number", "Timer", "Buff Name", "Multi-buff", "Dodge", "Buff Enable/Disable"]
+            tab_names_zh = ["全局", "背景与标题", "Buff外层", "层数数字", "倒计时", "Buff名字", "多buff差异化", "翻滚", "技能冷却", "Buff启用/禁用"]
+            tab_names_tw = ["全域", "背景與標題", "Buff外層", "層數數字", "倒計時", "Buff名字", "多buff差異化", "翻滾", "技能冷卻", "Buff啟用/禁用"]
+            tab_names_en = ["Global", "Background & Title", "Buff Outer", "Stack Number", "Timer", "Buff Name", "Multi-buff", "Dodge", "Skill Cooldown", "Buff Enable/Disable"]
             tab_names = tab_names_en if lang == "en" else (tab_names_tw if lang == "zh_tw" else tab_names_zh)
             for i, name in enumerate(tab_names):
                 if i < self.settings_tabs.count():
@@ -1598,6 +1833,11 @@ class SettingsDialog(QDialog):
             self.ex_status_offset_spin,
             self.lv7_timer_y_offset,
             self.lv7_timer_badge_width,
+            self.skill_cd_show_chk, self.skill_cd_size_spn, self.skill_cd_spread_spn,
+            self.skill_cd_offx_spn, self.skill_cd_offy_spn,
+            self.skill_cd_ready_scale_spn, self.skill_cd_ready_dur_spn,
+            self.skill_cd_name_chk, self.skill_cd_name_font_spn,
+            self.skill_cd_name_offy_spn, self.skill_cd_name_bgw_spn,
         ]
         for w in widgets:
             if isinstance(w, QComboBox):
@@ -1746,6 +1986,18 @@ class SettingsDialog(QDialog):
         self.settings["buff_name_offset_x"] = self.buff_name_offset_x.value()
         self.settings["buff_name_offset_y"] = self.buff_name_offset_y.value()
         self.settings["buff_name_bg_width"] = self.buff_name_bg_width.value()
+        # 技能冷却
+        self.settings["show_skill_cd"] = self.skill_cd_show_chk.isChecked()
+        self.settings["skill_cd_size"] = self.skill_cd_size_spn.value()
+        self.settings["skill_cd_spread"] = self.skill_cd_spread_spn.value()
+        self.settings["skill_cd_offset_x"] = self.skill_cd_offx_spn.value()
+        self.settings["skill_cd_offset_y"] = self.skill_cd_offy_spn.value()
+        self.settings["skill_cd_ready_scale"] = self.skill_cd_ready_scale_spn.value()
+        self.settings["skill_cd_ready_duration_ms"] = self.skill_cd_ready_dur_spn.value()
+        self.settings["skill_cd_show_name"] = self.skill_cd_name_chk.isChecked()
+        self.settings["skill_cd_name_font_size"] = self.skill_cd_name_font_spn.value()
+        self.settings["skill_cd_name_offset_y"] = self.skill_cd_name_offy_spn.value()
+        self.settings["skill_cd_name_bg_width"] = self.skill_cd_name_bgw_spn.value()
         self.settings["use_default_dodge_icon"] = self.icon_use_default.isChecked()
         self.settings["window_x"] = self.window_x.value()
         self.settings["window_y"] = self.window_y.value()
@@ -1831,6 +2083,10 @@ class GBFROverlayQt(QWidget):
         self.dodge_count = 0
         self.char_type = 0
         self._auto_minimized_by_game_focus = False
+        # 技能冷却状态
+        self.skill_cd_data = []
+        self._skill_ready_anim = [None] * 4  # 每槽的完成动画时间戳
+        load_char_db()
 
         self.recalc_layout()
         self.load_dodge_icon()
@@ -1930,10 +2186,15 @@ class GBFROverlayQt(QWidget):
         outline_pad = max(0, self.indicator_outline_width + 2)
         spike_side_extent = spike_outer_extent + max(self.spike_w // 2, self.spike_bead_radius) + outline_pad
         dragon_required_w = (self.circle_r + max(spike_side_extent, bead_outer_extent) + outline_pad + 10) * 2
-        self.canvas_w = max(self.CANVAS_W, int(roll_group_w + self.SHRIMP_LEFT_PAD + self.SHRIMP_RIGHT_PAD), int(dragon_required_w))
+        # 技能冷却UI所需宽度
+        skill_cd_spread = int(self.settings.get("skill_cd_spread", 55))
+        skill_cd_size = int(self.settings.get("skill_cd_size", 28))
+        skill_cd_extent = skill_cd_spread + skill_cd_size + 10
+        skill_cd_required_w = (self.circle_r + skill_cd_extent) * 2
+        self.canvas_w = max(self.CANVAS_W, int(roll_group_w + self.SHRIMP_LEFT_PAD + self.SHRIMP_RIGHT_PAD), int(dragon_required_w), int(skill_cd_required_w))
         self.circle_cx = self.canvas_w // 2
-        spike_top_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
-        spike_bottom_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
+        spike_top_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent, skill_cd_extent) + outline_pad
+        spike_bottom_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent, skill_cd_extent) + outline_pad
         self.circle_cy = self.TITLE_BAR_H + self.circle_pad_title + self.circle_r + spike_top_pad
         self.dragon_bottom_y = self.circle_cy + self.circle_r + self.spike_len
         self.roll_y = self.dragon_bottom_y + self.shrimp_gap_circle
@@ -1999,6 +2260,7 @@ class GBFROverlayQt(QWidget):
         if simplified_non_target:
             self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=False)
             self._draw_circle(painter, cx, cy, r, False, forced_opacity=0.05)
+            self._draw_skill_cd_group(painter)
             self._draw_divider(painter)
             self._draw_roll_ui_row(painter)
             return
@@ -2036,6 +2298,7 @@ class GBFROverlayQt(QWidget):
                 self._render_buff_ui(painter, buff, cx, cy, r, is_lv7)
                 self._draw_buff_name(painter, buff, cx, cy, r, 1.0)
 
+        self._draw_skill_cd_group(painter)
         self._draw_divider(painter)
         self._draw_roll_ui_row(painter)
 
@@ -2102,6 +2365,169 @@ class GBFROverlayQt(QWidget):
         painter.drawRoundedRect(bg_rect, radius, radius)
 
         # 绘制文字
+        painter.setPen(name_color)
+        painter.setFont(font)
+        painter.drawText(bg_rect, Qt.AlignCenter, name)
+        painter.restore()
+
+    # ==================== 技能冷却 UI ====================
+
+    def _draw_skill_cd_group(self, painter):
+        """绘制4个技能冷却指示器（菱形布局：左1/上2/右3/下4）。"""
+        if not bool(self.settings.get("show_skill_cd", True)):
+            return
+        if not self.skill_cd_data or self.status != "ok":
+            return
+        cx, cy, r = self.circle_cx, self.circle_cy, self.circle_r
+        off_x = int(self.settings.get("skill_cd_offset_x", 0))
+        off_y = int(self.settings.get("skill_cd_offset_y", 0))
+        spread = int(self.settings.get("skill_cd_spread", 55))
+        group_cx = cx + off_x
+        group_cy = cy + off_y
+        # 菱形方位：左/上/右/下
+        positions = [
+            (group_cx - spread, group_cy),       # 槽1 左
+            (group_cx, group_cy - spread),       # 槽2 上
+            (group_cx + spread, group_cy),       # 槽3 右
+            (group_cx, group_cy + spread),       # 槽4 下
+        ]
+        for i, (sx, sy) in enumerate(positions):
+            if i < len(self.skill_cd_data):
+                self._draw_skill_cd_element(painter, self.skill_cd_data[i], sx, sy)
+
+    def _draw_skill_cd_element(self, painter, skill, cx, cy):
+        """绘制单个技能冷却元素：方形扇+胶囊+名称+完成动画。"""
+        s = int(self.settings.get("skill_cd_size", 28))
+        cd_val = skill.get("cd", 0)
+        ready = skill.get("ready", True)
+        cd_max = skill.get("cd_max", 0)
+        lang = self.settings.get("language", "zh")
+
+        # 完成动画进度
+        anim_scale = 1.0
+        anim_color = None
+        anim_idx = skill.get("slot", 0)
+        anim_start = self._skill_ready_anim[anim_idx] if anim_idx < 4 else None
+        if anim_start is not None:
+            dur = int(self.settings.get("skill_cd_ready_duration_ms", 400))
+            elapsed = int(time.time() * 1000) - anim_start
+            if elapsed < dur:
+                progress = elapsed / dur
+                # 先放大再缩回
+                ready_scale = int(self.settings.get("skill_cd_ready_scale", 140)) / 100.0
+                if progress < 0.3:
+                    anim_scale = 1.0 + (ready_scale - 1.0) * (progress / 0.3)
+                else:
+                    anim_scale = ready_scale - (ready_scale - 1.0) * ((progress - 0.3) / 0.7)
+                anim_color = self.settings.get("skill_cd_ready_color", "#ffffff")
+            else:
+                self._skill_ready_anim[anim_idx] = None
+
+        # 颜色
+        base_color_hex = anim_color if anim_color else self.settings.get("skill_cd_color", "#55aaff")
+        base_opacity = self._effective_opacity("skill_cd_color") if not anim_color else 100
+
+        painter.save()
+        painter.setOpacity(base_opacity / 100.0)
+
+        # 缩放
+        if anim_scale != 1.0:
+            painter.translate(cx, cy)
+            painter.scale(anim_scale, anim_scale)
+            painter.translate(-cx, -cy)
+
+        # 方形扇 — 圆角矩形背景
+        half = s
+        rect = QRect(cx - half, cy - half, half * 2, half * 2)
+        radius = max(3, s // 4)
+
+        bg_color = qcolor(base_color_hex)
+        bg_color.setAlpha(40)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(bg_color)
+        painter.drawRoundedRect(rect, radius, radius)
+
+        # 扇形进度（冷却中）
+        if not ready and cd_max > 0:
+            ratio = max(0.0, min(1.0, cd_val / cd_max))
+            sector_color = qcolor(base_color_hex)
+            sector_color.setAlpha(120)
+            painter.setBrush(sector_color)
+            painter.drawPie(rect, 90 * 16, int(-ratio * 360 * 16))
+        elif ready:
+            # 就绪：完整扇形
+            sector_color = qcolor(base_color_hex)
+            sector_color.setAlpha(100)
+            painter.setBrush(sector_color)
+            painter.drawPie(rect, 90 * 16, int(-1.0 * 360 * 16))
+
+        # 边框
+        border_color = qcolor(base_color_hex)
+        border_color.setAlpha(180)
+        painter.setPen(QPen(border_color, 1))
+        painter.setBrush(Qt.NoBrush)
+        painter.drawRoundedRect(rect, radius, radius)
+
+        # 胶囊（倒计时文字）
+        if not ready:
+            timer_text = f"{cd_val:.1f}"
+        else:
+            timer_text = "✓"
+        cap_font = QFont("Segoe UI", max(7, s // 3), QFont.Bold)
+        cap_metrics = QFontMetrics(cap_font)
+        cap_w = min(s * 2 - 6, max(16, cap_metrics.horizontalAdvance(timer_text) + 8))
+        cap_h = max(12, s // 2)
+        cap_rect = QRect(int(cx - cap_w / 2), int(cy - cap_h / 2), cap_w, cap_h)
+        cap_bg = qcolor(self.settings.get("skill_cd_capsule_bg", "#0a0e1a"))
+        cap_bg.setAlpha(160)
+        cap_border = qcolor(self.settings.get("skill_cd_capsule_border", base_color_hex))
+        cap_border.setAlpha(100)
+        painter.setPen(QPen(cap_border, 1))
+        painter.setBrush(cap_bg)
+        painter.drawRoundedRect(cap_rect, 4, 4)
+        painter.setOpacity(self._effective_opacity("skill_cd_text_color") / 100.0)
+        text_color_hex = self.settings.get("skill_cd_text_color", "#ffffff")
+        if cd_val < 3 and not ready:
+            text_color_hex = "#ff4444"
+        painter.setPen(qcolor(text_color_hex))
+        painter.setFont(cap_font)
+        painter.drawText(cap_rect, Qt.AlignCenter, timer_text)
+
+        painter.restore()
+
+        # 技能名称（不受缩放影响）
+        if bool(self.settings.get("skill_cd_show_name", True)):
+            self._draw_skill_cd_name(painter, skill, cx, cy, s)
+
+    def _draw_skill_cd_name(self, painter, skill, cx, cy, s):
+        """绘制技能名称（带反色圆角背景，类似Buff名）。"""
+        lang = self.settings.get("language", "zh")
+        name = _skill_name(skill.get("ability_hash", 0), lang)
+        if not name:
+            return
+        name_hex = self.settings.get("skill_cd_name_color", "#aaccff")
+        name_opacity = self._effective_opacity("skill_cd_name_color")
+        font_size = max(1, int(self.settings.get("skill_cd_name_font_size", 7)))
+        font = QFont("Segoe UI", font_size, QFont.Bold)
+        painter.save()
+        metrics = QFontMetrics(font)
+        text_w = metrics.horizontalAdvance(name)
+        text_h = font_size + 2
+        off_y = int(self.settings.get("skill_cd_name_offset_y", 0))
+        bg_pad_x = max(2, font_size // 2)
+        bg_pad_y = max(1, font_size // 4)
+        bg_w = max(1, text_w + bg_pad_x * 2 + int(self.settings.get("skill_cd_name_bg_width", 0)))
+        bg_h = text_h + bg_pad_y * 2
+        bg_x = int(cx - bg_w / 2)
+        bg_y = int(cy + s + 4 + off_y)
+        bg_rect = QRect(bg_x, bg_y, bg_w, bg_h)
+        radius = max(2, font_size // 2)
+        name_color = qcolor(name_hex)
+        inv_color = QColor(255 - name_color.red(), 255 - name_color.green(), 255 - name_color.blue())
+        painter.setOpacity(name_opacity)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(inv_color)
+        painter.drawRoundedRect(bg_rect, radius, radius)
         painter.setPen(name_color)
         painter.setFont(font)
         painter.drawText(bg_rect, Qt.AlignCenter, name)
@@ -2996,6 +3422,32 @@ class GBFROverlayQt(QWidget):
             key = f"{self.char_type:#04x}_{buff['index']}"
             if buff_enabled.get(key, True):
                 self.active_buffs.append(buff)
+        # 读取技能冷却
+        if self.status == "ok":
+            char_base = read_u64(self.handle, self.pptr + CHAR_PTR_OFF)
+            new_skills = read_skill_cooldowns(self.handle, char_base)
+            cd_max = self.settings.get("skill_cooldown_max", {})
+            now_ms = int(time.time() * 1000)
+            for i, sk in enumerate(new_skills):
+                abid = ""
+                g = _ab_hash_map.get(sk["ability_hash"])
+                if g:
+                    abid = g.get("id", "")
+                if abid and sk["cd"] > cd_max.get(abid, 0):
+                    cd_max[abid] = sk["cd"]
+                # 检测冷却完成 → 触发动画
+                was_ready = self._skill_ready_anim[i] is not None or (
+                    self.skill_cd_data and not self.skill_cd_data[i].get("ready", True) if i < len(self.skill_cd_data) else False
+                )
+                if sk["ready"] and self.skill_cd_data and i < len(self.skill_cd_data):
+                    if not self.skill_cd_data[i].get("ready", True):
+                        self._skill_ready_anim[i] = now_ms
+                sk["ability_id"] = abid
+                sk["cd_max"] = cd_max.get(abid, 0) if abid else 0
+            self.skill_cd_data = new_skills
+            if cd_max != self.settings.get("skill_cooldown_max", {}):
+                self.settings["skill_cooldown_max"] = cd_max
+                save_settings(self.settings)
 
     def close_handle(self):
         if self.handle:
