@@ -59,9 +59,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "0.99"
-SETTINGS_SCHEMA_VERSION = 36
-APP_TITLE = "GBFR_CooldownIndicator_V099"
+APP_VERSION = "1.00"
+SETTINGS_SCHEMA_VERSION = 37
+APP_TITLE = "GBFR_CooldownIndicator_V100"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
@@ -619,13 +619,19 @@ def read_overlay_data(handle, pptr):
 def read_skill_cooldowns(handle, char_base):
     if not char_base:
         return []
-    ab_bytes = rpm(handle, char_base + ABILITY_HASH_OFFSET, 16)
-    if not ab_bytes or len(ab_bytes) < 16:
-        return []
-    ab_hashes = list(struct.unpack("<4I", ab_bytes))
+    ab_hashes = [0, 0, 0, 0]
+    try:
+        ab_bytes = rpm(handle, char_base + ABILITY_HASH_OFFSET, 16)
+        if ab_bytes and len(ab_bytes) >= 16:
+            ab_hashes = list(struct.unpack("<4I", ab_bytes))
+    except Exception:
+        pass
     skills = []
     for i in range(4):
-        cd_val = read_f32(handle, char_base + SKILL_SLOT_OFFSETS[i])
+        try:
+            cd_val = read_f32(handle, char_base + SKILL_SLOT_OFFSETS[i])
+        except Exception:
+            cd_val = None
         if cd_val is None or cd_val < 0 or cd_val > 9999 or cd_val != cd_val:
             cd_val = 0.0
         skills.append({
@@ -662,6 +668,18 @@ COLOR_FIELDS = [
 
 # 锁定时需要减半不透明度的颜色键（仅标题栏、背景、图标；层数UI和翻滚UI不受影响）
 LOCK_HALVED_KEYS = {"title_bar_color", "bg_color", "icon_color"}
+
+# 非战斗状态下需要调整不透明度的颜色键分组
+NON_COMBAT_SPIKE_KEYS = {
+    "circle_color_normal", "circle_color_lv7",
+    "spike_color_normal", "spike_color_lv7",
+    "arc_color", "text_color", "dh_text_outline_color",
+    "text_color_timer", "dh_text_outline_color_timer",
+    "timer_text_color", "indicator_outline_color",
+}
+NON_COMBAT_SKILL_CD_KEYS = {
+    "skill_cd_color", "skill_cd_text_color", "skill_cd_name_color",
+}
 
 # ============================ Settings ============================
 DEFAULT_SETTINGS = {
@@ -737,6 +755,9 @@ DEFAULT_SETTINGS = {
     "lv7_timer_y_offset": -6,
     "lv7_timer_badge_width": 9,
     "siegfried_only": True,
+    "non_combat_spike_opacity": 30,
+    "non_combat_roll_opacity": 30,
+    "non_combat_skill_cd_opacity": 30,
     "show_titlebar_status": True,
     "buff_enabled": {
         "0x11_0": True,
@@ -920,9 +941,24 @@ class SettingsDialog(QDialog):
         self.resolution_auto_scale.setChecked(bool(self.settings.get("resolution_auto_scale", DEFAULT_SETTINGS["resolution_auto_scale"])))
         cf.addRow("随分辨率放大:", self.resolution_auto_scale)
 
-        self.siegfried_only = QCheckBox("未接入/非目标角色时仅显示圆圈和翻滚UI")
+        self.siegfried_only = QCheckBox("非战斗状态/未接入角色时调整透明度")
         self.siegfried_only.setChecked(bool(self.settings.get("siegfried_only", DEFAULT_SETTINGS["siegfried_only"])))
-        cf.addRow("未接入角色简化:", self.siegfried_only)
+        cf.addRow("非战斗透明度:", self.siegfried_only)
+        self.non_combat_spike_op_spn = QSpinBox()
+        self.non_combat_spike_op_spn.setRange(0, 100)
+        self.non_combat_spike_op_spn.setSuffix("%")
+        self.non_combat_spike_op_spn.setValue(int(self.settings.get("non_combat_spike_opacity", 30)))
+        cf.addRow("尖刺UI不透明度:", self.non_combat_spike_op_spn)
+        self.non_combat_roll_op_spn = QSpinBox()
+        self.non_combat_roll_op_spn.setRange(0, 100)
+        self.non_combat_roll_op_spn.setSuffix("%")
+        self.non_combat_roll_op_spn.setValue(int(self.settings.get("non_combat_roll_opacity", 30)))
+        cf.addRow("翻滚UI不透明度:", self.non_combat_roll_op_spn)
+        self.non_combat_skill_cd_op_spn = QSpinBox()
+        self.non_combat_skill_cd_op_spn.setRange(0, 100)
+        self.non_combat_skill_cd_op_spn.setSuffix("%")
+        self.non_combat_skill_cd_op_spn.setValue(int(self.settings.get("non_combat_skill_cd_opacity", 30)))
+        cf.addRow("技能CD不透明度:", self.non_combat_skill_cd_op_spn)
         form.addRow(card)
 
         form = form_bg
@@ -1466,8 +1502,11 @@ class SettingsDialog(QDialog):
             "游戏在前台时显示，切到后台时自动最小化": "Show when game is focused; minimize when game is in background",
             "随分辨率放大:": "Resolution scale:",
             "按当前屏幕宽度自动放大": "Auto scale by current screen width",
-            "未接入角色简化:": "Pending character simplified:",
-            "未接入/非目标角色时仅显示圆圈和翻滚UI": "Only show circle and dodge UI for pending/non-target characters",
+            "未接入角色简化:": "Non-combat opacity:",
+            "未接入/非目标角色时仅显示圆圈和翻滚UI": "Adjust opacity when not in combat / character not connected",
+            "尖刺UI不透明度:": "Spike UI opacity:",
+            "翻滚UI不透明度:": "Dodge UI opacity:",
+            "技能CD不透明度:": "Skill CD opacity:",
             "标题栏状态文字:": "Title bar status text:",
             "在标题栏显示角色名和buff状态文字": "Show character name and buff status text in title bar",
             "标题栏不透明度:": "Title bar opacity:",
@@ -1592,8 +1631,11 @@ class SettingsDialog(QDialog):
             "游戏在前台时显示，切到后台时自动最小化": "遊戲在前台時顯示，切到後台時自動最小化",
             "随分辨率放大:": "隨解析度放大:",
             "按当前屏幕宽度自动放大": "按當前螢幕寬度自動放大",
-            "未接入角色简化:": "未接入角色簡化:",
-            "未接入/非目标角色时仅显示圆圈和翻滚UI": "未接入/非目標角色時僅顯示圓圈和翻滾UI",
+            "未接入角色简化:": "非戰鬥透明度:",
+            "未接入/非目标角色时仅显示圆圈和翻滚UI": "非戰鬥狀態/未接入角色時調整透明度",
+            "尖刺UI不透明度:": "尖刺UI不透明度:",
+            "翻滚UI不透明度:": "翻滾UI不透明度:",
+            "技能CD不透明度:": "技能CD不透明度:",
             "标题栏状态文字:": "標題列狀態文字:",
             "在标题栏显示角色名和buff状态文字": "在標題列顯示角色名和buff狀態文字",
             "标题栏不透明度:": "標題列不透明度:",
@@ -1838,6 +1880,7 @@ class SettingsDialog(QDialog):
             self.skill_cd_ready_scale_spn, self.skill_cd_ready_dur_spn,
             self.skill_cd_name_chk, self.skill_cd_name_font_spn,
             self.skill_cd_name_offy_spn, self.skill_cd_name_bgw_spn,
+            self.non_combat_spike_op_spn, self.non_combat_roll_op_spn, self.non_combat_skill_cd_op_spn,
         ]
         for w in widgets:
             if isinstance(w, QComboBox):
@@ -1905,6 +1948,9 @@ class SettingsDialog(QDialog):
         self.auto_focus_minimize.setChecked(DEFAULT_SETTINGS["auto_focus_minimize"])
         self.resolution_auto_scale.setChecked(DEFAULT_SETTINGS["resolution_auto_scale"])
         self.siegfried_only.setChecked(DEFAULT_SETTINGS["siegfried_only"])
+        self.non_combat_spike_op_spn.setValue(DEFAULT_SETTINGS["non_combat_spike_opacity"])
+        self.non_combat_roll_op_spn.setValue(DEFAULT_SETTINGS["non_combat_roll_opacity"])
+        self.non_combat_skill_cd_op_spn.setValue(DEFAULT_SETTINGS["non_combat_skill_cd_opacity"])
         self.show_titlebar_status.setChecked(DEFAULT_SETTINGS["show_titlebar_status"])
         # buff 全部重置为启用
         for cb in self.buff_checkboxes.values():
@@ -1974,6 +2020,9 @@ class SettingsDialog(QDialog):
         self.settings["auto_focus_minimize"] = self.auto_focus_minimize.isChecked()
         self.settings["resolution_auto_scale"] = self.resolution_auto_scale.isChecked()
         self.settings["siegfried_only"] = self.siegfried_only.isChecked()
+        self.settings["non_combat_spike_opacity"] = self.non_combat_spike_op_spn.value()
+        self.settings["non_combat_roll_opacity"] = self.non_combat_roll_op_spn.value()
+        self.settings["non_combat_skill_cd_opacity"] = self.non_combat_skill_cd_op_spn.value()
         self.settings["show_titlebar_status"] = self.show_titlebar_status.isChecked()
         self.settings["buff_enabled"] = {key: cb.isChecked() for key, cb in self.buff_checkboxes.items()}
         self.settings["multi_buff_offset"] = self.multi_buff_offset_spin.value()
@@ -2086,6 +2135,7 @@ class GBFROverlayQt(QWidget):
         # 技能冷却状态
         self.skill_cd_data = []
         self._skill_ready_anim = [None] * 4  # 每槽的完成动画时间戳
+        self.non_combat_opacity_active = False
         load_char_db()
 
         self.recalc_layout()
@@ -2124,10 +2174,16 @@ class GBFROverlayQt(QWidget):
     #  不透明度辅助
     # ----------------------------------------------------------------
     def _effective_opacity(self, color_key):
-        """返回 0.0–1.0 的有效不透明度，锁定时仅标题栏/背景/图标减半（向上取整）。"""
+        """返回 0.0–1.0 的有效不透明度，锁定时仅标题栏/背景/图标减半（向上取整）。
+        非战斗状态下尖刺UI/技能CD UI使用各自的不透明度覆写。"""
         opacity = int(self.settings.get(f"{color_key}_opacity", 100))
         if self.locked and color_key in LOCK_HALVED_KEYS:
             opacity = math.ceil(opacity / 2)
+        if self.non_combat_opacity_active:
+            if color_key in NON_COMBAT_SPIKE_KEYS:
+                opacity = int(self.settings.get("non_combat_spike_opacity", 30))
+            elif color_key in NON_COMBAT_SKILL_CD_KEYS:
+                opacity = int(self.settings.get("non_combat_skill_cd_opacity", 30))
         return max(0, min(100, opacity)) / 100.0
 
     def _buff_max_stacks(self, buff):
@@ -2248,18 +2304,20 @@ class GBFROverlayQt(QWidget):
         painter.scale(self.ui_scale, self.ui_scale)
 
         cx, cy, r = self.circle_cx, self.circle_cy, self.circle_r
-        simplified_non_target = (
+        non_combat = (
             bool(self.settings.get("siegfried_only", True))
             and self.status == "ok"
             and self.char_type not in BUFF_PROFILES
         ) or (self.status == "ok" and not self.active_buffs)
+        self.non_combat_opacity_active = non_combat
 
         self._draw_backdrop(painter)
         self._draw_title_bar(painter)
 
-        if simplified_non_target:
-            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=False)
-            self._draw_circle(painter, cx, cy, r, False, forced_opacity=0.05)
+        if non_combat:
+            # 非战斗/未接入角色：不隐藏UI，而是降低不透明度
+            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=True)
+            self._draw_circle(painter, cx, cy, r, False)
             self._draw_skill_cd_group(painter)
             self._draw_divider(painter)
             self._draw_roll_ui_row(painter)
@@ -3073,6 +3131,8 @@ class GBFROverlayQt(QWidget):
         if self.shrimp_gap_circle <= 0 or not bool(self.settings.get("show_roll_divider", DEFAULT_SETTINGS["show_roll_divider"])):
             return
         opacity = max(0, min(100, int(self.settings.get("roll_divider_opacity", DEFAULT_SETTINGS["roll_divider_opacity"]))))
+        if self.non_combat_opacity_active:
+            opacity = int(self.settings.get("non_combat_roll_opacity", 30))
         if opacity <= 0:
             return
         y = int(self.dragon_bottom_y + self.shrimp_gap_circle / 2)
@@ -3094,6 +3154,8 @@ class GBFROverlayQt(QWidget):
 
         # 翻滚UI不透明度（锁定时不减半，与层数UI一样不受锁定影响）
         roll_opacity = max(0, min(100, int(self.settings.get("roll_icon_opacity", DEFAULT_SETTINGS["roll_icon_opacity"])))) / 100.0
+        if self.non_combat_opacity_active:
+            roll_opacity = int(self.settings.get("non_combat_roll_opacity", 30)) / 100.0
 
         icon = self.dodge_icon_size
         gap = self.ROLL_ICON_GAP
