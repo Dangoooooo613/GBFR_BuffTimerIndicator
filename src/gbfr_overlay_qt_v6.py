@@ -77,9 +77,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "2.50"
+APP_VERSION = "2.60"
 SETTINGS_SCHEMA_VERSION = 66
-APP_TITLE = "GBFR_CooldownIndicator_V250"
+APP_TITLE = "GBFR_CooldownIndicator_V260"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
