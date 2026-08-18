@@ -1,6 +1,6 @@
 {
-  "version": "2.60",
-  "download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/download/v2.60/GBFR_CooldownIndicator_V260.exe",
-  "changelog": "V260：版本号递增（功能与 V250 完全一致：技能冷却菱形边框×1.35、冷却完毕呼吸光、多 buff 色相旋转、自动更新）。发布工具增加记住 token 与自动探测 Git 路径。",
+  "version": "2.61",
+  "download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/download/v2.61/GBFR_CooldownIndicator_V261.exe",
+  "changelog": "GBFR Cooldown Indicator V2.61 更新说明\n=====================================\n- 新增「启动读条窗口」：双击软件开启时先弹出进度条与步骤提示（加载设置→角色库→界面布局→图标资源→悬浮窗口→系统托盘→显示窗口），初始化完成后提示「启动完成」再进入主界面。\n- 默认写定在线更新地址（raw.githubusercontent.com 的 version.json），V2.61 起首次启动即自动检测新版本，无需手动填写。\n- 发布工具改进：上传 exe 增加真实进度条（百分比 + 已传/总大小 MB），单次超时拉长至 900 秒并支持最多 4 次自动重试；更新说明改为读取 release_notes.txt 文件；新增「跳过构建」勾选（已有 exe 可直接重发/补传）。",
   "min_version": "2.40"
 }
