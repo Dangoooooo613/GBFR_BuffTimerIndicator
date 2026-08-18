@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QProgressBar,
     QSizePolicy,
     QSlider,
     QScrollArea,
@@ -77,9 +78,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "2.60"
+APP_VERSION = "2.61"
 SETTINGS_SCHEMA_VERSION = 66
-APP_TITLE = "GBFR_CooldownIndicator_V260"
+APP_TITLE = "GBFR_CooldownIndicator_V261"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
@@ -1715,7 +1716,7 @@ DEFAULT_SETTINGS = {
     # ── 在线更新检测 ──
     "auto_check_update": True,      # 启动/定时自动检查更新
     "skip_version": "",             # 跳过的版本号（不再提示）
-    "update_check_url": "",         # version.json 地址（留空则禁用检查）
+    "update_check_url": "https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/version.json",  # version.json 地址（默认已写定，留空则禁用检查）
 }
 
 
@@ -3280,8 +3281,17 @@ class GBFROverlayQt(QObject):
     MAX_DODGES = 7
     ROLL_ICON_GAP = 4
 
-    def __init__(self):
+    def __init__(self, progress_cb=None):
         super().__init__()
+
+        def _step(pct, msg):
+            if progress_cb:
+                try:
+                    progress_cb(pct, msg)
+                except Exception:
+                    pass
+
+        _step(8, "正在加载设置…")
         self.settings = load_settings()
         self.locked = False
         self._pressed_core_btn = None  # 标题栏图标按下反馈态：None/"minimize"/"settings"/"lock"/"exit"
@@ -3318,10 +3328,13 @@ class GBFROverlayQt(QObject):
         # 裸值资源槽地址锁定（伊德四槽等）：{profile_buff_index: addr}
         self._raw_locked_addrs = {}
         self._prev_actor = 0
+        _step(22, "已加载角色数据库")
         load_char_db()
 
         # 计算「核心检测模块」画布布局（尖刺圆 + 标题栏）
+        _step(38, "正在计算界面布局…")
         self.recalc_layout()
+        _step(52, "正在加载图标资源…")
         self.load_dodge_icon()
         # 翻滚图标闪光状态
         self._dodge_flash = None
@@ -3344,8 +3357,9 @@ class GBFROverlayQt(QObject):
         self.skill_win = SkillWindow(self, "skill", parent=self.taskbar_owner)
         self.core_win.setWindowTitle(f"{_app_title(self.settings.get('language', 'zh'))} v{APP_VERSION}")
 
-
+        _step(72, "已创建悬浮窗口")
         self._setup_tray_icon()
+        _step(86, "已初始化系统托盘")
 
         # ---- 在线更新检测 ----
         self.update_info = None
@@ -3368,8 +3382,10 @@ class GBFROverlayQt(QObject):
         QTimer.singleShot(0, self.tick)
 
         # 显示模块窗口
+        _step(95, "正在显示悬浮窗口…")
         for w in (self.core_win, self.roll_win, self.skill_win):
             w.show()
+        _step(100, "启动完成")
 
     # ----------------------------------------------------------------
     #  窗口集合辅助
@@ -5646,12 +5662,80 @@ class SkillWindow(ModuleWindow):
         self.ctrl.render_skill(painter)
 
 
+class StartupSplash(QWidget):
+    """双击启动时的读条窗口：显示当前正在做什么，初始化完成后显示完成消息。"""
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SplashScreen)
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setFixedSize(440, 178)
+        self._build_ui()
+        self._center()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        container = QWidget()
+        container.setStyleSheet(
+            "background:rgba(17,23,39,0.97);border-radius:14px;"
+            "border:1px solid #2c3a5e;"
+        )
+        inner = QVBoxLayout(container)
+        inner.setContentsMargins(28, 24, 28, 22)
+        self.title_lbl = QLabel("GBFR 指示器 启动中…")
+        self.title_lbl.setStyleSheet("font-size:17px;font-weight:bold;color:#e8eefc;")
+        self.status_lbl = QLabel("正在准备…")
+        self.status_lbl.setStyleSheet("font-size:13px;color:#9fb4d8;")
+        self.bar = QProgressBar()
+        self.bar.setRange(0, 100)
+        self.bar.setValue(0)
+        self.bar.setTextVisible(True)
+        self.bar.setFormat("%p%")
+        self.bar.setStyleSheet(
+            "QProgressBar{background:rgba(255,255,255,0.08);border:1px solid #34466e;"
+            "border-radius:7px;height:16px;text-align:center;color:#dce6fa;font-size:11px;}"
+            "QProgressBar::chunk{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            "stop:0 #4f8dff,stop:1 #7ee0a0);border-radius:6px;}"
+        )
+        inner.addWidget(self.title_lbl)
+        inner.addWidget(self.status_lbl)
+        inner.addSpacing(12)
+        inner.addWidget(self.bar)
+        layout.addWidget(container)
+
+    def _center(self):
+        geo = QApplication.primaryScreen().availableGeometry()
+        r = self.geometry()
+        self.move(geo.width() // 2 - r.width() // 2, geo.height() // 2 - r.height() // 2)
+
+    def set_progress(self, pct=None, msg=None):
+        if pct is not None:
+            self.bar.setValue(int(pct))
+        if msg:
+            self.status_lbl.setText(msg)
+        QApplication.processEvents()
+
+    def finish(self, msg="✅ 启动完成，正在进入…"):
+        self.bar.setValue(100)
+        self.title_lbl.setText("GBFR 指示器")
+        self.status_lbl.setText(msg)
+        self.status_lbl.setStyleSheet("font-size:14px;color:#7ee0a0;font-weight:bold;")
+        QApplication.processEvents()
+        # 事件循环启动后才真正关闭，避免构造期间直接销毁
+        QTimer.singleShot(1200, self.close)
+
+
 def main():
     app = QApplication(sys.argv)
     if os.path.isfile(APP_ICON_PATH):
         app.setWindowIcon(QIcon(APP_ICON_PATH))
     app.setQuitOnLastWindowClosed(False)
-    overlay = GBFROverlayQt()  # 构造内已创建并 show 三个模块窗口
+    splash = StartupSplash()
+    splash.show()
+    splash.set_progress(4, "正在加载设置…")
+    overlay = GBFROverlayQt(progress_cb=splash.set_progress)  # 构造内已创建并 show 三个模块窗口
+    splash.finish()
     sys.exit(app.exec())
 
 
