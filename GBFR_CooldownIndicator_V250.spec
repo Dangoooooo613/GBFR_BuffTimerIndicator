@@ -1,0 +1,27 @@
+# -*- mode: python ; coding: utf-8 -*-
+a = Analysis(
+    ['src/gbfr_overlay_qt_v6.py'],
+    pathex=[],
+    binaries=[],
+    datas=[('assets/embedded_roll_icon.png', '.'), ('assets/app_icon.ico', '.'), ('GBFR_Character_Skills_Buffs.json', '.')],
+    hiddenimports=['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets'],
+    hookspath=[],
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='GBFR_CooldownIndicator_V250',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    runtime_tmpdir=None,
+    console=False,
+)

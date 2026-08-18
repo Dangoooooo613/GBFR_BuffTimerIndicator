@@ -1,116 +1,115 @@
-# GBFR_CooldownIndicator_V100
+# GBFR BuffTimer Indicator（碧蓝幻想Relink 指示器）
 
-A real-time buff stack, countdown timer & skill cooldown overlay for Granblue Fantasy: Relink.
-
----
-
-GBFR_CooldownIndicator is a real-time monitoring overlay for Granblue Fantasy: Relink. It reads game memory (read-only, safe) to display live buff stacks, countdown timers, and skill cooldowns on a transparent, always-on-top window.
-
-- Real-time countdown ring — precise to the second, never miss a buff expiry
-- **NEW: Non-combat opacity** — automatically reduce UI opacity when not in combat / character not connected
-- **NEW: Skill cooldown indicators** — 4 skills in diamond layout with square sector countdown, capsule timer, skill name, and cooldown-ready animation
-- 12 characters, 13 buffs fully supported
-- 80+ customizable parameters — colors, sizes, opacities, fonts, layout
-- Simplified Chinese / Traditional Chinese / English — switch anytime
-- Transparent & non-intrusive — drag, scale, lock
-- Single-file portable EXE — no install needed
-
-**Install:**
-1. Download GBFR_CooldownIndicator_V100.exe
-2. Run it — done
-3. Launch Granblue Fantasy: Relink, the overlay auto-detects your character
-4. Right-click the tray icon for Settings / Lock / Exit
-
-> Windows Defender may false-positive the EXE (common for PyInstaller). Add to exclusions if needed.
-
-## Build from Source
-
-\\ash
-git clone https://github.com/yourname/GBFR_Indicator.git
-cd GBFR_Indicator
-pip install -r requirements.txt
-pyinstaller GBFR_CooldownIndicator_V100.spec --noconfirm
-\Output: dist/GBFR_CooldownIndicator_V100.exe
-
-## Project Structure
-
-\GBFR_Indicator/
-|-- .gitignore
-|-- LICENSE
-|-- README.md
-|-- requirements.txt
-|-- GBFR_CooldownIndicator_V100.spec    # PyInstaller spec
-|-- GBFR_Character_Skills_Buffs.json     # Character/skill/buff name database
-|-- assets/
-|   |-- app_icon.ico
-|   +-- embedded_roll_icon.png
-+-- src/
-    +-- gbfr_overlay_qt_v6.py            # Main source
-\
-## Tech Stack
-
-- Python 3.11 / PySide6 (Qt6) / pymem / PyInstaller
-
-## License
-
-Personal use. Character and buff names belong to Cygames, Inc.
-
----
----
-
-# GBFR_CooldownIndicator_V100（中文）
-
-碧蓝幻想：Relink 实时Buff层数、倒计时与技能冷却叠加显示工具。
+> 单文件 Windows 工具，实时读取《碧蓝幻想 Relink》进程内存，在屏幕上叠加显示**技能冷却**、**Buff 状态**、**角色资源槽**等关键信息，辅助游玩与速通。
+> 基于 Python + PySide6 + pymem 构建，单 exe 发布，无需安装。
 
 ---
 
-GBFR_CooldownIndicator 是一款《碧蓝幻想：Relink》实时监控工具，通过只读方式读取游戏内存，在透明置顶窗口上显示Buff层数、倒计时和技能冷却。
+## 功能特性
 
-- 实时倒计时圆环——精确到秒，Buff到期不再靠猜
-- **新增：非战斗状态透明度控制** —— 非战斗/未接入角色时自动降低UI不透明度
-- **新增：技能冷却指示器** —— 4个技能以菱形布局排列，方形扇形倒计时、胶囊计时器、技能名称显示、冷却完成动画
-- 支持12个角色、13个Buff
-- 80+项可调参数——颜色、大小、透明度、字体、布局随心定制
-- 简中/繁中/英文三语随时切换
-- 透明置顶不挡视线——可拖动、可缩放、可锁定
-- 单文件便携EXE——无需安装
+### 1. 技能冷却监视（能力冷却模块）
+- 四槽菱形布局（无畏之刃 + 技能槽 1~4），旋转 45° 的圆角菱形，带立体三层边框。
+- 自动 AOB 扫描定位 actor；扫描失败时可从 Cheat Engine 复制指针手动填入。
+- 29 个角色自动识别（基于 charid 哈希）。
+- 实时冷却倒计时 + 进度占比；运行时自动学习各技能冷却峰值并持久化，可一键导出冷却上限表。
+- **V250 新增**：
+  - 菱形边框粗细可调（默认 ×1.35）。
+  - 冷却完毕时，在菱形**底部尖角**绘制一圈柔和**呼吸光**，用于提示“冷却结束”。呼吸频率、柔和程度、光的颜色（默认白色）、峰值不透明度全部可调。
 
-**安装方式：**
-1. 下载 GBFR_CooldownIndicator_V100.exe
-2. 双击运行，完事
-3. 启动《碧蓝幻想：Relink》，自动检测角色并显示Buff与技能冷却
-4. 右键托盘图标可打开设置 / 锁定窗口 / 退出
+### 2. 核心 Buff 检测模块
+- 以“尖刺圆”为主体，最多同时监测 **5 个 Buff**。
+- 多 Buff 布局：核心监测区长宽 ×1.35；所有 Buff **水平均匀分布**（圆心间距可调），垂直方向以 **Delta_Y 错位**（+Δ / −Δ 循环），并垂直居中。
+- 差异化颜色：按 Buff 槽位对你设定的基础色做 **HSV 色相旋转**（外部组 / 内部组两个开关独立控制），既保证每个 Buff 可区分，又不会破坏你的配色风格。
+- 层数显示；层数为 0 时显示“-”而非“0”。
+- 倒计时胶囊（背景 / 边框 / 文字）整体跟随槽位色相旋转，与尖刺圆同色系区分。
 
-> Windows Defender 可能误报此EXE（PyInstaller打包常见问题），添加到信任列表即可。
+### 3. Buff 启用 / 禁用
+- 每个角色一个可折叠小组框；生效区 / 隐藏区双栏，拖拽切换显示与隐藏，且**不可跨角色**误操作。
+- 角色 Buff 顺位可拖拽排序、右键置顶。
+
+### 4. 团长 / 古兰 / 姬塔 与 伊德专属
+- 团长（PL0000）/ 古兰（PL0100）/ 姬塔：Class 等级 + 倒计时。
+- 伊德（PL1900）：紫银之力、神威一体、隐藏槽。
+
+### 5. 其他
+- 窗口置顶、目标选择、丰富的设置面板（全参数持久化）。
+- 在线更新：设置内可填入 `version.json` 地址，启动 / 定时自动检测新版本。
+
+---
+
+## 下载与安装
+
+1. 前往 [Releases](https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases) 下载最新版 `GBFR_CooldownIndicator_VXXX.exe`（单文件，约 50MB，已内含 PySide6，无需安装）。
+2. **建议以管理员身份运行**（pymem 读取游戏内存通常需要足够权限，否则可能扫描/读取失败）。
+3. 启动《碧蓝幻想 Relink》，进入游戏后点击工具内“连接”自动 AOB 扫描；若扫描失败，可从 Cheat Engine 复制 actor 指针手动填入。
+4. 选择当前操控角色，按需打开设置面板调整布局与配色。
+
+---
+
+## 使用提示
+
+- **设置面板分组**：
+  - 技能冷却（含“就绪呼吸光”子页：开关 / 颜色 / 频率 Hz / 柔和程度 / 峰值不透明度）。
+  - 多 Buff 布局（按 2 / 3 / 4 / 5 个 Buff 各一组，每组含：缩放、圆心水平间距、圆心 Delta_Y、外部差异化颜色、内部差异化颜色，共 20 个参数）。
+  - Buff 启用 / 禁用（每角色折叠小组框）。
+  - 在线更新（检查更新按钮 + URL 输入框 + 自动检查勾选）。
+- **冷却上限表**：实战中自动累积各技能冷却峰值；点“导出冷却上限表”生成 CSV / JSON，便于查看每个能力的真实冷却秒数。
+
+---
 
 ## 从源码构建
 
-\\ash
-git clone https://github.com/yourname/GBFR_Indicator.git
+已验证环境：
+- Python 3.11（`C:/Python311/python.exe`）
+- `PySide6==6.11.1`、`PyInstaller==6.21.0`
+
+```bash
 cd GBFR_Indicator
-pip install -r requirements.txt
-pyinstaller GBFR_CooldownIndicator_V100.spec --noconfirm
-\输出：dist/GBFR_CooldownIndicator_V100.exe
+C:/Python311/python.exe -m PyInstaller GBFR_CooldownIndicator_V250.spec --noconfirm
+```
 
-## 项目结构
+产物位于 `dist/GBFR_CooldownIndicator_V250.exe`（约 50MB，PySide6 已打包）。
 
-\GBFR_Indicator/
-|-- .gitignore
-|-- LICENSE
-|-- README.md
-|-- requirements.txt
-|-- GBFR_CooldownIndicator_V100.spec    # PyInstaller打包配置
-|-- GBFR_Character_Skills_Buffs.json     # 角色/技能/Buff名称数据库
-|-- assets/
-|   |-- app_icon.ico
-|   +-- embedded_roll_icon.png
-+-- src/
-    +-- gbfr_overlay_qt_v6.py            # 主源码
-\
-## 技术栈
+> 注意：务必使用上述 Python 3.11 环境构建。若用未安装 PySide6 的解释器构建，会生成约 8~9MB 的残缺 exe，运行时会报 `No module named 'PySide6'`。
 
-- Python 3.11 / PySide6 (Qt6) / pymem / PyInstaller
+---
 
-## 许可
+## 在线更新（进阶）
 
-个人使用。角色名和Buff名版权归 Cygames, Inc. 所有。
+在仓库根目录维护 `version.json`：
+
+```json
+{
+  "version": "2.50",
+  "download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/download/v2.50/GBFR_CooldownIndicator_V250.exe",
+  "changelog": "V250：技能冷却菱形边框×1.35；冷却完毕底部柔和呼吸光；接入 version.json 自动更新。",
+  "min_version": "2.40"
+}
+```
+
+将工具设置里的 `update_check_url` 填为：
+
+```
+https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/version.json
+```
+
+即可在启动 / 定时自动检测新版本。
+
+---
+
+## 更新日志
+
+- **V250**：技能冷却菱形边框 ×1.35（可调）；冷却完毕底部柔和呼吸光（频率 / 柔和程度 / 颜色 / 峰值不透明度可调，默认白色）；接入 `version.json` 自动更新。
+- **V249**：倒计时胶囊（背景 / 边框 / 文字）整体跟随槽位色相旋转。
+- **V248**：多 Buff 布局按个数隔离小组框；Delta_Y 允许负值；生效区 / 隐藏区高度再 ×1.2；层数 0 显示“-”。
+- **V247**：设置参数全链路严格落地；Buff 小组框折叠 + 1.2 倍高度 + 左对齐；核心多 Buff 重写（最多 5 个、×1.35、水平均匀 + ΔY 错位、20 参数、色相旋转差异化）。
+- **V244**：团长 / 古兰 / 姬塔 Class 等级 + 倒计时；伊德四槽（紫银 / 神威 / 隐藏）；裸值资源槽读取框架。
+- （更早 V098–V101 为基础冷却监视与技能冷却 UI 修复。）
+
+---
+
+## 免责声明
+
+- 本工具仅**读取**游戏进程内存，不修改任何游戏文件，面向单机 / 离线使用。
+- 使用第三方内存读取工具存在账号风险，请自行评估并承担相关后果；作者不对任何使用后果负责。
+- 本工具并非 Cygames / PlatinumGames 官方产品。

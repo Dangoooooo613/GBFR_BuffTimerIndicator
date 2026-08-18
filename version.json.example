@@ -1,0 +1,6 @@
+{
+  "version": "2.51",
+  "download_url": "https://github.com/YOURNAME/GBFR_Overlay/releases/download/v2.51/GBFR_CooldownIndicator_V251.exe",
+  "changelog": "【示例】把 version 改成比当前 APP_VERSION 大的值即可触发更新提示；download_url 改成新 exe 的可直链地址。",
+  "min_version": "2.40"
+}
