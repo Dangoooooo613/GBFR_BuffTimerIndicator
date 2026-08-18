@@ -1,6 +1,6 @@
 {
-  "version": "2.50",
-  "download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/download/v2.50/GBFR_CooldownIndicator_V250.exe",
-  "changelog": "V250：技能冷却菱形边框×1.35（可调）；冷却完毕底部柔和呼吸光（频率/柔和程度/颜色/峰值不透明度可调，默认白色）；接入 version.json 自动更新。",
+  "version": "2.60",
+  "download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/download/v2.60/GBFR_CooldownIndicator_V260.exe",
+  "changelog": "V260：版本号递增（功能与 V250 完全一致：技能冷却菱形边框×1.35、冷却完毕呼吸光、多 buff 色相旋转、自动更新）。发布工具增加记住 token 与自动探测 Git 路径。",
   "min_version": "2.40"
 }
