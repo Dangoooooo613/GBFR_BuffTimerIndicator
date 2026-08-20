@@ -16,6 +16,7 @@ import json
 import math
 import os
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -23,7 +24,7 @@ import urllib.request
 from ctypes import wintypes
 
 from PySide6.QtCore import QObject, QPoint, QRect, QRectF, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QAction, QBrush, QColor, QDesktopServices, QFont, QFontMetrics, QLinearGradient, QRadialGradient, QIcon, QPainter, QPen, QPainterPath, QPixmap
+from PySide6.QtGui import QAction, QBrush, QColor, QDesktopServices, QFont, QFontMetrics, QLinearGradient, QRadialGradient, QIcon, QPainter, QPen, QPainterPath, QPixmap, QImage, QPainterPathStroker
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QAbstractSpinBox,
@@ -75,12 +76,21 @@ if getattr(sys, "frozen", False):
 else:
     _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
+# 源码运行（src/）时 bundled 资源在父目录 assets/ 下，做一次回退定位
+if not os.path.isfile(DEFAULT_SHRIMP_IMG_PATH):
+    DEFAULT_SHRIMP_IMG_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "embedded_roll_icon.png"
+    )
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
+if not os.path.isfile(APP_ICON_PATH):
+    APP_ICON_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "app_icon.ico"
+    )
 
 # ============================ Version ============================
-APP_VERSION = "2.61"
-SETTINGS_SCHEMA_VERSION = 66
-APP_TITLE = "GBFR_CooldownIndicator_V261"
+APP_VERSION = "3.1"
+SETTINGS_SCHEMA_VERSION = 75
+APP_TITLE = "GBFR_CooldownIndicator_V301"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
 
 def _app_title(lang="zh"):
@@ -336,11 +346,21 @@ ID_CELLS_SUB = -0x3C22B18          # u32 0~4，龙人格子
 ID_OVERDRIVE_SUB = -0x198D9D8      # f32 0~1，神威槽
 ID_HIDDEN_OFF = 0x1CB34            # f32 0~4，隐藏槽（actor 直接偏移）
 
+# 巴萨拉卡（PL1700）古洛诺斯槽冻结倒计时：actor 直接偏移（f32）
+# 来源：gbfr_vaseraga_freeze_monitor.py 实测确认
+VASERAGA_FREEZE_OFF = 0x1CAF0     # f32，古洛诺斯冻结剩余秒数（仅冻结中>0）
+
 _profile_siegfried = {
     "buffs": [
         {"zh": "屠龙之心", "zh_tw": "滅龍的鼓動", "en": "Dragonsbane Pulse",
          "stack_status_id": 0x40, "timer_status_id": 0x40,
          "timer_display": "full_stack_only"},
+        {"zh": "拂晓", "zh_tw": "拂曉", "en": "Daybreak",
+         "stack_status_id": 144, "timer_status_id": 144,
+         "timer_display": "any_stack", "single_layer": True},
+        {"zh": "漆黑血涌", "zh_tw": "黑色血潮", "en": "Dark Zeal",
+         "stack_status_id": 65, "timer_status_id": 65,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_gallanza = {
@@ -348,12 +368,18 @@ _profile_gallanza = {
         {"zh": "武夫", "zh_tw": "荒事", "en": "Wild Showman",
          "stack_status_id": 0x72, "timer_status_id": 0x72,
          "timer_display": "any_stack"},
+        {"zh": "回旋王", "zh_tw": "絕好勢", "en": "Ultimatum",
+         "stack_status_id": 112, "timer_status_id": 112,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_ferry = {
     "buffs": [
         {"zh": "托愿", "zh_tw": "被託付的願望", "en": "Loving Trust",
          "stack_status_id": 0x4E, "timer_status_id": 0x4E,
+         "timer_display": "any_stack"},
+        {"zh": "幽缘", "zh_tw": "幽緣", "en": "Spiritbond",
+         "stack_status_id": 79, "timer_status_id": 79,
          "timer_display": "any_stack"},
     ]
 }
@@ -374,9 +400,17 @@ _profile_id = {
          "stack_status_id": 0x3C, "timer_status_id": 0x3C,
          "timer_display": "any_stack"},
         # 神威一体（单层buff）：仅神威一体形态存在（require overdrive = 有神威一体 ExStatus）
-        {"zh": "神威一体", "zh_tw": "神威一體", "en": "Blade of the Immortals",
+        {"zh": "神威一体", "zh_tw": "神威一體", "en": "Godmight",
          "stack_status_id": ID_OVERDRIVE_STATUS_ID, "timer_status_id": ID_OVERDRIVE_STATUS_ID,
          "timer_display": "any_stack", "single_layer": True, "require": "overdrive"},
+        # 龙人化（单层buff）：仅龙人态存在（require dragon_form）
+        {"zh": "龙人化", "zh_tw": "龍人化", "en": "Dragonform",
+         "stack_status_id": 29, "timer_status_id": 29,
+         "timer_display": "any_stack", "single_layer": True, "require": "dragon_form"},
+        # 化龙（单层buff）：伊德专属 debuff（sid=126=Inversa），仅龙人态存在
+        {"zh": "化龙", "zh_tw": "龍深化", "en": "Inversa",
+         "stack_status_id": 126, "timer_status_id": 126,
+         "timer_display": "any_stack", "single_layer": True, "require": "dragon_form"},
         # 隐藏槽：非 ExStatus 裸值（actor 直接偏移）；仅神威一体形态有意义（require overdrive）
         {"zh": "隐藏槽", "zh_tw": "隱藏槽", "en": "Hidden Gauge",
          "raw_source": {"kind": "id_direct", "off": ID_HIDDEN_OFF, "fmt": "f32"},
@@ -389,12 +423,18 @@ _profile_captain = {
          "raw_source": {"kind": "class_state", "ptr_off": CLASS_STATE_PTR_OFF,
                         "rank_off": CLASS_RANK_OFF, "dur_off": CLASS_DURATION_OFF},
          "max_stacks": 4, "timer_display": "any_stack"},
+        {"zh": "不屈攻刃", "zh_tw": "不屈攻刃", "en": "Combat Healer",
+         "stack_status_id": 66, "timer_status_id": 66,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_tweyen = {
     "buffs": [
         {"zh": "致命一击强化", "zh_tw": "致命一擊強化", "en": "Enhanced Clincher",
          "stack_status_id": 0x7F, "timer_status_id": 0x7F,
+         "timer_display": "any_stack"},
+        {"zh": "煌矢", "zh_tw": "煌矢", "en": "Piercing Gleam",
+         "stack_status_id": 109, "timer_status_id": 109,
          "timer_display": "any_stack"},
     ]
 }
@@ -403,27 +443,40 @@ _profile_vaseraga = {
         {"zh": "冥刃", "zh_tw": "冥刃", "en": "Ebony Glint",
          "stack_status_id": 0x52, "timer_status_id": 0x52,
          "timer_display": "any_stack"},
-        {"zh": "不死之身", "zh_tw": "不死之身", "en": "Undying Body",
+        {"zh": "不死之身", "zh_tw": "不死之身", "en": "Undying",
          "stack_status_id": 0x1F, "timer_status_id": 0x1F,
          "timer_display": "any_stack", "single_layer": True},
         {"zh": "古洛诺斯之力", "zh_tw": "格羅諾斯解放", "en": "Grynoth Unleashed",
          "stack_status_id": 88, "timer_status_id": 88,
          "timer_display": "any_stack"},
-        {"zh": "古洛诺斯槽", "zh_tw": "古洛諾斯槽", "en": "Grynoth Gauge",
+        {"zh": "造成伤害UP", "zh_tw": "給予傷害UP", "en": "DMG\u2191",
          "stack_status_id": 42, "timer_status_id": 42,
          "timer_display": "any_stack"},
+        {"zh": "蚀魂魔刃", "zh_tw": "蝕魂之刃", "en": "Blood-Drinking Blade",
+         "stack_status_id": 138, "timer_status_id": 138,
+         "timer_display": "any_stack"},
+        # 古洛诺斯冻结倒计时（单层）：actor+0x1CAF0 直接偏移，仅冻结中>0 时显示
+        {"zh": "古洛诺斯冻结", "zh_tw": "古洛諾斯凍結", "en": "Grynoth Freeze",
+         "raw_source": {"kind": "actor_timer", "off": VASERAGA_FREEZE_OFF, "fmt": "f32", "max": 30.0},
+         "single_layer": True, "timer_display": "any_stack"},
     ]
 }
 _profile_io = {
     "buffs": [
-        {"zh": "星梦强化", "zh_tw": "星夢強化", "en": "Stargaze Boost",
-         "stack_status_id": 71, "timer_status_id": 71,
+        {"zh": "专注", "zh_tw": "全神貫注", "en": "Focused",
+         "stack_status_id": 27, "timer_status_id": 27,
+         "timer_display": "any_stack", "single_layer": True},
+        {"zh": "魔力漩涡", "zh_tw": "魔力漩渦", "en": "Mystic Vortex",
+         "stack_status_id": 26, "timer_status_id": 26,
+         "timer_display": "any_stack"},
+        {"zh": "魔法连锁", "zh_tw": "魔法連擊", "en": "Magic Chain",
+         "stack_status_id": 81, "timer_status_id": 81,
          "timer_display": "any_stack"},
     ]
 }
 _profile_maglielle = {
     "buffs": [
-        {"zh": "超凡艺术", "zh_tw": "極致戰藝", "en": "Arts Superior",
+        {"zh": "超凡艺术", "zh_tw": "極致戰藝", "en": "Arts Superiór",
          "stack_status_id": 87, "timer_status_id": 87,
          "timer_display": "any_stack"},
     ]
@@ -433,16 +486,21 @@ _profile_catalina = {
         {"zh": "苍刃", "zh_tw": "蒼刃", "en": "Blade Blue",
          "stack_status_id": 69, "timer_status_id": 69,
          "timer_display": "any_stack"},
+        {"zh": "双璧突击", "zh_tw": "雙重強襲", "en": "Dual Raid",
+         "stack_status_id": 139, "timer_status_id": 139,
+         "timer_display": "any_stack"},
+        {"zh": "阿瑞斯强袭", "zh_tw": "艾瑞斯強襲", "en": "Ares Surge",
+         "stack_status_id": 68, "timer_status_id": 68,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_rosetta = {
     "buffs": [
-        # 单层buff；status id 待用户从 CE 提供后填入（当前占位 0，代码自动跳过不显示）
-        {"zh": "落花无情强化", "zh_tw": "落花無情強化", "en": "Rosary Lattice",
-         "stack_status_id": 0, "timer_status_id": 0,
+        {"zh": "落花无情强化", "zh_tw": "花散強化", "en": "Lost Love Bloomed",
+         "stack_status_id": 98, "timer_status_id": 98,
          "timer_display": "any_stack", "single_layer": True},
-        {"zh": "螺旋玫瑰强化", "zh_tw": "螺旋玫瑰強化", "en": "Rosary Spiral",
-         "stack_status_id": 0, "timer_status_id": 0,
+        {"zh": "螺旋玫瑰强化", "zh_tw": "螺旋玫瑰強化", "en": "Spiral Rose Bloomed",
+         "stack_status_id": 97, "timer_status_id": 97,
          "timer_display": "any_stack", "single_layer": True},
     ]
 }
@@ -465,6 +523,9 @@ _profile_percival = {
         {"zh": "红莲之刃", "zh_tw": "紅蓮之刃", "en": "Molten Edge",
          "stack_status_id": 0x55, "timer_status_id": 0x55,
          "timer_display": "any_stack"},
+        {"zh": "征战之剑＋＋强化", "zh_tw": "征戰＋＋強化", "en": "Stoked Charge",
+         "stack_status_id": 83, "timer_status_id": 83,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_sandalphon = {
@@ -472,6 +533,12 @@ _profile_sandalphon = {
         {"zh": "无限之辉", "zh_tw": "無限光", "en": "Limitless Light",
          "stack_status_id": 0x6A, "timer_status_id": 0x6A,
          "timer_display": "any_stack", "single_layer": True},
+        {"zh": "极彩羽翼", "zh_tw": "極彩之羽", "en": "Chromatic Wings",
+         "stack_status_id": 45, "timer_status_id": 45,
+         "timer_display": "any_stack", "single_layer": True},
+        {"zh": "白辉祝福", "zh_tw": "白輝之加護", "en": "Lucent Refuge",
+         "stack_status_id": 107, "timer_status_id": 107,
+         "timer_display": "any_stack"},
     ]
 }
 _profile_seofon = {
@@ -482,6 +549,76 @@ _profile_seofon = {
         {"zh": "星海", "zh_tw": "星海", "en": "Star Sea",
          "stack_status_id": 0x75, "timer_status_id": 0x75,
          "timer_display": "any_stack"},
+        {"zh": "集谛", "zh_tw": "集諦", "en": "Samudaya",
+         "stack_status_id": 133, "timer_status_id": 133,
+         "timer_display": "any_stack"},
+    ]
+}
+
+# ============================ 新增角色 Buff 配置 ============================
+_profile_rackam = {
+    "buffs": [
+        {"zh": "双发子弹", "zh_tw": "雙連擊", "en": "Double Tap",
+         "stack_status_id": 38, "timer_status_id": 38,
+         "timer_display": "any_stack", "single_layer": True},
+        {"zh": "靶心狙击强化", "zh_tw": "靶心狙擊強化", "en": "Super Bull's Eye Blast",
+         "stack_status_id": 70, "timer_status_id": 70,
+         "timer_display": "any_stack", "single_layer": True},
+    ]
+}
+_profile_barn = {
+    "buffs": [
+        {"zh": "强化回馈", "zh_tw": "協同增幅", "en": "Synergy Boost",
+         "stack_status_id": 93, "timer_status_id": 93,
+         "timer_display": "any_stack"},
+    ]
+}
+_profile_charlotte = {
+    "buffs": [
+        {"zh": "崇高指令", "zh_tw": "高潔秩序", "en": "Noble Order",
+         "stack_status_id": 74, "timer_status_id": 74,
+         "timer_display": "any_stack"},
+    ]
+}
+_profile_eustace = {
+    "buffs": [
+        {"zh": "弗拉梅克之力", "zh_tw": "弗拉梅格解放", "en": "Flamek Unleashed",
+         "stack_status_id": 118, "timer_status_id": 118,
+         "timer_display": "any_stack"},
+    ]
+}
+_profile_fif = {
+    "buffs": [
+        {"zh": "连击收招强化", "zh_tw": "連技終擊強化", "en": "Enhanced Combo Finishers",
+         "stack_status_id": 123, "timer_status_id": 123,
+         "timer_display": "any_stack"},
+        {"zh": "暗灾", "zh_tw": "闇禍", "en": "Malice",
+         "stack_status_id": 124, "timer_status_id": 124,
+         "timer_display": "any_stack"},
+    ]
+}
+
+# ============================ 通用 Buff（全角色生效的状态效果）============================
+_profile_general = {
+    "buffs": [
+        {"zh": "再生", "zh_tw": "再生", "en": "Regen",
+         "stack_status_id": 5, "timer_status_id": 5, "timer_display": "any_stack"},
+        {"zh": "无敌", "zh_tw": "無敵", "en": "Invincibility",
+         "stack_status_id": 6, "timer_status_id": 6, "timer_display": "any_stack", "single_layer": True},
+        {"zh": "追击", "zh_tw": "追擊", "en": "Supplementary DMG",
+         "stack_status_id": 7, "timer_status_id": 7, "timer_display": "any_stack"},
+        {"zh": "霸体", "zh_tw": "畏怯無效", "en": "Stout Heart",
+         "stack_status_id": 8, "timer_status_id": 8, "timer_display": "any_stack"},
+        {"zh": "挺身而出", "zh_tw": "挺身掩護", "en": "Substitute",
+         "stack_status_id": 10, "timer_status_id": 10, "timer_display": "any_stack", "single_layer": True},
+        {"zh": "弱化免疫", "zh_tw": "弱化無效", "en": "Debuff Immunity",
+         "stack_status_id": 17, "timer_status_id": 17, "timer_display": "any_stack"},
+        {"zh": "暴击率UP", "zh_tw": "爆擊機率UP", "en": "Critical Hit Rate\u2191",
+         "stack_status_id": 23, "timer_status_id": 23, "timer_display": "any_stack"},
+        {"zh": "豪胆", "zh_tw": "堅毅", "en": "Guts",
+         "stack_status_id": 20, "timer_status_id": 20, "timer_display": "any_stack", "single_layer": True},
+        {"zh": "自动复活", "zh_tw": "自動復活", "en": "Autorevive",
+         "stack_status_id": 25, "timer_status_id": 25, "timer_display": "any_stack", "single_layer": True},
     ]
 }
 
@@ -489,22 +626,28 @@ BUFF_PROFILES = {
     # pl_id 键（推荐，charid hash 直接命中）
     "PL0000": _profile_captain,
     "PL0100": _profile_captain,
-    "PL1100": _profile_siegfried,
-    "PL2400": _profile_gallanza,
+    "PL0200": _profile_catalina,
+    "PL0300": _profile_rackam,
+    "PL0400": _profile_io,
+    "PL0600": _profile_rosetta,
     "PL0700": _profile_ferry,
     "PL0800": _profile_lancelot,
-    "PL1900": _profile_id,
-    "PL2300": _profile_tweyen,
-    "PL1700": _profile_vaseraga,
-    "PL1600": _profile_zeta,
-    "PL1800": _profile_cagliostro,
+    "PL0900": _profile_barn,
     "PL1000": _profile_percival,
+    "PL1100": _profile_siegfried,
+    "PL1200": _profile_charlotte,
+    "PL1600": _profile_zeta,
+    "PL1700": _profile_vaseraga,
+    "PL1800": _profile_cagliostro,
+    "PL1900": _profile_id,
     "PL2100": _profile_sandalphon,
     "PL2200": _profile_seofon,
-    "PL0400": _profile_io,
-    "PL0200": _profile_catalina,
-    "PL0600": _profile_rosetta,
+    "PL2300": _profile_tweyen,
+    "PL2400": _profile_gallanza,
     "PL2500": _profile_maglielle,
+    "PL2700": _profile_eustace,
+    "PL2900": _profile_fif,
+    "GENERAL": _profile_general,
     # 0x1FD char_type 键（回退兼容）
     0x11: _profile_siegfried,
     0x24: _profile_gallanza,
@@ -625,6 +768,8 @@ class BuffOrderGroup(QWidget):
     def __init__(self, pl_ids, profile, buff_order, lang="zh", title=None):
         self.pl_ids = list(pl_ids)
         self.profile = profile
+        self._lang = lang
+        # title 可以是 str（固定标题）或 dict（{"zh","zh_tw","en"} 多语标题）
         self._title_override = title
         self._meta = {
             i: (bc.get("zh", ""), bool(bc.get("single_layer")))
@@ -644,7 +789,14 @@ class BuffOrderGroup(QWidget):
         hdr = QHBoxLayout(); hdr.setContentsMargins(0, 0, 0, 0); hdr.setSpacing(4)
         self._collapse_btn = QToolButton(); self._collapse_btn.setFixedSize(18, 18)
         self._collapse_btn.setStyleSheet("QToolButton{border:none;color:#cfe0ff;font-weight:bold;font-size:12px;}")
-        self._title_lbl = QLabel(title or _pl_display_name(self.pl_ids[0], lang))
+        # 标题：支持 str / dict（多语） / None（自动 PL 名）
+        if title is None:
+            _ttl = _pl_display_name(self.pl_ids[0], lang)
+        elif isinstance(title, dict):
+            _ttl = title.get(lang, title.get("zh", ""))
+        else:
+            _ttl = title
+        self._title_lbl = QLabel(_ttl)
         self._title_lbl.setStyleSheet("color:#cfe0ff;font-weight:bold;font-size:11px;")
         hdr.addWidget(self._collapse_btn); hdr.addWidget(self._title_lbl); hdr.addStretch()
         outer.addLayout(hdr)
@@ -657,8 +809,13 @@ class BuffOrderGroup(QWidget):
 
         # 左右栏标题：等宽两栏，「生效区」左对齐于左栏左边界、「隐藏区」左对齐于右栏左边界（=中线）
         colhdr = QHBoxLayout(); colhdr.setContentsMargins(0, 0, 0, 0); colhdr.setSpacing(6)
-        lbl_shown = QLabel("生效区（拖动排序）"); lbl_shown.setStyleSheet("color:#b0c4e0;font-size:10px;")
-        lbl_hidden = QLabel("隐藏区"); lbl_hidden.setStyleSheet("color:#b0c4e0;font-size:10px;")
+        _col_map = {"zh": {}, "zh_tw": zh_to_tw, "en": zh_to_en}.get(self._lang, {})
+        def _ct(text):
+            return _col_map.get(text, text)
+        lbl_shown = QLabel(_ct("生效区（拖动排序）")); lbl_shown.setStyleSheet("color:#b0c4e0;font-size:10px;")
+        lbl_hidden = QLabel(_ct("隐藏区")); lbl_hidden.setStyleSheet("color:#b0c4e0;font-size:10px;")
+        self._lbl_shown = lbl_shown
+        self._lbl_hidden = lbl_hidden
         sw = QWidget(); _sl = QHBoxLayout(); _sl.setContentsMargins(0, 0, 0, 0); _sl.setSpacing(0); _sl.addWidget(lbl_shown); sw.setLayout(_sl)
         hw = QWidget(); _hl = QHBoxLayout(); _hl.setContentsMargins(0, 0, 0, 0); _hl.setSpacing(0); _hl.addWidget(lbl_hidden); hw.setLayout(_hl)
         colhdr.addWidget(sw); colhdr.addWidget(hw)
@@ -680,9 +837,10 @@ class BuffOrderGroup(QWidget):
         lists_layout.addWidget(self.hidden_list)
         b_layout.addLayout(lists_layout)
 
-        hint = QLabel("左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）")
+        hint = QLabel(_ct("左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）"))
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#8aa0c0;font-size:10px;")
+        self._hint = hint
         b_layout.addWidget(hint)
 
         outer.addWidget(self._body)
@@ -731,7 +889,7 @@ class BuffOrderGroup(QWidget):
 
     def _make_item(self, idx, hidden):
         label, sl = self._meta.get(idx, ("", False))
-        disp = ("✕ " if hidden else "") + label + ("（单层buff）" if sl else "")
+        disp = ("✕ " if hidden else "") + label + (self._tt("（单层buff）") if sl else "")
         it = QListWidgetItem(disp)
         it.setData(Qt.UserRole, idx)
         if hidden:
@@ -747,13 +905,13 @@ class BuffOrderGroup(QWidget):
             item = self.hidden_list.item(i)
             idx = item.data(Qt.UserRole)
             label, sl = self._meta.get(idx, ("", False))
-            item.setText("✕ " + label + ("（单层buff）" if sl else ""))
+            item.setText("✕ " + label + (self._tt("（单层buff）") if sl else ""))
             item.setForeground(QColor(255, 95, 95, 204))
         for i in range(self.shown_list.count()):
             item = self.shown_list.item(i)
             idx = item.data(Qt.UserRole)
             label, sl = self._meta.get(idx, ("", False))
-            item.setText(label + ("（单层buff）" if sl else ""))
+            item.setText(label + (self._tt("（单层buff）") if sl else ""))
             item.setForeground(QColor(223, 231, 245, 255))
 
     def _sync_from_lists(self):
@@ -796,15 +954,15 @@ class BuffOrderGroup(QWidget):
             return
         menu = QMenu(self)
         if source_list is self.shown_list:
-            act_top = menu.addAction("置顶")
-            act_toggle = menu.addAction("隐藏")
+            act_top = menu.addAction(self._tt("置顶"))
+            act_toggle = menu.addAction(self._tt("隐藏"))
             choiced = menu.exec_(source_list.mapToGlobal(pos))
             if choiced == act_top:
                 self._move_top(idx)
             elif choiced == act_toggle:
                 self._move_idx(idx, to_hidden=True, at_row=None)
         else:
-            act_toggle = menu.addAction("显示")
+            act_toggle = menu.addAction(self._tt("显示"))
             choiced = menu.exec_(source_list.mapToGlobal(pos))
             if choiced == act_toggle:
                 self._move_idx(idx, to_hidden=False, at_row=None)
@@ -830,11 +988,25 @@ class BuffOrderGroup(QWidget):
                 result[f"{pl_id}_{idx}"] = 0
         return result
 
+    def _tt(self, text):
+        m = {"zh": {}, "zh_tw": zh_to_tw, "en": zh_to_en}.get(self._lang, {})
+        return m.get(text, text)
+
     def refresh_title(self, lang):
+        self._lang = lang
         if self._title_override:
-            self._title_lbl.setText(self._title_override)
+            t = self._title_override
+            if isinstance(t, dict):
+                self._title_lbl.setText(t.get(lang, t.get("zh", "")))
+            else:
+                self._title_lbl.setText(t)
         else:
             self._title_lbl.setText(_pl_display_name(self.pl_ids[0], lang))
+        _col_map = {"zh": {}, "zh_tw": zh_to_tw, "en": zh_to_en}.get(lang, {})
+        self._lbl_shown.setText(_col_map.get("生效区（拖动排序）", "生效区（拖动排序）"))
+        self._lbl_hidden.setText(_col_map.get("隐藏区", "隐藏区"))
+        self._hint.setText(_col_map.get("左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）",
+                                        "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）"))
 
     def show_all(self):
         buffs = self.profile.get("buffs", [])
@@ -1327,6 +1499,44 @@ def read_overlay_data(handle, pptr, raw_locked=None):
             elif idx < len(exstatus_buffs):
                 buffs_out.append(exstatus_buffs[idx])
 
+    # 通用 Buff（全角色生效的状态效果）：从 ExStatus 中匹配，仅显示有层数或有倒计时的
+    gen_profile = BUFF_PROFILES.get("GENERAL")
+    if gen_profile:
+        for idx, buff_cfg in enumerate(gen_profile["buffs"]):
+            stack_sid = buff_cfg.get("stack_status_id")
+            timer_sid = buff_cfg.get("timer_status_id")
+            if not stack_sid and not timer_sid:
+                continue
+            stacks = 0
+            max_stacks = None
+            timer = None
+            timer_max = None
+            if stack_sid and stack_sid in all_buffs:
+                b = all_buffs[stack_sid]
+                stacks = b["stacks"]
+                max_stacks = b["max_stacks"] or None
+            if timer_sid and timer_sid in all_buffs:
+                b = all_buffs[timer_sid]
+                if not b["infinite"]:
+                    timer = b["remaining"]
+                    timer_max = b["initial"] or None
+            # 仅在 buff 实际存在（有层数或有计时器）时加入
+            if stacks <= 0 and (timer is None or timer <= 0):
+                continue
+            buffs_out.append({
+                "index": idx,
+                "group": "GENERAL",
+                "zh": buff_cfg.get("zh", ""),
+                "zh_tw": buff_cfg.get("zh_tw", buff_cfg.get("zh", "")),
+                "en": buff_cfg.get("en", ""),
+                "stacks": stacks,
+                "max_stacks": max_stacks,
+                "timer": timer,
+                "timer_max": timer_max,
+                "timer_display": buff_cfg.get("timer_display", "any_stack"),
+                "single_layer": bool(buff_cfg.get("single_layer", False)),
+            })
+
     return {"status": "ok", "dodge": dodge or 0, "char_type": char_type,
             "charid_hash": charid_hash, "pl_id": pl_id, "buffs": buffs_out,
             "raw_locked": new_locked}
@@ -1374,6 +1584,10 @@ def _resolve_gauge_addr(handle, actor, src, locked):
         if abs(calc - locked) < 0x100000:
             return calc, calc, True
         return locked, locked, True
+    if kind == "actor_timer":
+        # 巴萨拉卡古洛诺斯冻结：actor 直接偏移读 f32 倒计时
+        addr = actor + src.get("off", 0)
+        return addr, 0, True
     return 0, locked, False
 
 
@@ -1428,12 +1642,36 @@ def read_raw_buffs(handle, actor, profile, locked_addrs=None, prev_actor=0, all_
             v = 0.0
 
         kind = src.get("kind")
+
+        # 古洛诺斯冻结倒计时：仅冻结中 >0，非冻结时为 0，跳过不显示
+        if kind == "actor_timer":
+            if v <= 0.01:
+                continue
+            timer = v
+            timer_max = src.get("max", 30.0)
+            out[idx] = {
+                "index": idx,
+                "zh": buff_cfg.get("zh", ""),
+                "zh_tw": buff_cfg.get("zh_tw", buff_cfg.get("zh", "")),
+                "en": buff_cfg.get("en", ""),
+                "stacks": 0,
+                "max_stacks": 0,
+                "timer": timer,
+                "timer_max": timer_max,
+                "timer_display": buff_cfg.get("timer_display", "any_stack"),
+                "single_layer": bool(buff_cfg.get("single_layer", False)),
+                "gauge_mode": buff_cfg.get("gauge_mode"),
+                "gauge_value": None,
+            }
+            continue
+
         max_stacks = buff_cfg.get("max_stacks")
         if max_stacks is None:
             max_stacks = 4 if fmt == "f32" else 7
 
         # 值域校验：明显越界说明链/偏移不对，放弃本次读取
-        if kind != "class_state":
+        # actor_timer（冻结倒计时）跳过 stacks 值域校验，单独处理
+        if kind not in ("class_state", "actor_timer"):
             if fmt == "f32":
                 if v < -0.01 or v > max(max_stacks * 1.5, 1.0) + 0.1:
                     continue
@@ -1597,8 +1835,17 @@ DEFAULT_SETTINGS = {
     "flash_duration_ms": 400,             # 闪光动画时长ms
     "flash_apply_spikes": True,           # 应用：核心检测模块·尖刺闪光（原 spike_flash_on_stack_change）
     "flash_apply_skill_ready": True,      # 应用：能力模块·冷却完成闪光
-    "flash_apply_dodge": False,           # 应用：翻滚模块·图标闪光（NEW，png 可勾边）
-    "flash_dodge_outline": True,          # 翻滚图标闪光模式：勾边发光(outline)
+    "dodge_outline_enabled": True,        # 翻滚模块：沿图案轮廓常驻勾边（与闪光解耦）
+    "dodge_outline_width": 2.0,           # 翻滚勾边：贴边描边粗细(px，相对图标分辨率）
+    # ── 警告牌（翻滚第6/7次）可调参数 ──
+    "warning_size_scale": 0.68,           # 警告三角相对图标槽的缩放（0.3~1.0）
+    "warning_outline_color": "#e53935",   # 外部红色圆角三角边框色
+    "warning_outline_color_opacity": 100,
+    "warning_fill_color": "#ffef00",      # 内部黄色填充色
+    "warning_fill_color_opacity": 100,
+    "warning_outline_width": 0.24,        # 红色边框粗度（占三角形边长比例 0.05~0.5）
+    "dodge_outline_glow": 5.0,            # 翻滚勾边：外扩辉光宽度(px)
+    "dodge_outline_threshold": 24,        # 翻滚勾边：alpha 阈值(>该值视为图案像素)
     # ── 翻滚模块布局方向 ──
     "roll_orientation": "horizontal",     # horizontal / vertical
     # ── 各模块独立屏幕位置（取代旧的 shrimp_gap_circle / 分割线 相对定位）──
@@ -1711,12 +1958,15 @@ DEFAULT_SETTINGS = {
     "skill_cd_breath_color": "#ffffff",     # 光颜色（默认白色）
     "skill_cd_breath_color_opacity": 65,    # 峰值不透明度%
     "skill_cd_breath_freq": 0.5,            # 呼吸频率（Hz，每秒呼吸次数）
-    "skill_cd_breath_soft": 1.0,            # 柔和程度（0.2~3.0，越大越扩散柔和）
+    "skill_cd_breath_soft": 0.5,            # 柔和程度（0~1，越大越扩散柔和；真正控制渐变衰减指数）
+    "skill_cd_breath_size": 1.9,            # 光圈大小（半径倍率，相对能力尺寸 s；控制光晕扩散半径）
     "skill_cooldown_max": {},
     # ── 在线更新检测 ──
     "auto_check_update": True,      # 启动/定时自动检查更新
     "skip_version": "",             # 跳过的版本号（不再提示）
-    "update_check_url": "https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/version.json",  # version.json 地址（默认已写定，留空则禁用检查）
+    "update_check_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/version.json",  # version.json 地址（默认走 releases 下载 CDN，国内比 raw 快；留空则禁用检查）
+    # ── 启动与界面 ──
+    "splash_enabled": True,        # 启动时是否显示读条窗口
 }
 
 
@@ -1771,6 +2021,12 @@ def load_settings():
                         continue
                     order[k] = (idx + 1) if v else 0
             data["buff_order"] = order
+        # V270：旧版「翻滚图标闪光：勾边发光」开关 → 新版独立的「沿图案轮廓勾边」
+        if "flash_dodge_outline" in data and "dodge_outline_enabled" not in data:
+            try:
+                data["dodge_outline_enabled"] = bool(data["flash_dodge_outline"])
+            except Exception:
+                pass
         # 旧版多buff参数（全局单组：multi_buff_scale / _external_color / _internal_color）
         # → 新版按buff个数分组（映射到 2-buff 组，保留用户习惯）
         _OLD_MB = {
@@ -2014,12 +2270,13 @@ class SettingsDialog(QDialog):
         self.flash_apply_skill_ready_chk = QCheckBox("能力冷却完成闪光")
         self.flash_apply_skill_ready_chk.setChecked(bool(self.settings.get("flash_apply_skill_ready", DEFAULT_SETTINGS["flash_apply_skill_ready"])))
         cf.addRow(self.flash_apply_skill_ready_chk)
-        self.flash_apply_dodge_chk = QCheckBox("翻滚图标闪光")
-        self.flash_apply_dodge_chk.setChecked(bool(self.settings.get("flash_apply_dodge", DEFAULT_SETTINGS["flash_apply_dodge"])))
-        cf.addRow(self.flash_apply_dodge_chk)
-        self.flash_dodge_outline_chk = QCheckBox("翻滚图标闪光：勾边发光")
-        self.flash_dodge_outline_chk.setChecked(bool(self.settings.get("flash_dodge_outline", DEFAULT_SETTINGS["flash_dodge_outline"])))
-        cf.addRow(self.flash_dodge_outline_chk)
+        self.dodge_outline_enabled_chk = QCheckBox("翻滚闪光·白色实心勾边")
+        self.dodge_outline_enabled_chk.setChecked(bool(self.settings.get("dodge_outline_enabled", DEFAULT_SETTINGS["dodge_outline_enabled"])))
+        cf.addRow(self.dodge_outline_enabled_chk)
+        self.dodge_outline_width_dspn = QDoubleSpinBox(); self.dodge_outline_width_dspn.setRange(0.5, 8.0); self.dodge_outline_width_dspn.setSingleStep(0.5); self.dodge_outline_width_dspn.setDecimals(1); self.dodge_outline_width_dspn.setSuffix("px"); self.dodge_outline_width_dspn.setValue(float(self.settings.get("dodge_outline_width", DEFAULT_SETTINGS["dodge_outline_width"])))
+        cf.addRow("勾边粗细:", self.dodge_outline_width_dspn)
+        self.dodge_outline_glow_dspn = QDoubleSpinBox(); self.dodge_outline_glow_dspn.setRange(0.0, 20.0); self.dodge_outline_glow_dspn.setSingleStep(0.5); self.dodge_outline_glow_dspn.setDecimals(1); self.dodge_outline_glow_dspn.setSuffix("px"); self.dodge_outline_glow_dspn.setValue(float(self.settings.get("dodge_outline_glow", DEFAULT_SETTINGS["dodge_outline_glow"])))
+        cf.addRow("勾边辉光:", self.dodge_outline_glow_dspn)
         f.addRow(card)
 
         # ============ 顶级标签 2: 核心检测模块 ============
@@ -2215,19 +2472,32 @@ class SettingsDialog(QDialog):
         }
         captain_group = BuffOrderGroup(
             ["PL0000", "PL0100"], _profile_captain, buff_order, lang,
-            title=CAPTAIN_TITLE.get(lang, CAPTAIN_TITLE["zh"]),
+            title=CAPTAIN_TITLE,
         )
         captain_group.orderChanged.connect(self._emit_changed)
         self.buff_order_groups["CAPTAIN"] = captain_group
         cf.addRow(captain_group)
         # 其余角色（排除团长两个 pl_id，避免重复分组）
         for pl_id, profile in pl_profiles:
-            if pl_id in ("PL0000", "PL0100"):
+            if pl_id in ("PL0000", "PL0100", "GENERAL"):
                 continue
             group = BuffOrderGroup([pl_id], profile, buff_order, lang)
             group.orderChanged.connect(self._emit_changed)
             self.buff_order_groups[pl_id] = group
             cf.addRow(group)
+        # 通用 Buff 分组（全角色生效）
+        GENERAL_TITLE = {
+            "zh": "通用 Buff（全角色）",
+            "zh_tw": "通用 Buff（全角色）",
+            "en": "General Buffs (All Characters)",
+        }
+        general_group = BuffOrderGroup(
+            ["GENERAL"], _profile_general, buff_order, lang,
+            title=GENERAL_TITLE,
+        )
+        general_group.orderChanged.connect(self._emit_changed)
+        self.buff_order_groups["GENERAL"] = general_group
+        cf.addRow(general_group)
         self.buff_btn_all.clicked.connect(lambda: self._set_all_buff_rank(True))
         self.buff_btn_none.clicked.connect(lambda: self._set_all_buff_rank(False))
         f.addRow(card)
@@ -2254,7 +2524,16 @@ class SettingsDialog(QDialog):
         roidx = self.roll_orientation_combo.findData(self.settings.get("roll_orientation", DEFAULT_SETTINGS["roll_orientation"])); self.roll_orientation_combo.setCurrentIndex(max(0, roidx))
         cf.addRow("翻滚朝向:", self.roll_orientation_combo)
         f.addRow(card)
-        # 翻滚模块位置与缩放（从原“模块位置”顶级标签迁入）
+        # 警告牌（翻滚第6/7次）可调参数
+        card, cf = make_card(f, "── 翻滚警告牌（第6/7次）──")
+        self.warning_size_dspn = QDoubleSpinBox(); self.warning_size_dspn.setRange(0.30, 1.00); self.warning_size_dspn.setSingleStep(0.02); self.warning_size_dspn.setDecimals(2); self.warning_size_dspn.setSuffix("x"); self.warning_size_dspn.setValue(float(self.settings.get("warning_size_scale", DEFAULT_SETTINGS["warning_size_scale"])))
+        cf.addRow("图标大小:", self.warning_size_dspn)
+        self.warning_outline_w_dspn = QDoubleSpinBox(); self.warning_outline_w_dspn.setRange(0.03, 0.50); self.warning_outline_w_dspn.setSingleStep(0.01); self.warning_outline_w_dspn.setDecimals(2); self.warning_outline_w_dspn.setSuffix("x"); self.warning_outline_w_dspn.setValue(float(self.settings.get("warning_outline_width", DEFAULT_SETTINGS["warning_outline_width"])))
+        cf.addRow("外边粗细:", self.warning_outline_w_dspn)
+        self._add_color_row(cf, "warning_outline_color", "外部边色:")
+        self._add_color_row(cf, "warning_fill_color", "内部填充色:")
+        f.addRow(card)
+        # 翻滚模块位置与缩放（从原"模块位置"顶级标签迁入）
         f = make_sub_tab(r_sub, "位置与缩放")
         card, cf = make_card(f, "── 翻滚模块位置与缩放 ──")
         self.roll_x_spn, self.roll_y_spn = _mk_pos_row(cf, "roll_window_x", "roll_window_y")
@@ -2297,8 +2576,10 @@ class SettingsDialog(QDialog):
         self._add_color_row(cf, "skill_cd_breath_color", "呼吸光颜色:", with_opacity=True)
         self.skill_cd_breath_freq_dspn = QDoubleSpinBox(); self.skill_cd_breath_freq_dspn.setRange(0.05, 3.0); self.skill_cd_breath_freq_dspn.setSingleStep(0.05); self.skill_cd_breath_freq_dspn.setDecimals(2); self.skill_cd_breath_freq_dspn.setSuffix("Hz"); self.skill_cd_breath_freq_dspn.setValue(float(self.settings.get("skill_cd_breath_freq", 0.5)))
         cf.addRow("呼吸频率:", self.skill_cd_breath_freq_dspn)
-        self.skill_cd_breath_soft_dspn = QDoubleSpinBox(); self.skill_cd_breath_soft_dspn.setRange(0.2, 3.0); self.skill_cd_breath_soft_dspn.setSingleStep(0.1); self.skill_cd_breath_soft_dspn.setDecimals(2); self.skill_cd_breath_soft_dspn.setValue(float(self.settings.get("skill_cd_breath_soft", 1.0)))
-        cf.addRow("柔和程度:", self.skill_cd_breath_soft_dspn)
+        self.skill_cd_breath_soft_dspn = QDoubleSpinBox(); self.skill_cd_breath_soft_dspn.setRange(0.0, 1.0); self.skill_cd_breath_soft_dspn.setSingleStep(0.05); self.skill_cd_breath_soft_dspn.setDecimals(2); self.skill_cd_breath_soft_dspn.setValue(float(self.settings.get("skill_cd_breath_soft", 0.5)))
+        cf.addRow("柔和程度(0紧~1散):", self.skill_cd_breath_soft_dspn)
+        self.skill_cd_breath_size_dspn = QDoubleSpinBox(); self.skill_cd_breath_size_dspn.setRange(0.5, 4.0); self.skill_cd_breath_size_dspn.setSingleStep(0.1); self.skill_cd_breath_size_dspn.setDecimals(2); self.skill_cd_breath_size_dspn.setSuffix("×"); self.skill_cd_breath_size_dspn.setValue(float(self.settings.get("skill_cd_breath_size", 1.9)))
+        cf.addRow("光圈大小:", self.skill_cd_breath_size_dspn)
         f.addRow(card)
         # 技能名称
         f = make_sub_tab(s_sub, "能力名称")
@@ -2350,6 +2631,10 @@ class SettingsDialog(QDialog):
         self.auto_check_cb = QCheckBox("自动检查更新")
         self.auto_check_cb.setChecked(bool(self.settings.get("auto_check_update", True)))
         cf.addRow(self.auto_check_cb)
+        self.splash_cb = QCheckBox("启动时显示读条窗口")
+        self.splash_cb.setChecked(bool(self.settings.get("splash_enabled", True)))
+        self.splash_cb.setToolTip("关闭后双击 exe 不再弹出启动读条，直接进入主界面")
+        cf.addRow(self.splash_cb)
         self.update_url_le = QLineEdit(self.settings.get("update_check_url", "") or "")
         self.update_url_le.setPlaceholderText("https://.../version.json")
         cf.addRow("更新地址：", self.update_url_le)
@@ -2415,10 +2700,39 @@ class SettingsDialog(QDialog):
             "Buff 启用/禁用:": "Buff Enable/Disable:",
             "全选": "Select All",
             "全不选": "Deselect All",
-            "不显示": "Hidden",
+            "全显示": "Show All",
+            "全不显示": "Hide All",
+            "生效区（拖动排序）": "Active (drag to reorder)",
+            "隐藏区": "Hidden",
+            "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": "Left=shown, right=hidden; drag to switch (no cross-char)",
+            "（单层buff）": "(single-layer)",
+            "启用就绪呼吸光": "Enable Ready Glow",
+            "导出角色内存(找偏移用)": "Dump Character Memory (offset finding)",
+            "关闭后双击 exe 不再弹出启动读条，直接进入主界面": "No splash next launch: double-clicking the exe opens the main UI directly",
+            "把当前角色 actor 内存按 u32 导出到桌面 actor_dump.txt，用于定位 class/异能 等裸值偏移": "Exports current actor memory as u32 rows to Desktop actor_dump.txt, for locating raw offsets (class / Id gauge, etc.)",
+            "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": "Hide entire UI when not in battle (spike ring / roll / skill UI)",
+            "检查中…": "Checking…",
+            "已跳过 v": "Skipped v",
+            "启动中…": "Starting…",
+            "准备": "Ready",
+            "完成": "Done",
+            "正在加载设置…": "Loading settings…",
+            "已加载角色数据库": "Character database loaded",
+            "正在计算界面布局…": "Computing layout…",
+            "正在加载图标资源…": "Loading icon resources…",
+            "已创建悬浮窗口": "Floating windows created",
+            "已初始化系统托盘": "System tray initialized",
+            "正在显示悬浮窗口…": "Showing floating windows…",
+            "启动完成": "Startup complete",
+            "置顶": "Pin to Top",
+            "隐藏": "Hide",
+            "显示": "Show",
+            "不显示": "Not shown",
             "启动位置:": "Start position:",
             "整体等比缩放:": "UI scale:",
             "模块缩放:": "Module scale:",
+            "宽度拉伸:": "Width stretch:",
+            "高度拉伸:": "Height stretch:",
             "扫描周期 (ms):": "Scan interval (ms):",
             "── 尖刺(含顶端圆点) ──": "── Spikes (incl. tip bead) ──",
             "── 圆环 ──": "── Ring ──",
@@ -2458,7 +2772,7 @@ class SettingsDialog(QDialog):
             "层数数字X偏移 — (计时版):": "Stack number X offset — (Timer):",
             "层数数字Y偏移:": "Stack number Y offset:",
             "层数数字Y偏移 — (计时版):": "Stack number Y offset — (Timer):",
-            "倒计时字体大小:": "Timer font size:",
+            "倒计时字体大小:": "Countdown font size:",
             "倒计时文字色:": "Timer text color:",
             "默认图标:": "Default icon:",
             "使用内置默认图标": "Use embedded default icon",
@@ -2549,14 +2863,22 @@ class SettingsDialog(QDialog):
             "位置与缩放": "Position & Scale",
             "── 核心模块位置与缩放 ──": "── Core Position & Scale ──",
             "── 翻滚模块位置与缩放 ──": "── Dodge Position & Scale ──",
+            "── 翻滚警告牌（第6/7次）──": "── Dodge Warning (6th/7th) ──",
             "── 能力模块位置与缩放 ──": "── Skill Position & Scale ──",
             "── 单层buff倒计时胶囊 ──": "── Single-layer Buff Timer Capsule ──",
             "闪光颜色:": "Flash color:",
-            "背景不透明度:": "Background opacity:",
+            "背景不透明度:": "Skill BG opacity:",
             "扇形不透明度:": "Sector opacity:",
             "边框不透明度:": "Border opacity:",
             "胶囊不透明度:": "Capsule opacity:",
             "翻滚朝向:": "Dodge orientation:",
+            "图标大小:": "Icon size:",
+            "外边粗细:": "Border thickness:",
+            "外部边色:": "Border color:",
+            "内部填充色:": "Fill color:",
+            "勾边粗细:": "Outline width:",
+            "勾边辉光:": "Outline glow:",
+            "翻滚闪光·白色实心勾边": "Dodge flash·white solid outline",
             "尖刺闪光（核心检测模块）": "Spike flash (core)",
             "能力冷却完成闪光": "Skill ready flash",
             "翻滚图标闪光": "Dodge icon flash",
@@ -2573,8 +2895,17 @@ class SettingsDialog(QDialog):
             "前往下载": "Go to Download",
             "跳过此版本": "Skip this version",
             "自动检查更新": "Auto check for updates",
+            "启动时显示读条窗口": "Show splash on startup",
             "更新地址：": "Update URL:",
             "更新日志：": "Changelog:",
+            "检查失败：": "Check failed: ",
+            "未配置更新地址": "Update URL not configured",
+            "连接超时，请检查网络或开启梯子后重试": "Connection timed out. Check network or enable VPN",
+            "更新服务器连接被拒绝，请检查网络或开启梯子": "Update server refused. Check network or enable VPN",
+            "网络连接异常，请检查网络或 DNS": "Network error. Check network or DNS",
+            "更新检查失败: ": "Update check failed: ",
+            "发现新版本": "New version available",
+            "已是最新": "Up to date",
         }
         zh_to_tw = {
             "Overlay 设置": "Overlay 設定",
@@ -2606,6 +2937,33 @@ class SettingsDialog(QDialog):
             "Buff 启用/禁用:": "Buff 啟用/禁用:",
             "全选": "全選",
             "全不选": "全不選",
+            "全显示": "全顯示",
+            "全不显示": "全不顯示",
+            "生效区（拖动排序）": "生效區（拖動排序）",
+            "隐藏区": "隱藏區",
+            "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": "左欄=顯示，右欄=隱藏；拖到另一側切換（不可跨角色）",
+            "（单层buff）": "（單層buff）",
+            "启用就绪呼吸光": "啟用就緒呼吸光",
+            "导出角色内存(找偏移用)": "匯出角色記憶體(找偏移用)",
+            "关闭后双击 exe 不再弹出启动读条，直接进入主界面": "關閉後雙擊 exe 不再彈出啟動讀條，直接進入主介面",
+            "把当前角色 actor 内存按 u32 导出到桌面 actor_dump.txt，用于定位 class/异能 等裸值偏移": "把當前角色 actor 記憶體按 u32 匯出到桌面 actor_dump.txt，用於定位 class/異能 等裸值偏移",
+            "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": "未進入戰鬥時隱藏整個UI（尖刺圓/翻滾/技能UI 全部）",
+            "检查中…": "檢查中…",
+            "已跳过 v": "已跳過 v",
+            "启动中…": "啟動中…",
+            "准备": "準備",
+            "完成": "完成",
+            "正在加载设置…": "正在載入設定…",
+            "已加载角色数据库": "已載入角色資料庫",
+            "正在计算界面布局…": "正在計算介面佈局…",
+            "正在加载图标资源…": "正在載入圖示資源…",
+            "已创建悬浮窗口": "已建立懸浮視窗",
+            "已初始化系统托盘": "已初始化系統托盤",
+            "正在显示悬浮窗口…": "正在顯示懸浮視窗…",
+            "启动完成": "啟動完成",
+            "置顶": "置頂",
+            "隐藏": "隱藏",
+            "显示": "顯示",
             "不显示": "不顯示",
             "启动位置:": "啟動位置:",
             "整体等比缩放:": "整體等比縮放:",
@@ -2740,6 +3098,7 @@ class SettingsDialog(QDialog):
             "位置与缩放": "位置與縮放",
             "── 核心模块位置与缩放 ──": "── 核心模組位置與縮放 ──",
             "── 翻滚模块位置与缩放 ──": "── 翻滾模組位置與縮放 ──",
+            "── 翻滚警告牌（第6/7次）──": "── 翻滾警告牌（第6/7次）──",
             "── 能力模块位置与缩放 ──": "── 能力模組位置與縮放 ──",
             "── 单层buff倒计时胶囊 ──": "── 單層buff倒數膠囊 ──",
             "闪光颜色:": "閃光顏色:",
@@ -2748,6 +3107,13 @@ class SettingsDialog(QDialog):
             "边框不透明度:": "邊框不透明度:",
             "胶囊不透明度:": "膠囊不透明度:",
             "翻滚朝向:": "翻滾朝向:",
+            "图标大小:": "圖標大小:",
+            "外边粗细:": "外邊粗細:",
+            "外部边色:": "外部邊色:",
+            "内部填充色:": "內部填充色:",
+            "勾边粗细:": "勾邊粗細:",
+            "勾边辉光:": "勾邊輝光:",
+            "翻滚闪光·白色实心勾边": "翻滾閃光·白色實心勾邊",
             "尖刺闪光（核心检测模块）": "尖刺閃光（核心檢測模組）",
             "能力冷却完成闪光": "能力冷卻完成閃光",
             "翻滚图标闪光": "翻滾圖標閃光",
@@ -2764,8 +3130,17 @@ class SettingsDialog(QDialog):
             "前往下载": "前往下載",
             "跳过此版本": "跳過此版本",
             "自动检查更新": "自動檢查更新",
+            "启动时显示读条窗口": "啟動時顯示讀條視窗",
             "更新地址：": "更新地址：",
             "更新日志：": "更新日誌：",
+            "检查失败：": "檢查失敗：",
+            "未配置更新地址": "未設定更新位址",
+            "连接超时，请检查网络或开启梯子后重试": "連線逾時，請檢查網路或開啟梯子後重試",
+            "更新服务器连接被拒绝，请检查网络或开启梯子": "更新伺服器連線被拒，請檢查網路或開啟梯子",
+            "网络连接异常，请检查网络或 DNS": "網路連線異常，請檢查網路或 DNS",
+            "更新检查失败: ": "更新檢查失敗: ",
+            "发现新版本": "發現新版本",
+            "已是最新": "已是最新",
         }
         en_to_zh = {v: k for k, v in zh_to_en.items()}
         tw_to_zh = {v: k for k, v in zh_to_tw.items()}
@@ -2809,6 +3184,12 @@ class SettingsDialog(QDialog):
             translated = _translate_text(text)
             if translated != text:
                 button.setText(translated)
+        for widget in self.findChildren(QWidget):
+            tip = widget.toolTip()
+            if tip:
+                translated = _translate_text(tip)
+                if translated != tip:
+                    widget.setToolTip(translated)
 
         if hasattr(self, "timer_style"):
             ring_idx = self.timer_style.findData("ring")
@@ -2832,6 +3213,8 @@ class SettingsDialog(QDialog):
         if hasattr(self, "buff_order_groups"):
             for pl_id, group in self.buff_order_groups.items():
                 group.refresh_title(lang)
+        # 让动态刷新也能使用同一翻译函数
+        self._translate_text = _translate_text
 
     def _add_color_row(self, form, key, label, with_opacity=True):
         """创建一行：颜色按钮 + 不透明度标签 + 不透明度微调框。"""
@@ -2916,10 +3299,13 @@ class SettingsDialog(QDialog):
             self.skill_cd_name_bgw_spn,
             self.skill_cd_border_scale_dspn, self.skill_cd_breath_chk,
             self.skill_cd_breath_freq_dspn, self.skill_cd_breath_soft_dspn,
+            self.skill_cd_breath_size_dspn,
             # ── V203: 闪光全局化 / 模块位置 / 翻滚朝向 ──
             self.flash_scale_spn, self.flash_dur_spn,
             self.flash_apply_spikes_chk, self.flash_apply_skill_ready_chk,
-            self.flash_apply_dodge_chk, self.flash_dodge_outline_chk,
+            self.dodge_outline_enabled_chk,
+            self.dodge_outline_width_dspn, self.dodge_outline_glow_dspn,
+            self.warning_size_dspn, self.warning_outline_w_dspn,
             self.roll_orientation_combo,
             self.core_x_spn, self.core_y_spn, self.roll_x_spn, self.roll_y_spn,
             self.skill_x_spn, self.skill_y_spn,
@@ -2929,7 +3315,7 @@ class SettingsDialog(QDialog):
                 w.currentIndexChanged.connect(self._emit_changed)
             elif isinstance(w, QCheckBox):
                 w.stateChanged.connect(self._emit_changed)
-            elif isinstance(w, (QSpinBox, QSlider)):
+            elif isinstance(w, (QSpinBox, QDoubleSpinBox, QSlider)):
                 w.valueChanged.connect(self._emit_changed)
             elif isinstance(w, QLineEdit):
                 w.textChanged.connect(self._emit_changed)
@@ -2996,6 +3382,7 @@ class SettingsDialog(QDialog):
         for group in getattr(self, "buff_order_groups", {}).values():
             group.show_all()
         self.auto_check_cb.setChecked(DEFAULT_SETTINGS["auto_check_update"])
+        self.splash_cb.setChecked(DEFAULT_SETTINGS["splash_enabled"])
         self.update_url_le.setText(DEFAULT_SETTINGS["update_check_url"])
         self.skip_version = DEFAULT_SETTINGS.get("skip_version", "")
         # 多buff差异化：按 buff 个数 2/3/4/5 恢复 20 个参数
@@ -3038,8 +3425,9 @@ class SettingsDialog(QDialog):
         self.flash_dur_spn.setValue(DEFAULT_SETTINGS["flash_duration_ms"])
         self.flash_apply_spikes_chk.setChecked(DEFAULT_SETTINGS["flash_apply_spikes"])
         self.flash_apply_skill_ready_chk.setChecked(DEFAULT_SETTINGS["flash_apply_skill_ready"])
-        self.flash_apply_dodge_chk.setChecked(DEFAULT_SETTINGS["flash_apply_dodge"])
-        self.flash_dodge_outline_chk.setChecked(DEFAULT_SETTINGS["flash_dodge_outline"])
+        self.dodge_outline_enabled_chk.setChecked(DEFAULT_SETTINGS["dodge_outline_enabled"])
+        self.warning_size_dspn.setValue(DEFAULT_SETTINGS["warning_size_scale"])
+        self.warning_outline_w_dspn.setValue(DEFAULT_SETTINGS["warning_outline_width"])
         # 翻滚朝向
         self.roll_orientation_combo.setCurrentIndex(max(0, self.roll_orientation_combo.findData(DEFAULT_SETTINGS["roll_orientation"])))
         # 各模块独立屏幕位置
@@ -3080,6 +3468,7 @@ class SettingsDialog(QDialog):
         self.skill_cd_breath_chk.setChecked(DEFAULT_SETTINGS["skill_cd_breath_enabled"])
         self.skill_cd_breath_freq_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_freq"])
         self.skill_cd_breath_soft_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_soft"])
+        self.skill_cd_breath_size_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_size"])
         for key, btn in self.color_buttons.items():
             val = DEFAULT_SETTINGS.get(key, "#ffffff")
             self.settings[key] = val
@@ -3137,12 +3526,16 @@ class SettingsDialog(QDialog):
         self.settings["skill_cd_breath_enabled"] = self.skill_cd_breath_chk.isChecked()
         self.settings["skill_cd_breath_freq"] = self.skill_cd_breath_freq_dspn.value()
         self.settings["skill_cd_breath_soft"] = self.skill_cd_breath_soft_dspn.value()
+        self.settings["skill_cd_breath_size"] = self.skill_cd_breath_size_dspn.value()
         self.settings["flash_scale"] = self.flash_scale_spn.value()
         self.settings["flash_duration_ms"] = self.flash_dur_spn.value()
         self.settings["flash_apply_spikes"] = self.flash_apply_spikes_chk.isChecked()
         self.settings["flash_apply_skill_ready"] = self.flash_apply_skill_ready_chk.isChecked()
-        self.settings["flash_apply_dodge"] = self.flash_apply_dodge_chk.isChecked()
-        self.settings["flash_dodge_outline"] = self.flash_dodge_outline_chk.isChecked()
+        self.settings["dodge_outline_enabled"] = self.dodge_outline_enabled_chk.isChecked()
+        self.settings["dodge_outline_width"] = self.dodge_outline_width_dspn.value()
+        self.settings["dodge_outline_glow"] = self.dodge_outline_glow_dspn.value()
+        self.settings["warning_size_scale"] = self.warning_size_dspn.value()
+        self.settings["warning_outline_width"] = self.warning_outline_w_dspn.value()
         self.settings["skill_cd_show_name"] = self.skill_cd_name_chk.isChecked()
         self.settings["skill_cd_name_font_size"] = self.skill_cd_name_font_spn.value()
         self.settings["skill_cd_name_offset_x"] = self.skill_cd_name_offx_spn.value()
@@ -3198,12 +3591,16 @@ class SettingsDialog(QDialog):
         for key, spin in self.opacity_spins.items():
             self.settings[f"{key}_opacity"] = spin.value()
         self.settings["auto_check_update"] = self.auto_check_cb.isChecked()
+        self.settings["splash_enabled"] = self.splash_cb.isChecked()
         self.settings["skip_version"] = self.skip_version or ""
         self.settings["update_check_url"] = self.update_url_le.text().strip()
         return self.settings
 
     # ---------------- 在线更新 ----------------
     def refresh_update_ui(self, info=None):
+        def _t(text):
+            fn = getattr(self, "_translate_text", None)
+            return fn(text) if fn else text
         if info is None:
             info = getattr(self.ctrl, "update_info", None)
         if info is None:
@@ -3213,28 +3610,29 @@ class SettingsDialog(QDialog):
             self.changelog_edit.setPlainText("")
             return
         if info.get("error") == "no_url":
-            self.update_status_label.setText("未配置更新地址")
+            self.update_status_label.setText(_t("未配置更新地址"))
             self.download_btn.setEnabled(False); self.skip_btn.setEnabled(False)
             self.changelog_edit.setPlainText("")
             return
         if info.get("error"):
-            self.update_status_label.setText("检查失败：" + str(info.get("error")))
+            self.update_status_label.setText(_t("检查失败：") + str(info.get("error")))
             self.download_btn.setEnabled(False); self.skip_btn.setEnabled(False)
             return
         latest = info.get("latest_version", "")
         self.changelog_edit.setPlainText(info.get("changelog", "") or "")
         if info.get("has_update"):
-            self.update_status_label.setText("发现新版本 v" + str(latest) + "！")
+            self.update_status_label.setText(_t("发现新版本") + " v" + str(latest) + "！")
             self.download_btn.setEnabled(bool(info.get("download_url")))
             self.skip_btn.setEnabled(True)
-            self.skip_btn.setText("跳过 v" + str(latest))
+            self.skip_btn.setText(_t("跳过此版本") + " v" + str(latest))
         else:
-            self.update_status_label.setText("已是最新 (v" + str(latest) + ")")
+            self.update_status_label.setText(_t("已是最新") + " (v" + str(latest) + ")")
             self.download_btn.setEnabled(False)
             self.skip_btn.setEnabled(False)
 
     def _on_check_update_clicked(self):
-        self.update_status_label.setText("检查中…")
+        _tr = getattr(self, "_translate_text", None)
+        self.update_status_label.setText(_tr("检查中…") if _tr else "检查中…")
         self.download_btn.setEnabled(False); self.skip_btn.setEnabled(False)
         if self.ctrl is not None:
             self.ctrl.check_update(manual=True)
@@ -3249,7 +3647,8 @@ class SettingsDialog(QDialog):
         info = getattr(self.ctrl, "update_info", None)
         if info and info.get("latest_version"):
             self.skip_version = str(info["latest_version"])
-            self.update_status_label.setText("已跳过 v" + self.skip_version)
+            _tr = getattr(self, "_translate_text", None)
+            self.update_status_label.setText((_tr("已跳过 v") if _tr else "已跳过 v") + self.skip_version)
             self.skip_btn.setEnabled(False)
             self.download_btn.setEnabled(False)
 
@@ -3261,6 +3660,8 @@ class SettingsDialog(QDialog):
 # ============================ Overlay Widget ============================
 class GBFROverlayQt(QObject):
     update_checked = Signal(object)
+    update_downloaded = Signal(str)   # 新版 exe 已下载到本地路径
+    update_download_failed = Signal(str)  # 下载失败原因
     """控制器（隐藏、不绘制）：负责扫描内存、持有共享状态、托盘、设置，
     并创建/管理 3 个独立可拖动的模块窗口（核心检测 / 翻滚 / 能力冷却）。"""
 
@@ -3294,13 +3695,21 @@ class GBFROverlayQt(QObject):
         _step(8, "正在加载设置…")
         self.settings = load_settings()
         self.locked = False
-        self._pressed_core_btn = None  # 标题栏图标按下反馈态：None/"minimize"/"settings"/"lock"/"exit"
+        self._pressed_core_btn = None  # 标题栏图标按下反馈态：None/"update"/"minimize"/"settings"/"lock"/"exit"
         self._pressed_visual = False   # 指针是否仍在被按下的按钮内（仅影响凹陷视觉，不清除锁定）
         # 窗口局部像素版命中矩形（与绘制缩放一致，避免画布<->窗口坐标换算误差）
+        self._btn_update_rect_win = QRect()
         self._btn_minimize_rect_win = QRect()
         self._btn_settings_rect_win = QRect()
         self._btn_lock_rect_win = QRect()
         self._btn_exit_rect_win = QRect()
+        # 标题栏更新按钮状态
+        self._update_has_update = False
+        self._update_downloading = False
+        self._update_progress_pct = 0
+        # 翻滚勾边轮廓缓存（按 PNG 图案外边缘）
+        self._dodge_outline_img = None
+        self._dodge_outline_key = None
 
         self.handle = None
         self.pid = None
@@ -3323,6 +3732,7 @@ class GBFROverlayQt(QObject):
         self.skill_cd_data = []
         self._skill_ready_anim = [None] * 4  # 每槽的完成动画时间戳
         self._spike_flash = {}        # 每层buff的尖刺闪光：{bkey: {"start": ms, "from": prev_stacks}}
+        self._spike_group_flash = None  # 尖刺圆整体模块级闪光：{"start": ms}
         self._prev_buff_stacks = {}   # 每层buff上一帧层数：{bkey: stacks}
         self.spike_hidden = False
         # 裸值资源槽地址锁定（伊德四槽等）：{profile_buff_index: addr}
@@ -3336,8 +3746,8 @@ class GBFROverlayQt(QObject):
         self.recalc_layout()
         _step(52, "正在加载图标资源…")
         self.load_dodge_icon()
-        # 翻滚图标闪光状态
-        self._dodge_flash = None
+        # 翻滚模块级闪光状态：{"start": ms}；dodge_count 增加时触发
+        self._roll_group_flash = None
         self._prev_dodge_count = 0
 
         # 任务栏归并：用一个隐藏的“宿主”窗口持有 3 个模块窗口，
@@ -3366,6 +3776,12 @@ class GBFROverlayQt(QObject):
         self._update_thread = None
         self.settings_dialog = None
         self.update_checked.connect(self._on_update_checked)
+        self.update_downloaded.connect(self._on_update_downloaded)
+        self.update_download_failed.connect(self._on_update_download_failed)
+        # 标题栏更新按钮呼吸光动画（仅在有新版本时真正触发重绘）
+        self._update_glow_timer = QTimer(self)
+        self._update_glow_timer.timeout.connect(lambda: self.core_win.update() if getattr(self, "_update_has_update", False) else None)
+        self._update_glow_timer.start(100)
         self._update_startup_timer = QTimer(self)
         self._update_startup_timer.setSingleShot(True)
         self._update_startup_timer.timeout.connect(lambda: self.check_update())
@@ -3378,6 +3794,13 @@ class GBFROverlayQt(QObject):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(500)
+
+        # 常驻高频动画重绘：驱动呼吸光/闪光放大等基于时间的动画。
+        # 即使设置面板以 modal 打开也能持续重绘（repaint 同步执行，不受 modal 事件循环合并影响），
+        # 解决「拖动呼吸光/闪光参数时悬浮窗不实时反馈、只有颜色能立即变」的问题。
+        self._anim_timer = QTimer(self)
+        self._anim_timer.timeout.connect(self._anim_repaint_all)
+        self._anim_timer.start(40)
         # 首次扫描延后到事件循环启动后执行，避免阻塞构造。
         QTimer.singleShot(0, self.tick)
 
@@ -3564,6 +3987,9 @@ class GBFROverlayQt(QObject):
     def load_dodge_icon(self):
         path = DEFAULT_SHRIMP_IMG_PATH if bool(self.settings.get("use_default_dodge_icon", True)) else self.settings.get("shrimp_img_path", DEFAULT_SHRIMP_IMG_PATH)
         self.shrimp = QPixmap(path)
+        # 用户自定义路径失效时回退到默认图标，避免勾边/图标本体全空
+        if self.shrimp.isNull() and os.path.isfile(DEFAULT_SHRIMP_IMG_PATH):
+            self.shrimp = QPixmap(DEFAULT_SHRIMP_IMG_PATH)
         if not self.shrimp.isNull():
             self.shrimp = self.shrimp.scaled(
                 self.dodge_icon_size,
@@ -3571,30 +3997,47 @@ class GBFROverlayQt(QObject):
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation,
             )
+        # 图标变更 → 轮廓缓存失效（下次绘制按新图标重建）
+        self._dodge_outline_img = None
+        self._dodge_outline_key = None
 
     def _calc_icon_btn_rects(self):
-        """计算标题栏图标按钮区域：未锁定时 4 个图标(最小化/设置/锁定/退出)作为整体水平居中于
-        标题栏顶部一行；锁定时仅显示锁定图标并居中。下方另留「文本层」给状态文字。"""
+        """计算标题栏图标按钮区域（含更新按钮）。
+
+        顺序从左到右：更新(update)、最小化、设置、锁定、退出。
+        未锁定时 5 个图标整体水平居中；锁定后仅显示锁定图标，
+        若有新版本则额外显示更新按钮（更新按钮在最左）。
+        """
         th = self.TITLE_BAR_H
         s = self.ICON_BTN_SIZE
         gap = self.ICON_BTN_GAP
         icon_row_h = self.ICON_BTN_SIZE + 10
+        has_update = getattr(self, "_update_has_update", False)
+        off = -9999
         if not self.locked:
-            n = 4
+            n = 5
             total_w = n * s + (n - 1) * gap
             start_x = (self.core_canvas_w - total_w) / 2.0
             y = (icon_row_h - s) // 2
-            minimize_x = start_x
-            settings_x = start_x + (s + gap)
-            lock_x = start_x + 2 * (s + gap)
-            exit_x = start_x + 3 * (s + gap)
+            update_x = start_x
+            minimize_x = start_x + (s + gap)
+            settings_x = start_x + 2 * (s + gap)
+            lock_x = start_x + 3 * (s + gap)
+            exit_x = start_x + 4 * (s + gap)
         else:
-            # 仅锁定图标：整体居中
-            lock_x = (self.core_canvas_w - s) / 2.0
             y = (icon_row_h - s) // 2
-            off = -9999
-            minimize_x = settings_x = exit_x = off
+            if has_update:
+                n = 2
+                total_w = n * s + (n - 1) * gap
+                start_x = (self.core_canvas_w - total_w) / 2.0
+                update_x = start_x
+                lock_x = start_x + (s + gap)
+                minimize_x = settings_x = exit_x = off
+            else:
+                lock_x = (self.core_canvas_w - s) / 2.0
+                update_x = minimize_x = settings_x = exit_x = off
         return (
+            QRect(int(update_x), int(y), s, s),
             QRect(int(minimize_x), int(y), s, s),
             QRect(int(settings_x), int(y), s, s),
             QRect(int(lock_x), int(y), s, s),
@@ -3655,22 +4098,43 @@ class GBFROverlayQt(QObject):
             self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=True)
             self._draw_circle(painter, cx, cy, r, False)
 
+    def _buff_key(self, buff):
+        """与内存更新循环一致的 buff 键：PLxxxx_idx 或 char_type_idx。"""
+        pl = self.pl_id
+        if not pl and self.char_type in CHAR_TYPE_TO_PL:
+            pl = CHAR_TYPE_TO_PL[self.char_type]
+        return f"{pl}_{buff['index']}" if pl else f"{self.char_type:#04x}_{buff['index']}"
+
     def _render_buff_ui(self, painter, buff, cx, cy, r, is_lv7, scale=1.0, color_override=None):
-        """渲染一个完整的 buff UI 元素（圆环+尖刺+倒计时+中心文字）。"""
+        """渲染一个完整的 buff UI 元素（圆环+尖刺+倒计时+中心文字）。
+
+        闪光规则（V271）：层数增加时【仅尖刺 + 装饰小球】放大并白色闪光；
+        中间圆环、计时器、层数字【不随闪光缩放/变色】，保持不动。
+        """
         is_single_layer = self._is_buff_single_layer(buff)
+        # V274 尖刺闪光：改为「仅新增尖刺」——按本 buff 的 flash 记录独立判定，
+        # 只有 index >= 上一次层数 的尖刺放大白闪；外圈圆环勾边不参与闪光。
+        bkey = self._buff_key(buff)
+        spike_flash_record = self._spike_flash.get(bkey)
         painter.save()
+        # scale 仅用于多buff布局缩放（位置/大小），不是动画闪光，绝不动到中间层
         if scale != 1.0:
             painter.translate(cx, cy)
             painter.scale(scale, scale)
             painter.translate(-cx, -cy)
 
+        # 中间层（始终不动）：外发光 + 圆环外勾边 + 圆环 + 计时器 + 中心文字
+        # V274：圆环外勾边固定不随闪光缩放（flash_scale=1.0，需求1）。
         self._draw_glow(painter, cx, cy, r, is_lv7, color_override=color_override)
         include_spikes = not is_single_layer
         self._draw_indicator_outer_outline(painter, cx, cy, r, is_lv7,
-                                           include_spikes=include_spikes,
-                                           buff=buff, color_override=color_override)
+                                           include_spikes=False,
+                                           buff=buff, color_override=color_override,
+                                           flash_scale=1.0)
         if not is_single_layer:
-            self._draw_spikes(painter, cx, cy, r, is_lv7, buff=buff, color_override=color_override)
+            self._draw_spikes(painter, cx, cy, r, is_lv7, buff=buff,
+                              color_override=color_override,
+                              flash_record=spike_flash_record)
         self._draw_circle(painter, cx, cy, r, is_lv7, color_override=color_override)
         self._draw_timer_progress(painter, cx, cy, r, is_lv7, buff=buff, color_override=color_override)
         self._draw_center_text(painter, cx, cy, r, is_lv7, buff=buff,
@@ -3927,38 +4391,49 @@ class GBFROverlayQt(QObject):
             self._draw_skill_cd_name(painter, skill, cx, cy, s)
 
     def _draw_ready_breath(self, painter, cx, cy, s, base_opacity):
-        """就绪呼吸光：在菱形底部尖角（顶点，距中心 d=s*√2）绘制柔和的径向渐变呼吸光。
+        """就绪呼吸光：以能力菱形为轮廓的柔和径向呼吸光晕（衬在菱形底层，露出一圈光环）。
 
-        仅在能力冷却完毕（ready）时由 _draw_skill_cd_element 调用；绘制于菱形之前（衬在底层）。
-        可调项：skill_cd_breath_color（颜色，默认白）、skill_cd_breath_color_opacity（峰值不透明度）、
-               skill_cd_breath_freq（Hz 呼吸频率）、skill_cd_breath_soft（柔和/扩散程度）。
+        仅在能力冷却完毕（ready）时由 _draw_skill_cd_element 调用。
+        关键修复：
+          1) 发光形状不再是圆形，而是与能力完全同形的「菱形」；
+          2) 发光中心与菱形中心重合；
+          3) 所有参数（颜色/不透明度/频率/柔和度/光圈大小）在设置面板实时可调，
+             并通过 _apply_live_settings 立即反馈到悬浮窗重绘。
         """
         color_hex = self.settings.get("skill_cd_breath_color", "#ffffff")
         col = qcolor(color_hex)
         peak = int(self.settings.get("skill_cd_breath_color_opacity", 65) * 255 / 100)
         freq = float(self.settings.get("skill_cd_breath_freq", 0.5))   # Hz
-        soft = float(self.settings.get("skill_cd_breath_soft", 1.0))
+        soft = max(0.0, min(1.0, float(self.settings.get("skill_cd_breath_soft", 0.5))))
+        size_mul = max(0.2, float(self.settings.get("skill_cd_breath_size", 1.9)))
         # 正弦呼吸相位 0..1（freq 越大呼吸越快）
         phase = (math.sin(2.0 * math.pi * freq * time.time()) + 1.0) / 2.0
-        alpha = int(peak * (0.25 + 0.75 * phase))   # 在 25%~100% 之间往复呼吸
+        alpha = int(peak * (0.3 + 0.7 * phase))   # 在 30%~100% 之间往复呼吸
         if alpha <= 0:
             return
-        # 底部尖角位置 + 柔和半径（soft 越大越扩散、越柔和）
-        d = s * math.sqrt(2.0)
-        gx, gy = cx, cy + d
-        base_r = s * (1.1 + 0.9 * soft)
-        grad = QRadialGradient(gx, gy, base_r)
-        c = QColor(col); c.setAlpha(alpha)
-        grad.setColorAt(0.0, c)
-        c2 = QColor(col); c2.setAlpha(int(alpha * 0.45))
-        grad.setColorAt(0.55, c2)
-        c3 = QColor(col); c3.setAlpha(0)
-        grad.setColorAt(1.0, c3)
+        # 呼吸菱形的几何：与能力菱形同心、同圆角比例，线性尺寸放大 size_mul
+        half_b = s * size_mul
+        radius_b = max(2, int(half_b / 4))
+        R = half_b * math.sqrt(2.0)  # 覆盖菱形角点的径向渐变半径
+        # 衰减指数：soft 越大 → p 越小 → 渐变更平缓（更扩散柔和）；soft 越小 → 核心更紧实
+        p = 0.5 + (1.0 - soft) * 3.0
+        grad = QRadialGradient(cx, cy, R)
+        for t in (0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0):
+            a = int(alpha * max(0.0, (1.0 - t) ** p))
+            c = QColor(col); c.setAlpha(a)
+            grad.setColorAt(t, c)
         painter.save()
         painter.setOpacity(base_opacity)
+        # 把坐标系旋转 45°，使圆角矩形变成菱形；径向渐变中心 (cx,cy) 在旋转下保持不变
+        painter.translate(cx, cy)
+        painter.rotate(45)
+        painter.translate(-cx, -cy)
+        clip_path = QPainterPath()
+        clip_path.addRoundedRect(QRectF(cx - half_b, cy - half_b, half_b * 2, half_b * 2), radius_b, radius_b)
+        painter.setClipPath(clip_path)
         painter.setPen(Qt.NoPen)
         painter.setBrush(grad)
-        painter.drawEllipse(QRectF(gx - base_r, gy - base_r, base_r * 2, base_r * 2))
+        painter.drawRect(QRectF(cx - R, cy - R, R * 2, R * 2))
         painter.restore()
 
     def _draw_skill_cd_name(self, painter, skill, cx, cy, s):
@@ -4153,39 +4628,37 @@ class GBFROverlayQt(QObject):
     def _draw_title_bar(self, painter):
         th = self.TITLE_BAR_H
         lang = self.settings.get("language", "zh")
-
-        # 图标按钮区域（最小化、设置、锁定、退出，从左到右）
-        minimize_rect, settings_rect, lock_rect, exit_rect = self._calc_icon_btn_rects()
-        self._btn_lock_rect = lock_rect
+        has_update = getattr(self, "_update_has_update", False)
         hidden_rect = QRect(-9999, -9999, 0, 0)
+
+        # 图标按钮区域：更新(update)、最小化、设置、锁定、退出
+        update_rect, minimize_rect, settings_rect, lock_rect, exit_rect = self._calc_icon_btn_rects()
+        self._btn_update_rect = update_rect if has_update or not self.locked else hidden_rect
         self._btn_minimize_rect = hidden_rect if self.locked else minimize_rect
         self._btn_settings_rect = hidden_rect if self.locked else settings_rect
+        self._btn_lock_rect = lock_rect
         self._btn_exit_rect = hidden_rect if self.locked else exit_rect
-        # 窗口局部像素版命中矩形（与 paintEvent 的 painter.scale(disp_w) 对应：画布坐标×disp = 窗口像素）
-        # 用窗口局部像素直接命中，避免 event.position() 先除 disp_w 再比画布矩形的换算误差（释放不触发）
+
+        # 窗口局部像素版命中矩形（与 paintEvent 的 painter.scale(disp_w) 对应）
         disp = getattr(getattr(self, "core_win", None), "disp_w", 1.0) or 1.0
-        hit_m = 2  # 命中容差（窗口像素），补偿按下到释放间的极微位移取整
+        hit_m = 2
         def _to_win(r):
             return QRect(int(r.x() * disp) - hit_m, int(r.y() * disp) - hit_m,
                          int(r.width() * disp) + 2 * hit_m, int(r.height() * disp) + 2 * hit_m)
+        self._btn_update_rect_win = _to_win(update_rect) if (has_update or not self.locked) else hidden_rect
         self._btn_minimize_rect_win = hidden_rect if self.locked else _to_win(minimize_rect)
         self._btn_settings_rect_win = hidden_rect if self.locked else _to_win(settings_rect)
-        # 锁定图标始终显示且必须可点击（用于解锁），其窗口命中矩形不能因为 locked 而变成空矩形
         self._btn_lock_rect_win = _to_win(lock_rect)
         self._btn_exit_rect_win = hidden_rect if self.locked else _to_win(exit_rect)
 
         icon_color = QColor(self.settings.get("icon_color", "#7f8fa6"))
-
-        # 当前被按住的按钮（按下反馈）：仅 CoreWindow 场景有效
-        # 注意：_draw_title_bar 是 GBFROverlayQt 控制器的方法，状态存在 self 上
-        # 按下即锁定 _pressed_core_btn；_pressed_visual 仅在指针仍位于该按钮内时为 True（决定凹陷视觉）
         pressed = getattr(self, "_pressed_core_btn", None) if getattr(self, "_pressed_visual", False) else None
 
         painter.save()
         painter.setOpacity(self._effective_opacity("icon_color"))
 
         if not self.locked:
-            # 标题栏状态文字（锁定时隐藏）：放在图标行下方的「文本层」，水平居中
+            # 状态文字
             if self.settings.get("show_titlebar_status", True):
                 status_text = self._build_titlebar_status_text(lang)
                 if status_text:
@@ -4195,23 +4668,41 @@ class GBFROverlayQt(QObject):
                     painter.setFont(QFont("Segoe UI", 8, QFont.Bold))
                     painter.drawText(text_rect, Qt.AlignHCenter | Qt.AlignVCenter, status_text)
 
-            # 按下态凹陷背景（在画图标前先铺底）
-            for name, rect in (("minimize", minimize_rect), ("settings", settings_rect), ("exit", exit_rect)):
+            # 按下态凹陷背景
+            for name, rect in (("update", update_rect), ("minimize", minimize_rect),
+                               ("settings", settings_rect), ("exit", exit_rect)):
                 if pressed == name:
                     self._draw_btn_press_bg(painter, rect)
 
-            # 最小化图标：横线（按下时整体下移 1px，呈「按进去」感）
-            self._draw_icon_minimize(painter, minimize_rect.translated(1, 1) if pressed == "minimize" else minimize_rect, icon_color)
-            # 设置图标：圆角矩形 + S
-            self._draw_icon_settings(painter, settings_rect.translated(1, 1) if pressed == "settings" else settings_rect, icon_color)
-            # 退出图标：X
-            self._draw_icon_exit(painter, exit_rect.translated(1, 1) if pressed == "exit" else exit_rect, icon_color)
+            # 更新按钮：有新版本时发光高亮，否则暗淡占位
+            update_color = QColor("#f5c842") if has_update else icon_color
+            if has_update:
+                self._draw_icon_update(painter, update_rect, update_color, glow=True)
+            else:
+                base_op = painter.opacity()
+                painter.setOpacity(base_op * 0.30)
+                self._draw_icon_update(painter, update_rect, icon_color, glow=False)
+                painter.setOpacity(base_op)
 
-        # 锁定图标（始终显示）
-        if pressed == "lock":
-            self._draw_btn_press_bg(painter, lock_rect)
+            # 最小化 / 设置 / 退出
+            self._draw_icon_minimize(painter, minimize_rect.translated(1, 1) if pressed == "minimize" else minimize_rect, icon_color)
+            self._draw_icon_settings(painter, settings_rect.translated(1, 1) if pressed == "settings" else settings_rect, icon_color)
+            self._draw_icon_exit(painter, exit_rect.translated(1, 1) if pressed == "exit" else exit_rect, icon_color)
+        else:
+            # 锁定模式：锁定图标始终可点；有新版本时再显示更新按钮
+            if has_update:
+                if pressed == "update":
+                    self._draw_btn_press_bg(painter, update_rect)
+                self._draw_icon_update(painter, update_rect, QColor("#f5c842"), glow=True)
+            if pressed == "lock":
+                self._draw_btn_press_bg(painter, lock_rect)
         lock_icon_color = QColor("#ffaa22") if self.locked else icon_color
         self._draw_icon_lock(painter, lock_rect.translated(1, 1) if pressed == "lock" else lock_rect, lock_icon_color, self.locked)
+
+        # 下载中：在更新按钮上叠加环形进度 + 百分比（修复「下载进度从未绘制」的问题）
+        if getattr(self, "_update_downloading", False):
+            pct = max(0, min(100, int(getattr(self, "_update_progress_pct", 0))))
+            self._draw_update_progress(painter, update_rect, pct)
 
         painter.restore()
 
@@ -4301,6 +4792,51 @@ class GBFROverlayQt(QObject):
         painter.drawLine(QPoint(cx - d, cy + d), QPoint(cx + d, cy - d))
         painter.restore()
 
+    def _draw_icon_update(self, painter, rect, color, glow=False):
+        """更新按钮图标：向下箭头 + 可选呼吸光晕。"""
+        painter.save()
+        if glow:
+            # 柔和呼吸光：alpha 随时间 50~140 脉动
+            t = time.time()
+            alpha = int(95 + 55 * math.sin(t * 5.5))
+            grad = QRadialGradient(rect.center(), rect.width() * 0.85)
+            grad.setColorAt(0.0, QColor(255, 200, 60, alpha))
+            grad.setColorAt(0.6, QColor(255, 170, 40, int(alpha * 0.35)))
+            grad.setColorAt(1.0, QColor(255, 170, 40, 0))
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(grad))
+            painter.drawEllipse(rect.center(), int(rect.width() / 2), int(rect.height() / 2))
+        # 箭头
+        cx = rect.center().x()
+        cy = rect.center().y()
+        pen = QPen(color, 1.5, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        painter.setPen(pen)
+        painter.drawLine(QPoint(cx, cy - 4), QPoint(cx, cy + 3))
+        painter.drawLine(QPoint(cx - 4, cy - 1), QPoint(cx, cy + 3))
+        painter.drawLine(QPoint(cx + 4, cy - 1), QPoint(cx, cy + 3))
+        painter.restore()
+
+    def _draw_update_progress(self, painter, rect, pct):
+        """下载中：在更新按钮上绘制环形进度 + 百分比文字（绿环表示进行中）。"""
+        if rect is None or rect.width() <= 0:
+            return
+        painter.save()
+        cx, cy = rect.center().x(), rect.center().y()
+        r = min(rect.width(), rect.height()) / 2 - 1
+        # 背景底环（半透明白）
+        painter.setPen(QPen(QColor(255, 255, 255, 55), 2))
+        painter.drawEllipse(QPoint(cx, cy), int(r), int(r))
+        # 进度环（绿色，从 12 点方向顺时针）
+        if pct > 0:
+            span = int(pct * 360 / 100.0)
+            painter.setPen(QPen(QColor("#3fd16b"), 2.5))
+            painter.drawArc(QPoint(cx, cy), int(r), int(r), 90 * 16, -span * 16)
+        # 百分比文字
+        painter.setPen(QColor("#ffffff"))
+        painter.setFont(QFont("Segoe UI", 6, QFont.Bold))
+        painter.drawText(rect, Qt.AlignCenter, f"{int(pct)}%")
+        painter.restore()
+
     # ================================================================
     #  绘制：圆环外发光
     # ================================================================
@@ -4321,8 +4857,12 @@ class GBFROverlayQt(QObject):
     # ================================================================
     #  绘制：尖刺
     # ================================================================
-    def _draw_indicator_outer_outline(self, painter, cx, cy, r, is_lv7, include_spikes=True, buff=None, color_override=None):
-        """绘制指示器最外层勾边：先画底层粗白边，再由圆环/尖刺本体覆盖内侧。"""
+    def _draw_indicator_outer_outline(self, painter, cx, cy, r, is_lv7, include_spikes=True, buff=None, color_override=None, flash_scale=1.0):
+        """绘制指示器最外层勾边：先画底层粗白边，再由圆环/尖刺本体覆盖内侧。
+
+        V273：flash_scale 透传——层数闪光时圆环外描边随尖刺一起以圆心为中心放大，
+        避免「尖刺外扩、外圈勾边不动」的脱节观感。
+        """
         if not bool(self.settings.get("use_indicator_outline", DEFAULT_SETTINGS["use_indicator_outline"])):
             return
         outline_w = max(0, int(self.settings.get("indicator_outline_width", DEFAULT_SETTINGS["indicator_outline_width"])))
@@ -4341,6 +4881,11 @@ class GBFROverlayQt(QObject):
             visible_spikes = 0
 
         painter.save()
+        # V273：闪光时同步放大圆环 + 尖刺外描边（与 _draw_spikes 同 flash_scale，保持对齐）
+        if flash_scale != 1.0:
+            painter.translate(cx, cy)
+            painter.scale(flash_scale, flash_scale)
+            painter.translate(-cx, -cy)
         painter.setOpacity(opacity)
         painter.setBrush(Qt.NoBrush)
         pen = QPen(outline_color, outline_w * 2 + 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
@@ -4368,7 +4913,13 @@ class GBFROverlayQt(QObject):
 
         painter.restore()
 
-    def _draw_spikes(self, painter, cx, cy, r, is_lv7, buff=None, color_override=None):
+    def _draw_spikes(self, painter, cx, cy, r, is_lv7, buff=None, color_override=None, flash_record=None):
+        """绘制尖刺 + 装饰小球。
+
+        V274 变更：层数增加的闪光【只作用于「新增」的那一支（及装饰圆、勾边）】——
+        仅 index >= flash_record["from"]（上一次层数）的尖刺以圆心为中心放大并白色闪光；
+        其余尖刺保持不动。中间圆环/计时器/层数字完全不在此函数内绘制，不受闪光影响。
+        """
         if not buff:
             return
         max_stacks = self._buff_max_stacks(buff)
@@ -4377,86 +4928,108 @@ class GBFROverlayQt(QObject):
             return
         key = "spike_color_lv7" if is_lv7 else "spike_color_normal"
         spike_color = qcolor(self._get_color(key, color_override))
-        painter.save()
-        painter.setOpacity(self._effective_opacity(key))
 
+        # 预计算几何
+        spikes = []
+        for i in range(visible_spikes):
+            angle = -90 + i * (360.0 / max_stacks)
+            spikes.append(self._calc_spike_points(cx, cy, r, angle))
+
+        # 新增尖刺判定：仅 index >= 上一次层数 的尖刺参与闪光
+        prev_stacks = 0
+        flash_scale = 1.0
+        flash_progress = 0.0
+        if flash_record is not None:
+            flash_scale, flash_progress = self._compute_group_flash_scale(flash_record)
+            prev_stacks = int(flash_record.get("from", 0))
+        new_from = max(0, prev_stacks)
+
+        # 局部函数：描出一支尖刺的勾边路径（含装饰圆）
+        def _stroke_spike(p, pts):
+            path = QPainterPath()
+            path.moveTo(pts["tip"][0], pts["tip"][1])
+            path.lineTo(pts["left"][0], pts["left"][1])
+            path.lineTo(pts["root"][0], pts["root"][1])
+            path.lineTo(pts["right"][0], pts["right"][1])
+            path.closeSubpath()
+            p.drawPath(path)
+            bead_r = max(0, int(self.spike_bead_radius))
+            if bead_r > 0:
+                bx, by = pts["bead"]
+                p.drawEllipse(QPoint(int(bx), int(by)), bead_r, bead_r)
+
+        use_outline = bool(self.settings.get("use_indicator_outline", DEFAULT_SETTINGS.get("use_indicator_outline", True)))
+        outline_w = max(0, int(self.settings.get("indicator_outline_width", DEFAULT_SETTINGS.get("indicator_outline_width", 2))))
+        outline_color = qcolor(self._get_color("indicator_outline_color", color_override))
+        out_opacity = self._effective_opacity("indicator_outline_color")
+
+        # 0) 普通尖刺外勾边（仅非新增尖刺；新增尖刺的勾边在闪光段随尖刺一起放大绘制）
+        if use_outline and outline_w > 0 and out_opacity > 0:
+            painter.save()
+            painter.setOpacity(out_opacity)
+            painter.setBrush(Qt.NoBrush)
+            pen = QPen(outline_color, outline_w * 2 + 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+            painter.setPen(pen)
+            for i, pts in enumerate(spikes):
+                if i >= new_from and flash_progress > 0.0:
+                    continue
+                _stroke_spike(painter, pts)
+            painter.restore()
+
+        # 1) 正常尖刺本体 + 装饰小球（始终绘制，含新增尖刺的正常位置）
+        painter.setOpacity(self._effective_opacity(key))
         light_c = QColor(spike_color).lighter(140)
         dark_c = QColor(spike_color).darker(135)
         outline_c = QColor(spike_color).darker(180)
         outline_c.setAlpha(150)
-
-        # 层数增加 → 本buff新出现的尖刺（index >= from）复用冷却完成动画设置做闪光
-        bkey = f"{self.char_type:#04x}_{buff.get('index')}"
-        flash = self._spike_flash.get(bkey)
-        flash_color = None
-        anim_scale = 1.0
-        flash_from = 0
-        if flash:
-            dur = int(self.settings.get("flash_duration_ms", 400))
-            now_ms = int(time.time() * 1000)
-            elapsed = now_ms - flash["start"]
-            if elapsed < dur:
-                progress = elapsed / dur
-                ready_scale = int(self.settings.get("flash_scale", 140)) / 100.0
-                if progress < 0.3:
-                    anim_scale = 1.0 + (ready_scale - 1.0) * (progress / 0.3)
-                else:
-                    anim_scale = ready_scale - (ready_scale - 1.0) * ((progress - 0.3) / 0.7)
-                flash_color = qcolor(self.settings.get("flash_color", "#ffffff"))
-                flash_from = flash["from"]
-            else:
-                self._spike_flash.pop(bkey, None)
-
-        for i in range(visible_spikes):
-            angle = -90 + i * (360.0 / max_stacks)
-            points = self._calc_spike_points(cx, cy, r, angle)
+        for pts in spikes:
             path = QPainterPath()
-            path.moveTo(points["tip"][0], points["tip"][1])
-            path.lineTo(points["left"][0], points["left"][1])
-            path.lineTo(points["root"][0], points["root"][1])
-            path.lineTo(points["right"][0], points["right"][1])
+            path.moveTo(pts["tip"][0], pts["tip"][1])
+            path.lineTo(pts["left"][0], pts["left"][1])
+            path.lineTo(pts["root"][0], pts["root"][1])
+            path.lineTo(pts["right"][0], pts["right"][1])
             path.closeSubpath()
-
             bead_r = max(0, int(self.spike_bead_radius))
-            bead_x, bead_y = points["bead"]
+            bead_x, bead_y = pts["bead"]
+            grad = QLinearGradient(pts["root"][0], pts["root"][1], pts["tip"][0], pts["tip"][1])
+            grad.setColorAt(0.0, dark_c)
+            grad.setColorAt(0.42, spike_color)
+            grad.setColorAt(1.0, light_c)
+            painter.setBrush(QBrush(grad))
+            painter.setPen(QPen(outline_c, 1.0))
+            painter.drawPath(path)
+            if bead_r > 0:
+                bead_c = QColor(spike_color).darker(110)
+                bead_outline = QColor(spike_color).darker(180)
+                painter.setBrush(bead_c)
+                painter.setPen(QPen(bead_outline, 1.2))
+                painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
 
-            if flash_color is not None and i >= flash_from:
-                # 新出现尖刺：围绕自身中心放大，并用「完成色」重绘（尖刺本体 + 顶端装饰小圆）
-                midx = (points["root"][0] + points["tip"][0]) / 2.0
-                midy = (points["root"][1] + points["tip"][1]) / 2.0
+        # 2) 新增尖刺的闪光：以圆心为中心放大 + 白色叠加（仅 i>=new_from 且闪光进行中）
+        if flash_progress > 0.0 and flash_scale > 1.0 and new_from < visible_spikes:
+            fc = qcolor(self.settings.get("flash_color", "#ffffff"))
+            whiten = max(0.0, 1.0 - flash_progress)
+            for i, pts in enumerate(spikes):
+                if i < new_from:
+                    continue
                 painter.save()
-                painter.setOpacity(1.0)
-                if anim_scale != 1.0:
-                    painter.translate(midx, midy)
-                    painter.scale(anim_scale, anim_scale)
-                    painter.translate(-midx, -midy)
-                f_outline = QColor(flash_color).darker(180)
-                f_outline.setAlpha(220)
-                painter.setBrush(QBrush(flash_color))
-                painter.setPen(QPen(f_outline, 1.0))
-                painter.drawPath(path)
-                if bead_r > 0:
-                    painter.setBrush(flash_color)
-                    painter.setPen(QPen(f_outline, 1.2))
-                    painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
+                painter.translate(cx, cy)
+                painter.scale(flash_scale, flash_scale)
+                painter.translate(-cx, -cy)
+                # 勾边（随尖刺一起放大闪）
+                if use_outline and outline_w > 0 and out_opacity > 0:
+                    painter.save()
+                    painter.setOpacity(out_opacity)
+                    painter.setBrush(Qt.NoBrush)
+                    painter.setPen(QPen(outline_color, outline_w * 2 + 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                    _stroke_spike(painter, pts)
+                    painter.restore()
+                # 白色闪光叠加
+                painter.setOpacity(whiten)
+                painter.setBrush(QBrush(fc))
+                painter.setPen(QPen(fc, 1.0))
+                _stroke_spike(painter, pts)
                 painter.restore()
-            else:
-                # 正常绘制：根部略深、尖端略亮
-                grad = QLinearGradient(points["root"][0], points["root"][1], points["tip"][0], points["tip"][1])
-                grad.setColorAt(0.0, dark_c)
-                grad.setColorAt(0.42, spike_color)
-                grad.setColorAt(1.0, light_c)
-                painter.setBrush(QBrush(grad))
-                painter.setPen(QPen(outline_c, 1.0))
-                painter.drawPath(path)
-
-                # 根部小圆点：对应PPT里底部的小圆
-                if bead_r > 0:
-                    bead_c = QColor(spike_color).darker(110)
-                    bead_outline = QColor(spike_color).darker(180)
-                    painter.setBrush(bead_c)
-                    painter.setPen(QPen(bead_outline, 1.2))
-                    painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
 
         painter.restore()
 
@@ -4722,12 +5295,21 @@ class GBFROverlayQt(QObject):
     # ================================================================
     #  绘制：翻滚模块（独立窗口，横/竖可选；图标闪光勾边发光）
     # ================================================================
-    def _draw_dodge_icon_at(self, painter, x, y, icon, flash_progress):
-        """在 (x,y) 绘制单个翻滚图标（警告牌 / png / 兜底方块），可选勾边闪光。"""
+    def _draw_dodge_icon_at(self, painter, x, y, icon, flash_scale=1.0, flash_progress=0.0):
+        """在 (x,y) 绘制单个翻滚图标（警告牌 / png / 兜底方块）。
+
+        V272 闪光规则：翻滚次数增加时触发一次模块级放大+白闪。
+        闪光形状 = 白色实心填充 + 白色勾边外轮廓，作为整体放大并随 progress 衰减，
+        平时不显示（由设置「翻滚闪光·白色实心勾边」开关控制是否启用）。
+        """
         warning_mode = self.dodge_count >= 6
         if warning_mode:
+            # 第6/7次：黄色圆角三角填充 + 红色圆角三角边框
             self._draw_warning_roll_icon(painter, x, y, icon)
-        elif not self.shrimp.isNull():
+            return
+        has_shrimp = not self.shrimp.isNull()
+        # 图标本体
+        if has_shrimp:
             painter.drawPixmap(x, y, self.shrimp)
         else:
             painter.setPen(Qt.NoPen)
@@ -4735,40 +5317,204 @@ class GBFROverlayQt(QObject):
             path = QPainterPath()
             path.addRoundedRect(x + 2, y + max(2, icon // 6), icon - 4, max(8, icon * 2 // 3), 6, 6)
             painter.drawPath(path)
-        # 翻滚图标闪光（勾边发光 outline 模式）
-        if flash_progress > 0 and bool(self.settings.get("flash_apply_dodge", False)):
-            fc = QColor(self.settings.get("flash_color", "#ffffff"))
-            alpha = int(220 * (1.0 - flash_progress))
-            grow = int(icon * 0.3 * (1.0 - flash_progress))
-            fc.setAlpha(alpha)
-            pen = QPen(fc, max(2, int(icon * 0.14)))
-            painter.setPen(pen)
-            painter.setBrush(Qt.NoBrush)
-            painter.drawRoundedRect(x - grow, y - grow, icon + 2 * grow, icon + 2 * grow, 6, 6)
+        # 白色实心勾边闪光：仅翻滚触发瞬间（flash_progress>0）出现一次，随 progress 衰减消失
+        if flash_progress > 0.0 and has_shrimp and bool(self.settings.get("dodge_outline_enabled", True)):
+            cxic, cyic = x + icon / 2.0, y + icon / 2.0
+            fade = max(0.0, 1.0 - flash_progress)
+            painter.save()
+            if flash_scale != 1.0:
+                painter.translate(cxic, cyic)
+                painter.scale(flash_scale, flash_scale)
+                painter.translate(-cxic, -cyic)
+            # 1) 内部实心填充（白色）：V274 完全不透明——勾边内部是实心白块，不淡出
+            simg = self._get_dodge_solid_img_white()
+            if simg is not None:
+                painter.setOpacity(1.0)
+                painter.drawImage(QRectF(x, y, icon, icon), simg)
+            # 2) 外部勾边轮廓（白色辉光）：自然随 progress 衰减
+            oimg = self._get_dodge_outline_img_white()
+            if oimg is not None:
+                painter.setOpacity(fade)
+                ow, oh = oimg.width(), oimg.height()
+                painter.drawImage(QRectF(x - (ow - icon) / 2.0, y - (oh - icon) / 2.0, ow, oh), oimg)
+            painter.restore()
+
+    # ----------------------------------------------------------------
+    #  翻滚勾边：按 PNG 内部图案外边缘描边（形态学膨胀求轮廓）
+    # ----------------------------------------------------------------
+    def _build_shape_outline(self, src_img, edge_w, glow_w, threshold, color):
+        """从带透明通道的源图 alpha 求出图案外轮廓，返回一张带 alpha 的 RGBA 图像
+        （图案边缘一圈实色描边 + 向外扩展的渐隐辉光），颜色已染成 color。
+        返回 None 表示无法处理。
+        """
+        if src_img is None or src_img.isNull():
+            return None
+        w0, h0 = src_img.width(), src_img.height()
+        if w0 <= 0 or h0 <= 0:
+            return None
+        edge_w = max(0, int(round(edge_w)))
+        glow_w = max(0, int(round(glow_w)))
+        pad = edge_w + glow_w
+        W, H = w0 + 2 * pad, h0 + 2 * pad
+        # 1) 构建掩码（图案像素 = alpha>阈值），放置在带 padding 的画布中央
+        mask = bytearray(W * H)
+        src = src_img.toImage().convertToFormat(QImage.Format_ARGB32)
+        for yy in range(h0):
+            row = bytes(src.scanLine(yy))
+            dy = yy + pad
+            base = dy * W + pad
+            for xx in range(w0):
+                a = row[xx * 4 + 3]
+                mask[base + xx] = 1 if a > threshold else 0
+
+        # 2) 3x3 极大值膨胀一步（半径+1）
+        def dilate_step(m):
+            out = bytearray(W * H)
+            for y in range(H):
+                y0 = max(0, y - 1); y1 = min(H - 1, y + 1)
+                base = y * W
+                for x in range(W):
+                    if m[base + x]:
+                        out[base + x] = 1
+                        continue
+                    x0 = max(0, x - 1); x1 = min(W - 1, x + 1)
+                    found = False
+                    for ny in range(y0, y1 + 1):
+                        nb = ny * W
+                        for nx in range(x0, x1 + 1):
+                            if m[nb + nx]:
+                                found = True
+                                break
+                        if found:
+                            break
+                    if found:
+                        out[base + x] = 1
+            return out
+
+        # 3) 逐级膨胀，逐带染色：前 edge_w 层为实色描边，其后 glow_w 层为渐隐辉光
+        out = QImage(W, H, QImage.Format_ARGB32)
+        out.fill(0)
+        prev = mask
+        R = edge_w + glow_w
+        cr = color.red(); cg = color.green(); cb = color.blue()
+        glow_peak = 150
+        for r in range(1, R + 1):
+            cur = dilate_step(prev)
+            # band = cur 且不在 prev（即本次新扩张到的像素）
+            is_edge = r <= edge_w
+            if is_edge:
+                a = 255
+            else:
+                a = int(glow_peak * (1.0 - (r - edge_w) / (glow_w + 1.0)))
+                if a < 0:
+                    a = 0
+            if a > 0:
+                for y in range(H):
+                    base = y * W
+                    ob = base
+                    for x in range(W):
+                        i = base + x
+                        if cur[i] and not prev[i]:
+                            out.setPixelColor(x, y, QColor(cr, cg, cb, a))
+            prev = cur
+        return out
+
+    def _get_dodge_outline_img(self):
+        """获取（带缓存）翻滚 PNG 的图案轮廓辉光图像；参数/图标变化时自动重建。"""
+        if self.shrimp.isNull():
+            return None
+        edge_w = float(self.settings.get("dodge_outline_width", 2.0))
+        glow_w = float(self.settings.get("dodge_outline_glow", 5.0))
+        thr = int(self.settings.get("dodge_outline_threshold", 24))
+        fc = QColor(self.settings.get("flash_color", "#ffffff"))
+        key = (id(self.shrimp), edge_w, glow_w, thr, fc.rgb())
+        if getattr(self, "_dodge_outline_img", None) is not None and self._dodge_outline_key == key:
+            return self._dodge_outline_img
+        img = self._build_shape_outline(self.shrimp, edge_w, glow_w, thr, fc)
+        self._dodge_outline_img = img
+        self._dodge_outline_key = key
+        return img
+
+    def _get_dodge_outline_img_white(self):
+        """白色翻滚勾边（闪光形状用），与 flash_color 解耦，恒为白色。"""
+        if self.shrimp.isNull():
+            return None
+        edge_w = float(self.settings.get("dodge_outline_width", 2.0))
+        glow_w = float(self.settings.get("dodge_outline_glow", 5.0))
+        thr = int(self.settings.get("dodge_outline_threshold", 24))
+        white = QColor("#ffffff")
+        key = (id(self.shrimp), edge_w, glow_w, thr, "white")
+        if getattr(self, "_dodge_outline_img_white", None) is not None and getattr(self, "_dodge_outline_key_white", None) == key:
+            return self._dodge_outline_img_white
+        img = self._build_shape_outline(self.shrimp, edge_w, glow_w, thr, white)
+        self._dodge_outline_img_white = img
+        self._dodge_outline_key_white = key
+        return img
+
+    def _get_dodge_solid_img_white(self):
+        """白色实心填充（闪光内部用），按 PNG alpha 阈值决定填充区域。"""
+        if self.shrimp.isNull():
+            return None
+        thr = int(self.settings.get("dodge_outline_threshold", 24))
+        key = (id(self.shrimp), thr, "solid_white")
+        if getattr(self, "_dodge_solid_img_white", None) is not None and getattr(self, "_dodge_solid_key_white", None) == key:
+            return self._dodge_solid_img_white
+        src = self.shrimp.toImage().convertToFormat(QImage.Format_ARGB32)
+        w, h = src.width(), src.height()
+        img = QImage(w, h, QImage.Format_ARGB32)
+        img.fill(0)
+        white = QColor("#ffffff")
+        for yy in range(h):
+            row = bytes(src.scanLine(yy))
+            base = yy * w
+            for xx in range(w):
+                if row[xx * 4 + 3] > thr:
+                    img.setPixelColor(xx, yy, white)
+        self._dodge_solid_img_white = img
+        self._dodge_solid_key_white = key
+        return img
+
+    def _compute_group_flash_scale(self, flash_record):
+        """计算统一闪光放大缩放。flash_record 为 {"start": ms} 或 None。
+
+        动画曲线：0~30% 放大到 flash_scale，30%~100% 缩回 1.0。
+        返回 (scale, progress)，其中 progress=0 表示闪光已结束/未触发。
+        """
+        if flash_record is None:
+            return 1.0, 0.0
+        start = flash_record.get("start")
+        if start is None:
+            return 1.0, 0.0
+        dur = int(self.settings.get("flash_duration_ms", 400))
+        elapsed = int(time.time() * 1000) - start
+        if elapsed >= dur:
+            return 1.0, 0.0
+        progress = elapsed / dur
+        ready_scale = int(self.settings.get("flash_scale", 140)) / 100.0
+        if progress < 0.3:
+            scale = 1.0 + (ready_scale - 1.0) * (progress / 0.3)
+        else:
+            scale = ready_scale - (ready_scale - 1.0) * ((progress - 0.3) / 0.7)
+        return scale, progress
 
     def render_roll(self, painter):
-        """翻滚模块渲染：图标整体居中于本窗口画布（roll_cx/cy），支持横/竖排与闪光。"""
+        """翻滚模块渲染：图标整体居中于本窗口画布（roll_cx/cy），支持横/竖排与模块级闪光。"""
         # 先画模块背景：即使 dodge_count=0 或没进游戏，也让窗口可见、可拖动
         self._draw_module_backdrop(painter, self.roll_canvas_w, self.roll_canvas_h, draw_border=True, module_key="roll")
 
         count = min(max(int(self.dodge_count), 0), self.MAX_DODGES)
         if count <= 0:
+            # 没有翻滚次数时清理组级闪光记录，避免下次从过期状态开始
+            self._roll_group_flash = None
             return
 
         # 翻滚UI不透明度（锁定时不减半；且不随角色是否被识别而改变）
         roll_opacity = max(0, min(100, int(self.settings.get("roll_icon_opacity", DEFAULT_SETTINGS["roll_icon_opacity"])))) / 100.0
 
-        # 闪光进度（0~1，随时间消退）
-        flash_progress = 0.0
-        if bool(self.settings.get("flash_apply_dodge", False)):
-            start = getattr(self, "_dodge_flash", None)
-            if start is not None:
-                dur = int(self.settings.get("flash_duration_ms", 400))
-                elapsed = int(time.time() * 1000) - start
-                if elapsed < dur:
-                    flash_progress = elapsed / dur
-                else:
-                    self._dodge_flash = None
+        # 模块级闪光：翻滚次数增加时整个图标组统一放大闪烁
+        group_flash_scale, group_flash_progress = self._compute_group_flash_scale(getattr(self, "_roll_group_flash", None))
+        if group_flash_progress <= 0.0:
+            self._roll_group_flash = None
 
         icon = self.dodge_icon_size
         gap = self.ROLL_ICON_GAP
@@ -4776,60 +5522,82 @@ class GBFROverlayQt(QObject):
 
         painter.save()
         painter.setOpacity(roll_opacity)
+        # 以画布中心为锚点应用模块级闪光缩放
+        if group_flash_scale != 1.0:
+            painter.translate(self.roll_cx, self.roll_cy)
+            painter.scale(group_flash_scale, group_flash_scale)
+            painter.translate(-self.roll_cx, -self.roll_cy)
         if horizontal:
             group_width = count * icon + (count - 1) * gap if count > 1 else icon
             start_x = self.roll_cx - group_width / 2.0
             base_y = self.roll_cy - icon / 2.0
             for i in range(count):
                 x = int(start_x + i * (icon + gap))
-                self._draw_dodge_icon_at(painter, x, int(base_y), icon, flash_progress)
+                self._draw_dodge_icon_at(painter, x, int(base_y), icon, group_flash_scale, group_flash_progress)
         else:
             group_height = count * icon + (count - 1) * gap if count > 1 else icon
             start_y = self.roll_cy - group_height / 2.0
             base_x = self.roll_cx - icon / 2.0
             for i in range(count):
                 y = int(start_y + i * (icon + gap))
-                self._draw_dodge_icon_at(painter, int(base_x), y, icon, flash_progress)
+                self._draw_dodge_icon_at(painter, int(base_x), y, icon, group_flash_scale, group_flash_progress)
         painter.restore()
 
     def _draw_warning_roll_icon(self, painter, x, y, icon):
-        """绘制红边框、黄底、红色粗感叹号的三角形警告牌。"""
-        pad = max(2, int(icon * 0.08))
-        cx = x + icon / 2.0
-        top = y + pad
-        left = x + pad
-        right = x + icon - pad
-        bottom = y + icon - pad
+        """第6/7次翻滚：黄色圆角三角内部填充 + 红色圆角三角边框。
+
+        V274 全部参数可调：大小 warning_size_scale、外边色 warning_outline_color、
+        内填色 warning_fill_color、外边粗度 warning_outline_width（占三角边长比例）。
+        红边用「两个不同尺寸三角」直接控制：红比黄每边少 inset bt=边长*wfrac，
+        红边可见粗度=bt，不受描边宽度上限钳制。
+        """
+        warn_scale = float(self.settings.get("warning_size_scale", DEFAULT_SETTINGS.get("warning_size_scale", 0.68)))
+        warn_scale = max(0.3, min(1.0, warn_scale))
+        sz = int(icon * warn_scale)
+        if sz < 8:
+            return
+        ox = x + (icon - sz) // 2
+        oy = y + (icon - sz) // 2
+        cx = ox + sz / 2.0
 
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # 三角形路径
-        tri = QPainterPath()
-        tri.moveTo(cx, top)
-        tri.lineTo(right, bottom)
-        tri.lineTo(left, bottom)
-        tri.closeSubpath()
+        # 红边可见粗度（占三角边长比例，可调）
+        wfrac = float(self.settings.get("warning_outline_width", DEFAULT_SETTINGS.get("warning_outline_width", 0.24)))
+        wfrac = max(0.03, min(0.5, wfrac))
+        bt = max(3, int(sz * wfrac))
+        pad_red = max(3, int(sz * 0.07))
+        pad_yellow = pad_red + bt
+        corner_r = max(4, int(sz * 0.14))
 
-        # 红色粗边框 + 黄色背景填充
-        red = QColor("#d71920")
-        border_w = max(3, int(icon * 0.105))
-        painter.setPen(QPen(red, border_w, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.setBrush(QColor("#ffef00"))
-        painter.drawPath(tri)
+        def _rounded_triangle(top, left, right, bottom, w):
+            sharp = QPainterPath()
+            sharp.moveTo(cx, top)
+            sharp.lineTo(right, bottom)
+            sharp.lineTo(left, bottom)
+            sharp.closeSubpath()
+            st = QPainterPathStroker()
+            st.setWidth(w)
+            st.setJoinStyle(Qt.RoundJoin)
+            st.setCapStyle(Qt.RoundCap)
+            return st.createStroke(sharp).united(sharp)
 
-        # 红色粗感叹号 — 竖条
-        bar_w = max(2, int(icon * 0.105))
-        bar_h = max(8, int(icon * 0.34))
-        bar_x = int(cx - bar_w / 2)
-        bar_y = int(y + icon * 0.36)
+        # 红色大三角（外框）
+        tri_red = _rounded_triangle(oy + pad_red, ox + pad_red, ox + sz - pad_red, oy + sz - pad_red, corner_r * 2)
+        # 黄色小三角（内填，向内收 bt → 露出红边）
+        tri_yellow = _rounded_triangle(oy + pad_yellow, ox + pad_yellow, ox + sz - pad_yellow, oy + sz - pad_yellow, corner_r * 2)
+
+        red = qcolor(self._get_color("warning_outline_color"))
+        yellow = qcolor(self._get_color("warning_fill_color"))
+
         painter.setPen(Qt.NoPen)
+        painter.setOpacity(self._effective_opacity("warning_outline_color"))
         painter.setBrush(red)
-        painter.drawRoundedRect(QRect(bar_x, bar_y, bar_w, bar_h), max(1, bar_w // 2), max(1, bar_w // 2))
-
-        # 红色感叹号 — 底部圆点
-        dot_r = max(2, int(icon * 0.075))
-        painter.drawEllipse(QPoint(int(cx), int(y + icon * 0.81)), dot_r, dot_r)
+        painter.drawPath(tri_red)
+        painter.setOpacity(self._effective_opacity("warning_fill_color"))
+        painter.setBrush(yellow)
+        painter.drawPath(tri_yellow)
 
         painter.restore()
 
@@ -4843,7 +5611,18 @@ class GBFROverlayQt(QObject):
             self.core_win.show()
         backup = dict(self.settings)
         try:
-            dlg = SettingsDialog(self.core_win, self.settings, ctrl=self)
+            # 关键修复：设置对话框不再以 core_win（Qt.Tool 窗口）为父。
+            # Windows 上，若一个模态对话框之父是 Qt.Tool 窗口，当焦点切到其它应用（如游戏）时，
+            # 父级 Tool 窗口会被系统级联隐藏，表现为「只有核心检测区消失、重置才能找回」。
+            # 改为无父顶层对话框 + WindowStaysOnTopHint + 应用模态，并手动定位到核心窗口附近。
+            dlg = SettingsDialog(None, self.settings, ctrl=self)
+            dlg.setWindowFlags(dlg.windowFlags() | Qt.WindowStaysOnTopHint)
+            try:
+                cg = self.core_win.geometry()
+                dlg.move(max(0, cg.x() + (cg.width() - dlg.width()) // 2),
+                          max(0, cg.y() + max(20, int(cg.height() * 0.12))))
+            except Exception:
+                pass
         except Exception as e:
             import traceback as _tb
             err = _tb.format_exc()
@@ -4853,11 +5632,32 @@ class GBFROverlayQt(QObject):
                     _f.write(err + "\n")
             except Exception:
                 pass
-            QMessageBox.critical(self.core_win, "设置打开失败", "设置窗口构造异常：\n%s" % e)
+            lang = self.settings.get("language", "zh")
+            _tt = {"zh": ("设置打开失败", "设置窗口构造异常：\n%s"),
+                   "zh_tw": ("設定開啟失敗", "設定視窗建構異常：\n%s"),
+                   "en": ("Settings Error", "Settings dialog construction failed:\n%s")}
+            _tt = _tt.get(lang, _tt["en"])
+            QMessageBox.critical(self.core_win, _tt[0], _tt[1] % e)
             return
         dlg.settings_changed.connect(self._apply_live_settings)
         self.settings_dialog = dlg
-        if dlg.exec() == QDialog.Accepted:
+        # 设置对话框打开期间启动高频刷新（50ms），拖动滑块时悬浮窗预览更跟手
+        self._settings_live_timer = QTimer(self)
+        self._settings_live_timer.timeout.connect(self._refresh_live_preview)
+        self._settings_live_timer.start(50)
+        rc = dlg.exec()
+        if getattr(self, "_settings_live_timer", None) is not None:
+            self._settings_live_timer.stop()
+            self._settings_live_timer.deleteLater()
+            self._settings_live_timer = None
+        # 关闭后兜底：确保核心窗口仍可见（防止任何意外的级联隐藏）
+        try:
+            if not self.core_win.isVisible():
+                self.core_win.show()
+            self.core_win.raise_()
+        except Exception:
+            pass
+        if rc == QDialog.Accepted:
             self.settings = dlg.get_settings()
             save_settings(self.settings)
             self._after_settings_changed()
@@ -4873,19 +5673,38 @@ class GBFROverlayQt(QObject):
     # 找不到可读地址时，由用户在游戏中实测、定位真实偏移。
     # ----------------------------------------------------------------
     def dump_actor_memory(self, start=0x0, length=0x2000, path=None):
+        lang = self.settings.get("language", "zh")
+        _t = {
+            "no_game": {"zh": "尚未连接到游戏进程（请先启动游戏并进入战斗）。",
+                        "zh_tw": "尚未連線到遊戲進程（請先啟動遊戲並進入戰鬥）。",
+                        "en": "Not connected to game (please launch the game and enter combat)."},
+            "no_char": {"zh": "未检测到角色基址（请确认已进入游戏）。",
+                        "zh_tw": "未偵測到角色基址（請確認已進入遊戲）。",
+                        "en": "Character base address not found (please confirm game has loaded)."},
+            "read_fail": {"zh": "读取内存失败（角色可能已离场）。",
+                          "zh_tw": "讀取記憶體失敗（角色可能已離場）。",
+                          "en": "Memory read failed (character may have left the field)."},
+            "ok": {"zh": "已导出到：\n%s\n(offset 范围 0x%X ~ 0x%X)\n\n请在游戏中切换/改变目标值（如更换团长职业、消耗/积攒伊度异能），对比两次 dump 找出对应偏移后告诉我。",
+                   "zh_tw": "已匯出到：\n%s\n(offset 範圍 0x%X ~ 0x%X)\n\n請在遊戲中切換/改變目標值（如更換團長職業、消耗/積攢伊度異能），對比兩次 dump 找出對應偏移後告訴我。",
+                   "en": "Exported to:\n%s\n(offset range 0x%X ~ 0x%X)\n\nChange target values in-game (e.g. switch Captain class, spend/charge Id gauge), compare two dumps to find the offset."},
+            "write_fail": {"zh": "写出失败：%s",
+                           "zh_tw": "寫出失敗：%s",
+                           "en": "Write failed: %s"},
+            "title": {"zh": "内存探针", "zh_tw": "記憶體探針", "en": "Memory Probe"},
+        }
         if self.handle is None or self.pptr is None:
-            QMessageBox.warning(self.core_win, "内存探针", "尚未连接到游戏进程（请先启动游戏并进入战斗）。")
+            QMessageBox.warning(self.core_win, _t["title"][lang], _t["no_game"][lang])
             return
         try:
             char_base = read_u64(self.handle, self.pptr + CHAR_PTR_OFF)
         except Exception:
             char_base = None
         if not char_base:
-            QMessageBox.warning(self.core_win, "内存探针", "未检测到角色基址（请确认已进入游戏）。")
+            QMessageBox.warning(self.core_win, _t["title"][lang], _t["no_char"][lang])
             return
         buf = rpm(self.handle, char_base + start, length)
         if buf is None:
-            QMessageBox.warning(self.core_win, "内存探针", "读取内存失败（角色可能已离场）。")
+            QMessageBox.warning(self.core_win, _t["title"][lang], _t["read_fail"][lang])
             return
         if path is None:
             try:
@@ -4896,16 +5715,14 @@ class GBFROverlayQt(QObject):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write("# actor base = 0x%X\n" % char_base)
-                f.write("# 每行：offset(相对actor基址)  hex        dec\n")
+                f.write("# offset(相对actor基址)  hex        dec\n")
                 for i in range(0, len(buf) - 3, 4):
                     val = struct.unpack("<I", buf[i:i + 4])[0]
                     f.write("0x%04X  0x%08X  %10d\n" % (start + i, val, val))
-            QMessageBox.information(self.core_win, "内存探针",
-                                    "已导出到：\n%s\n(offset 范围 0x%X ~ 0x%X)\n\n"
-                                    "请在游戏中切换/改变目标值（如更换团长职业、消耗/积攒伊度异能），"
-                                    "对比两次 dump 找出对应偏移后告诉我。" % (path, start, start + length))
+            QMessageBox.information(self.core_win, _t["title"][lang],
+                                    _t["ok"][lang] % (path, start, start + length))
         except Exception as e:
-            QMessageBox.critical(self.core_win, "内存探针", "写出失败：%s" % e)
+            QMessageBox.critical(self.core_win, _t["title"][lang], _t["write_fail"][lang] % e)
 
     def _after_settings_changed(self):
         """设置变化后刷新标题、重新计算布局并刷新三个窗口尺寸/位置。"""
@@ -4919,6 +5736,37 @@ class GBFROverlayQt(QObject):
         self.settings = dict(new_settings)
         save_settings(self.settings)
         self._after_settings_changed()
+        # 轮廓参数/图标变更时让缓存失效，确保新参数立即重建
+        self._dodge_outline_img = None
+        self._dodge_outline_key = None
+        # 强制三个模块窗口同步重绘（repaint 比 update 更即时，适合设置面板拖动时实时预览）
+        for name in ("core_win", "roll_win", "skill_win"):
+            w = getattr(self, name, None)
+            if w is not None:
+                w.repaint()
+                w.update()
+        # 在模态设置对话框内也立即把重绘事件刷到屏幕上，避免被事件循环缓冲
+        app = QApplication.instance()
+        if app is not None:
+            app.processEvents()
+
+    def _anim_repaint_all(self):
+        """常驻高频重绘（40ms）：驱动呼吸光/闪光放大等基于时间的动画。
+
+        即使设置面板以 modal 打开，本定时器仍在事件循环中触发，repaint() 同步执行，
+        让呼吸光频率/柔和度/光圈大小以及闪光放大在拖动滑块时实时反馈到悬浮窗。
+        """
+        for name in ("core_win", "roll_win", "skill_win"):
+            w = getattr(self, name, None)
+            if w is not None and w.isVisible():
+                w.repaint()
+
+    def _refresh_live_preview(self):
+        """设置对话框打开期间的高频刷新回调，让滑块/数值改动即时反映到悬浮窗。"""
+        for name in ("core_win", "roll_win", "skill_win"):
+            w = getattr(self, name, None)
+            if w is not None and w.isVisible():
+                w.repaint()
 
     # ================================================================
     #  系统托盘
@@ -5120,7 +5968,9 @@ class GBFROverlayQt(QObject):
             if any(w.isVisible() and not w.isMinimized() for w in self._all_windows()):
                 self._auto_minimized_by_game_focus = True
                 for w in self._all_windows():
-                    w.showMinimized()
+                    # 用 hide() 而非 showMinimized()：本程序窗口是 Qt.Tool+无边框+透明背景，
+                    # 在 Windows 上 showMinimized() 容易变成「最小化后无法从任务栏/托盘恢复」的隐形状态。
+                    w.hide()
 
     def scan(self):
         pid = find_pid()
@@ -5166,10 +6016,9 @@ class GBFROverlayQt(QObject):
             self._prev_actor = char_base
         self.status = snap["status"]
         self.dodge_count = snap["dodge"] or 0
-        # 翻滚图标闪光：可用翻滚次数增加时触发（勾边发光）
-        if bool(self.settings.get("flash_apply_dodge", False)):
-            if self.dodge_count > getattr(self, "_prev_dodge_count", 0):
-                self._dodge_flash = int(time.time() * 1000)
+        # 翻滚模块级闪光：可用翻滚次数增加时触发统一放大动画
+        if self.dodge_count > getattr(self, "_prev_dodge_count", 0):
+            self._roll_group_flash = {"start": int(time.time() * 1000)}
         self._prev_dodge_count = self.dodge_count
         self.char_type = snap.get("char_type", 0)
         self.charid_hash = snap.get("charid_hash", 0)
@@ -5181,17 +6030,20 @@ class GBFROverlayQt(QObject):
         all_buffs = snap.get("buffs", [])
         self.active_buffs = []
 
-        def _bkey(idx):
+        def _bkey(buff):
+            """计算 buff 顺位键。通用 buff 用 GENERAL_ 前缀，角色专属用 PL_id。"""
+            group = buff.get("group")
+            if group:
+                return f"{group}_{buff['index']}"
             pl = self.pl_id
             if not pl and self.char_type in CHAR_TYPE_TO_PL:
                 pl = CHAR_TYPE_TO_PL[self.char_type]
-            return f"{pl}_{idx}" if pl else f"{self.char_type:#04x}_{idx}"
+            return f"{pl}_{buff['index']}" if pl else f"{self.char_type:#04x}_{buff['index']}"
 
         # 过滤（rank>0 视为启用）并按顺位升序排列：buff[0]=第1位，buff[1]=第2位...
         _ordered = []
         for buff in all_buffs:
-            idx = buff['index']
-            rank = buff_order.get(_bkey(idx), idx + 1)
+            rank = buff_order.get(_bkey(buff), buff['index'] + 1)
             if rank and rank > 0:
                 _ordered.append((rank, buff))
         _ordered.sort(key=lambda t: t[0])
@@ -5200,14 +6052,19 @@ class GBFROverlayQt(QObject):
         if bool(self.settings.get("flash_apply_spikes", True)):
             now_ms = int(time.time() * 1000)
             new_prev = {}
+            any_stack_increased = False
             for buff in self.active_buffs:
-                bkey = _bkey(buff['index'])
+                bkey = _bkey(buff)
                 cur = int(buff.get("stacks", 0))
                 prev = self._prev_buff_stacks.get(bkey, 0)
                 if cur > prev:
                     self._spike_flash[bkey] = {"start": now_ms, "from": prev}
+                    any_stack_increased = True
                 new_prev[bkey] = cur
             self._prev_buff_stacks = new_prev
+            # 任意层数增加时同时触发尖刺圆整体模块级闪光
+            if any_stack_increased:
+                self._spike_group_flash = {"start": now_ms}
             # 清理已结束的闪光记录
             dur = int(self.settings.get("flash_duration_ms", 400))
             expired = [k for k, v in self._spike_flash.items() if now_ms - v["start"] >= dur]
@@ -5215,7 +6072,7 @@ class GBFROverlayQt(QObject):
                 del self._spike_flash[k]
         else:
             self._prev_buff_stacks = {
-                _bkey(b['index']): int(b.get("stacks", 0))
+                _bkey(b): int(b.get("stacks", 0))
                 for b in self.active_buffs
             }
         # 读取技能冷却
@@ -5322,36 +6179,193 @@ class GBFROverlayQt(QObject):
         self._update_thread = threading.Thread(target=self._do_check_update, args=(url, manual, skip), daemon=True)
         self._update_thread.start()
 
+    # 更新源镜像：国内优先走 releases 下载 CDN（与 GBFR Logs 显血插件同款，快），
+    # 其次 jsDelivr（代理 main 分支，国内通常可达），最后才回退 raw（常被墙/限速）。
+    UPDATE_MIRRORS = [
+        "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/version.json",
+        "https://cdn.jsdelivr.net/gh/Dangoooooo613/GBFR_BuffTimerIndicator@main/version.json",
+        "https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/version.json",
+    ]
+
     def _do_check_update(self, url, manual, skip):
         info = {"has_update": False, "error": None, "checked_at": time.time()}
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "GBFR-Overlay-Updater"})
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            latest = str(data.get("version", "")).strip()
-            info["latest_version"] = latest
-            info["download_url"] = data.get("download_url", "")
-            info["changelog"] = data.get("changelog", "")
-            info["min_version"] = data.get("min_version", "")
-            if latest and self._version_gt(latest, APP_VERSION) and latest != skip:
-                info["has_update"] = True
-        except Exception as e:
-            info["error"] = str(e)
+        last_err = None
+        # 快速通道放最前：先试镜像（releases 下载 CDN / jsDelivr），最后才试用户自定义地址
+        # （用户自定义若恰好是旧 raw 默认则已在镜像列表里，不会重复尝试）。
+        candidates = list(self.UPDATE_MIRRORS)
+        if url and url not in candidates:
+            candidates.append(url)
+        # 断梯子/网络波动时 8s 太短：改成递增超时 + 3 次重试
+        timeouts = [15, 25, 35]
+        for c_url in candidates:
+            for attempt, timeout in enumerate(timeouts, start=1):
+                try:
+                    req = urllib.request.Request(c_url, headers={"User-Agent": "GBFR-Overlay-Updater"})
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                    latest = str(data.get("version", "")).strip()
+                    info["latest_version"] = latest
+                    info["download_url"] = data.get("download_url", "")
+                    info["changelog"] = data.get("changelog", "")
+                    info["min_version"] = data.get("min_version", "")
+                    if latest and self._version_gt(latest, APP_VERSION) and latest != skip:
+                        info["has_update"] = True
+                    self.update_info = info
+                    self.update_checked.emit(info)
+                    return
+                except Exception as e:
+                    last_err = e
+                    if attempt < len(timeouts):
+                        time.sleep(1.5)
+            # 该镜像全部超时/失败，换下一个（不在此打印，避免刷屏）
+        info["error"] = self._format_update_error(last_err)
         self.update_info = info
         self.update_checked.emit(info)
 
+    def _format_update_error(self, e):
+        """把原始异常转成用户看得懂的短句（同时用于翻译）。"""
+        s = str(e)
+        low = s.lower()
+        if "timed out" in low or "timeout" in low:
+            return "连接超时，请检查网络或开启梯子后重试"
+        if "10061" in s or "actively refused" in low:
+            return "更新服务器连接被拒绝，请检查网络或开启梯子"
+        if "10060" in s or "10054" in s or "getaddrinfo" in low or "name or service not known" in low:
+            return "网络连接异常，请检查网络或 DNS"
+        return "更新检查失败: " + s
+
     def _on_update_checked(self, info):
-        if info.get("has_update"):
+        had_update = getattr(self, "_update_has_update", False)
+        self._update_has_update = bool(info.get("has_update"))
+        if self._update_has_update:
             try:
-                self.tray_icon.showMessage("发现新版本", f"v{info.get('latest_version')} 可用，请在设置 → 关于 查看", QSystemTrayIcon.Information, 8000)
+                lang = self.settings.get("language", "zh")
+                if lang == "en":
+                    tray_title = "New version available"
+                    tray_msg = f"v{info.get('latest_version')} available. Click the title bar update button or go to Settings → About."
+                elif lang == "zh_tw":
+                    tray_title = "發現新版本"
+                    tray_msg = f"v{info.get('latest_version')} 可用，請點擊標題列更新按鈕或到設定 → 關於 查看"
+                else:
+                    tray_title = "发现新版本"
+                    tray_msg = f"v{info.get('latest_version')} 可用，请点击标题栏更新按钮或到设置 → 关于 查看"
+                self.tray_icon.showMessage(tray_title, tray_msg, QSystemTrayIcon.Information, 8000)
             except Exception:
                 pass
+        # 标题栏按钮亮起/熄灭（有更新时开始呼吸光）
+        if had_update != self._update_has_update and getattr(self, "core_win", None) is not None:
+            self.core_win.update()
         dlg = getattr(self, "settings_dialog", None)
         if dlg is not None:
             try:
                 dlg.refresh_update_ui(info)
             except Exception:
                 pass
+
+    def on_titlebar_update_clicked(self):
+        """用户点击标题栏更新按钮：开始下载新版 exe。"""
+        info = getattr(self, "update_info", None)
+        if not info or not info.get("has_update"):
+            return
+        if getattr(self, "_update_downloading", False):
+            return
+        url = info.get("download_url", "")
+        if not url:
+            lang = self.settings.get("language", "zh")
+            if lang == "en":
+                QMessageBox.warning(self.core_win, "Update", "No download URL available.")
+            elif lang == "zh_tw":
+                QMessageBox.warning(self.core_win, "更新", "沒有可用的下載連結。")
+            else:
+                QMessageBox.warning(self.core_win, "更新", "没有可用的下载链接。")
+            return
+        self._update_downloading = True
+        threading.Thread(target=self._do_download_update, args=(url,), daemon=True).start()
+
+    def _do_download_update(self, url):
+        """后台下载新版 exe 到当前程序同目录（保留 JSON 配置）。"""
+        try:
+            # 从下载链接解析文件名，例如 GBFR_CooldownIndicator_V262.exe
+            from urllib.parse import urlparse, unquote
+            name = os.path.basename(urlparse(url).path) or "GBFR_CooldownIndicator_new.exe"
+            name = unquote(name)
+            dest_tmp = os.path.join(EXE_DIR, name + ".tmp")
+            dest = os.path.join(EXE_DIR, name)
+            req = urllib.request.Request(url, headers={"User-Agent": "GBFR-Overlay-Updater"})
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                total = int(resp.headers.get("Content-Length", 0))
+                downloaded = 0
+                with open(dest_tmp, "wb") as f:
+                    while True:
+                        chunk = resp.read(256 * 1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total:
+                            self._update_progress_pct = int(downloaded * 100 / total)
+            # 替换旧文件（如果同名已存在）
+            if os.path.exists(dest):
+                os.remove(dest)
+            os.rename(dest_tmp, dest)
+            self.update_downloaded.emit(dest)
+        except Exception as e:
+            self._update_downloading = False
+            self.update_download_failed.emit(str(e))
+
+    def _on_update_downloaded(self, dest):
+        self._update_downloading = False
+        self._ask_restart(dest)
+
+    def _on_update_download_failed(self, msg):
+        self._update_downloading = False
+        lang = self.settings.get("language", "zh")
+        if lang == "en":
+            QMessageBox.warning(self.core_win, "Download Failed", f"Download failed:\n{msg}")
+        elif lang == "zh_tw":
+            QMessageBox.warning(self.core_win, "下載失敗", f"新版下載失敗：\n{msg}")
+        else:
+            QMessageBox.warning(self.core_win, "下载失败", f"新版下载失败：\n{msg}")
+
+    def _ask_restart(self, dest):
+        """下载完成后弹窗：关闭当前并打开新版 / 仅打开新版 / 稍后。"""
+        lang = self.settings.get("language", "zh")
+        if lang == "en":
+            title = "Update downloaded"
+            text = f"New version saved to:\n{dest}"
+            btn_restart_text = "Close current & open new"
+            btn_open_text = "Open new only"
+            btn_later_text = "Later"
+        elif lang == "zh_tw":
+            title = "更新已下載"
+            text = f"新版已儲存至：\n{dest}"
+            btn_restart_text = "關閉當前並打開新版"
+            btn_open_text = "僅打開新版"
+            btn_later_text = "稍後"
+        else:
+            title = "更新已下载"
+            text = f"新版已保存到：\n{dest}"
+            btn_restart_text = "关闭当前并打开新版"
+            btn_open_text = "仅打开新版"
+            btn_later_text = "稍后"
+        # 不以 core_win（Qt.Tool）为父，避免模态框在切游戏时级联隐藏核心窗口
+        box = QMessageBox(None)
+        box.setWindowFlags(box.windowFlags() | Qt.WindowStaysOnTopHint)
+        box.setWindowTitle(title)
+        box.setText(text)
+        info_text = {"zh": "是否立即运行新版？",
+                      "zh_tw": "是否立即執行新版？",
+                      "en": "Run the new version now?"}.get(lang, "Run the new version now?")
+        box.setInformativeText(info_text)
+        btn_restart = box.addButton(btn_restart_text, QMessageBox.YesRole)
+        btn_open = box.addButton(btn_open_text, QMessageBox.NoRole)
+        btn_later = box.addButton(btn_later_text, QMessageBox.RejectRole)
+        box.exec()
+        if box.clickedButton() == btn_restart:
+            subprocess.Popen([dest], cwd=EXE_DIR)
+            QApplication.quit()
+        elif box.clickedButton() == btn_open:
+            subprocess.Popen([dest], cwd=EXE_DIR)
 
     @staticmethod
     def _version_gt(a, b):
@@ -5419,8 +6433,21 @@ class ModuleWindow(QWidget):
             self.ctrl.ui_scale = self.disp_w
             painter.scale(self.disp_w, self.disp_h)
             self.render(painter)
-        except Exception:
-            pass
+        except Exception as e:
+            # 不再静默吞掉异常：首次出现的绘制错误记录到日志，方便定位缺失导入等问题。
+            try:
+                import traceback
+                logged = getattr(self, "_logged_paint_errors", set())
+                key = (type(e).__name__, str(e))
+                if key not in logged:
+                    logged.add(key)
+                    self._logged_paint_errors = logged
+                    logp = os.path.join(EXE_DIR, "paint_errors.log")
+                    with open(logp, "a", encoding="utf-8") as f:
+                        f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] paintEvent error in {self.module_key}: {key}\n")
+                        f.write(traceback.format_exc() + "\n")
+            except Exception:
+                pass
 
     def render(self, painter):
         pass
@@ -5586,6 +6613,8 @@ class CoreWindow(ModuleWindow):
                 self.update()
             return
         # 按下时只记录「按下态」并刷新绘制（凹陷反馈），实际动作延迟到 mouseRelease 触发
+        if self.ctrl._btn_update_rect_win.contains(raw):
+            self.ctrl._pressed_core_btn = "update"; self.ctrl._pressed_visual = True; self.update(); return
         if self.ctrl._btn_exit_rect_win.contains(raw):
             self.ctrl._pressed_core_btn = "exit"; self.ctrl._pressed_visual = True; self.update(); return
         if self.ctrl._btn_minimize_rect_win.contains(raw):
@@ -5636,6 +6665,8 @@ class CoreWindow(ModuleWindow):
                 w.update()
         elif btn == "settings":
             self.ctrl.open_settings()
+        elif btn == "update":
+            self.ctrl.on_titlebar_update_clicked()
 
 
 class DodgeWindow(ModuleWindow):
@@ -5663,46 +6694,50 @@ class SkillWindow(ModuleWindow):
 
 
 class StartupSplash(QWidget):
-    """双击启动时的读条窗口：显示当前正在做什么，初始化完成后显示完成消息。"""
+    """双击启动时的读条窗口：紧凑简约，显示当前步骤与进度。"""
 
-    def __init__(self):
+    def __init__(self, lang="zh"):
         super().__init__()
+        self._lang = lang
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SplashScreen)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setFixedSize(440, 178)
+        self.setFixedSize(280, 62)
+        self.setStyleSheet(
+            "QWidget{background:rgba(14,19,32,0.96);border-radius:8px;"
+            "border:1px solid #283450;}"
+            "QLabel{color:#c8d6f0;}"
+            "QProgressBar{background:rgba(255,255,255,0.07);border:none;"
+            "border-radius:3px;height:4px;}"
+            "QProgressBar::chunk{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            "stop:0 #4f8dff,stop:1 #7ee0a0);border-radius:3px;}"
+        )
         self._build_ui()
         self._center()
 
+    def _tr(self, text):
+        m = {"zh": {}, "zh_tw": zh_to_tw, "en": zh_to_en}.get(self._lang, {})
+        return m.get(text, text)
+
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        container = QWidget()
-        container.setStyleSheet(
-            "background:rgba(17,23,39,0.97);border-radius:14px;"
-            "border:1px solid #2c3a5e;"
-        )
-        inner = QVBoxLayout(container)
-        inner.setContentsMargins(28, 24, 28, 22)
-        self.title_lbl = QLabel("GBFR 指示器 启动中…")
-        self.title_lbl.setStyleSheet("font-size:17px;font-weight:bold;color:#e8eefc;")
-        self.status_lbl = QLabel("正在准备…")
-        self.status_lbl.setStyleSheet("font-size:13px;color:#9fb4d8;")
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(8)
+        top = QHBoxLayout()
+        top.setSpacing(0)
+        self.title_lbl = QLabel(self._tr("启动中…"))
+        self.title_lbl.setStyleSheet("font-size:12px;font-weight:bold;color:#e8eefc;")
+        self.status_lbl = QLabel(self._tr("准备"))
+        self.status_lbl.setStyleSheet("font-size:11px;color:#8aa2cc;")
+        self.status_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        top.addWidget(self.title_lbl)
+        top.addStretch()
+        top.addWidget(self.status_lbl)
+        layout.addLayout(top)
         self.bar = QProgressBar()
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
-        self.bar.setTextVisible(True)
-        self.bar.setFormat("%p%")
-        self.bar.setStyleSheet(
-            "QProgressBar{background:rgba(255,255,255,0.08);border:1px solid #34466e;"
-            "border-radius:7px;height:16px;text-align:center;color:#dce6fa;font-size:11px;}"
-            "QProgressBar::chunk{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
-            "stop:0 #4f8dff,stop:1 #7ee0a0);border-radius:6px;}"
-        )
-        inner.addWidget(self.title_lbl)
-        inner.addWidget(self.status_lbl)
-        inner.addSpacing(12)
-        inner.addWidget(self.bar)
-        layout.addWidget(container)
+        self.bar.setTextVisible(False)
+        layout.addWidget(self.bar)
 
     def _center(self):
         geo = QApplication.primaryScreen().availableGeometry()
@@ -5713,17 +6748,17 @@ class StartupSplash(QWidget):
         if pct is not None:
             self.bar.setValue(int(pct))
         if msg:
-            self.status_lbl.setText(msg)
+            self.status_lbl.setText(self._tr(msg))
         QApplication.processEvents()
 
-    def finish(self, msg="✅ 启动完成，正在进入…"):
+    def finish(self, msg=None):
+        if msg is None:
+            msg = self._tr("完成")
         self.bar.setValue(100)
-        self.title_lbl.setText("GBFR 指示器")
-        self.status_lbl.setText(msg)
-        self.status_lbl.setStyleSheet("font-size:14px;color:#7ee0a0;font-weight:bold;")
+        self.status_lbl.setText(self._tr(msg))
+        self.status_lbl.setStyleSheet("font-size:12px;color:#7ee0a0;font-weight:bold;")
         QApplication.processEvents()
-        # 事件循环启动后才真正关闭，避免构造期间直接销毁
-        QTimer.singleShot(1200, self.close)
+        QTimer.singleShot(600, self.close)
 
 
 def main():
@@ -5731,11 +6766,15 @@ def main():
     if os.path.isfile(APP_ICON_PATH):
         app.setWindowIcon(QIcon(APP_ICON_PATH))
     app.setQuitOnLastWindowClosed(False)
-    splash = StartupSplash()
-    splash.show()
-    splash.set_progress(4, "正在加载设置…")
-    overlay = GBFROverlayQt(progress_cb=splash.set_progress)  # 构造内已创建并 show 三个模块窗口
-    splash.finish()
+    settings = load_settings()
+    splash = None
+    if settings.get("splash_enabled", True):
+        splash = StartupSplash(settings.get("language", "zh"))
+        splash.show()
+        splash.set_progress(4, "正在加载设置…")
+    overlay = GBFROverlayQt(progress_cb=splash.set_progress if splash else None)
+    if splash is not None:
+        splash.finish()
     sys.exit(app.exec())
 
 
