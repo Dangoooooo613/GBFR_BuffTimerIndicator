@@ -82,9 +82,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "3.60"
+APP_VERSION = "3.61"
 SETTINGS_SCHEMA_VERSION = 89
-APP_TITLE = "GBFR_CooldownIndicator_V360"
+APP_TITLE = "GBFR_CooldownIndicator_V361"
 
 # ============================ 三语翻译表（提前定义，供 UI 组件全局使用）===========================
 ZH_TO_EN = {
