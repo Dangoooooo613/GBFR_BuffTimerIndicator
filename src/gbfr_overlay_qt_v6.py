@@ -25,7 +25,7 @@ from ctypes import wintypes
 import mastery_reader
 import buff_data_generated
 
-from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QPointF, QRect, QRectF, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QPointF, QProcess, QRect, QRectF, QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QBitmap, QBrush, QColor, QCursor, QDesktopServices, QFont, QFontMetrics, QLinearGradient, QPolygonF, QRadialGradient, QIcon, QImage, QPainter, QPen, QPainterPath, QPixmap, QRegion
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -81,9 +81,9 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "4.01"
+APP_VERSION = "5.20"
 SETTINGS_SCHEMA_VERSION = 90
-APP_TITLE = "GBFR_CooldownIndicator_V401"
+APP_TITLE = "GBFR_CooldownIndicator_V520"
 
 # ============================ 三语翻译表（提前定义，供 UI 组件全局使用）===========================
 from i18n_loader import UI_TRANS
@@ -102,6 +102,39 @@ def _tr(zh, lang=None):
 
 _CURRENT_LANG = "zh"
 AUTHOR_TAG = "@Bilibili/Dangoooooo"
+
+class _UpdateCancelled(Exception):
+    """用户在下载进度框点了「取消」。"""
+    pass
+
+
+def pick_lang_text(value, lang="zh"):
+    """按语言选取多语言文本：value 为 dict 时依次取 lang → zh → 第一个非空值；为 str 时原样返回。"""
+    if isinstance(value, dict):
+        for key in (lang, "zh"):
+            v = value.get(key)
+            if isinstance(v, str) and v.strip():
+                return v
+        for v in value.values():
+            if isinstance(v, str) and v.strip():
+                return v
+        return ""
+    if isinstance(value, str):
+        return value
+    return ""
+
+def _load_local_changelog(lang="zh"):
+    """读取随 exe 打包的本地 version.json 更新日志（未检查更新/检查失败时「关于」页兜底显示）。"""
+    for base in (_BUNDLE_DIR, EXE_DIR):
+        p = os.path.join(base, "version.json")
+        try:
+            if os.path.isfile(p):
+                with open(p, "r", encoding="utf-8") as f:
+                    d = json.load(f)
+                return pick_lang_text(d.get("changelog", ""), lang)
+        except Exception:
+            continue
+    return ""
 
 def _app_title(lang="zh"):
     return APP_TITLE
@@ -2778,6 +2811,7 @@ class SettingsDialog(QDialog):
             self.refresh_update_ui(self.ctrl.update_info)
         else:
             self.update_status_label.setText("—")
+            self.changelog_edit.setPlainText(_load_local_changelog(self.settings.get("language", "zh")))
 
         # 信号 / 按钮
         self._connect_live_signals()
@@ -2910,6 +2944,15 @@ class SettingsDialog(QDialog):
             for pl_id, group in self.buff_order_groups.items():
                 group.refresh_title(lang)
                 group.refresh_items(lang)
+
+        # 更新日志按当前语言重取（远端多语言 changelog / 本地兜底）
+        if hasattr(self, "changelog_edit"):
+            try:
+                info = getattr(self.ctrl, "update_info", None)
+                remote_cl = pick_lang_text(info.get("changelog", ""), lang) if info and not info.get("error") else ""
+                self.changelog_edit.setPlainText(remote_cl or _load_local_changelog(lang))
+            except Exception:
+                pass
 
     def _add_color_row(self, form, key, label, with_opacity=True):
         """创建一行：颜色按钮 + 不透明度标签 + 不透明度微调框。"""
@@ -3442,25 +3485,27 @@ class SettingsDialog(QDialog):
     def refresh_update_ui(self, info=None):
         if info is None:
             info = getattr(self.ctrl, "update_info", None)
+        lang = self.settings.get("language", "zh")
+        local_cl = _load_local_changelog(lang)
         if info is None:
             self.update_status_label.setText("—")
             self.download_btn.setEnabled(False)
             self.skip_btn.setEnabled(False)
-            self.changelog_edit.setPlainText("")
+            self.changelog_edit.setPlainText(local_cl)
             return
         if info.get("error") == "no_url":
             self.update_status_label.setText(_tr("未配置更新地址"))
             self.download_btn.setEnabled(False); self.skip_btn.setEnabled(False)
-            self.changelog_edit.setPlainText("")
+            self.changelog_edit.setPlainText(local_cl)
             return
         if info.get("error"):
             self.update_status_label.setText(_tr("检查失败：") + str(info.get("error")))
             self.download_btn.setEnabled(False); self.skip_btn.setEnabled(False)
-            # 清除陈旧日志，避免残留旧版本（如 3.0）内容误导用户
-            self.changelog_edit.setPlainText("")
+            # 远端拉取失败：显示随 exe 打包的本地当前版本日志（非陈旧远端内容）
+            self.changelog_edit.setPlainText(local_cl)
             return
         latest = info.get("latest_version", "")
-        self.changelog_edit.setPlainText(info.get("changelog", "") or "")
+        self.changelog_edit.setPlainText(pick_lang_text(info.get("changelog", ""), lang) or local_cl)
         if info.get("has_update"):
             self.update_status_label.setText(_tr("发现新版本") + " v" + str(latest) + "！")
             dl = info.get("download_url") or ""
@@ -3486,7 +3531,9 @@ class SettingsDialog(QDialog):
         info = getattr(self.ctrl, "update_info", None)
         url = (info.get("download_url") if info else None) or self.download_url_le.text().strip()
         if url:
-            QDesktopServices.openUrl(QUrl(url))
+            # 优先应用内下载（同目录 → 完成后启动新版本并退出旧程序），失败回退浏览器
+            if self.ctrl is None or not self.ctrl.start_self_update(url):
+                QDesktopServices.openUrl(QUrl(url))
 
     def _on_skip_clicked(self):
         info = getattr(self.ctrl, "update_info", None)
@@ -3540,6 +3587,8 @@ class _HotkeyFilter(QAbstractNativeEventFilter):
 # ============================ Overlay Widget ============================
 class GBFROverlayQt(QObject):
     update_checked = Signal(object)
+    update_dl_progress = Signal(int, int)   # 已下载字节, 总字节(0=未知)
+    update_dl_done = Signal(str, str)       # (新exe完整路径, 错误信息；成功时错误为空)
     """控制器（隐藏、不绘制）：负责扫描内存、持有共享状态、托盘、设置，
     并创建/管理 3 个独立可拖动的模块窗口（核心检测 / 翻滚 / 能力冷却）。"""
 
@@ -3650,6 +3699,12 @@ class GBFROverlayQt(QObject):
         self._update_thread = None
         self.settings_dialog = None
         self.update_checked.connect(self._on_update_checked)
+        # ---- 应用内自更新（下载新 exe 到旧 exe 同目录 → 启动新 → 退出旧）----
+        self._dl_thread = None
+        self._dl_cancel = False
+        self._dl_dialog = None
+        self.update_dl_progress.connect(self._on_dl_progress)
+        self.update_dl_done.connect(self._on_dl_done)
         self._update_startup_timer = QTimer(self)
         self._update_startup_timer.setSingleShot(True)
         self._update_startup_timer.timeout.connect(lambda: self.check_update())
@@ -6190,7 +6245,8 @@ class GBFROverlayQt(QObject):
                 clicked = msg.clickedButton()
                 if clicked is btn_dl:
                     url = (info.get("download_url") or "").strip()
-                    if url:
+                    if url and not self.start_self_update(url):
+                        # 应用内下载启动失败（如无写入权限）时回退浏览器
                         QDesktopServices.openUrl(QUrl(url))
                 elif clicked is btn_skip:
                     self.settings["skip_version"] = latest
@@ -6203,6 +6259,120 @@ class GBFROverlayQt(QObject):
                 dlg.refresh_update_ui(info)
             except Exception:
                 pass
+
+    # ---------------- 应用内自更新 ----------------
+    def start_self_update(self, url):
+        """应用内下载新 exe 到旧 exe 同目录；返回 False 表示无法启动下载。"""
+        url = (url or "").strip()
+        if not url:
+            return False
+        if self._dl_thread is not None and self._dl_thread.is_alive():
+            return True
+        from urllib.parse import urlparse, unquote
+        name = os.path.basename(unquote(urlparse(url).path)) or "GBFR_CooldownIndicator_new.exe"
+        # 新文件名不能与当前正在运行的 exe 重名（Windows 下运行中的 exe 被锁定）
+        cur_name = os.path.basename(os.path.abspath(sys.argv[0])) if getattr(sys, "frozen", False) else ""
+        if cur_name and name.lower() == cur_name.lower():
+            stem, ext = os.path.splitext(name)
+            name = stem + "_new" + ext
+        target = os.path.join(EXE_DIR, name)
+        part_path = target + ".part"   # 先下 .part，校验 MZ 头成功后再改名，避免半截 exe
+        self._dl_cancel = False
+        from PySide6.QtWidgets import QProgressDialog
+        dlg = QProgressDialog(_tr("正在下载新版本…"), _tr("取消"), 0, 0, self.core_win)
+        dlg.setWindowTitle(_tr("发现新版本"))
+        dlg.setMinimumDuration(0)
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        dlg.canceled.connect(self._on_dl_cancel)
+        dlg.show()
+        self._dl_dialog = dlg
+        self._dl_thread = threading.Thread(
+            target=self._do_download_update, args=(url, part_path, target), daemon=True)
+        self._dl_thread.start()
+        return True
+
+    def _on_dl_cancel(self):
+        self._dl_cancel = True
+
+    def _do_download_update(self, url, part_path, target_path):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "GBFR-Overlay-Updater"})
+            with urllib.request.urlopen(req, timeout=60) as resp, open(part_path, "wb") as f:
+                try:
+                    total = int(resp.headers.get("Content-Length") or 0)
+                except (TypeError, ValueError):
+                    total = 0
+                recv = 0
+                while True:
+                    if self._dl_cancel:
+                        raise _UpdateCancelled()
+                    chunk = resp.read(1 << 16)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    recv += len(chunk)
+                    self.update_dl_progress.emit(recv, total)
+            with open(part_path, "rb") as f:
+                head = f.read(2)
+            if head != b"MZ":
+                self._safe_remove(part_path)
+                self.update_dl_done.emit("", "bad_file")
+                return
+            os.replace(part_path, target_path)
+            self.update_dl_done.emit(target_path, "")
+        except _UpdateCancelled:
+            self._safe_remove(part_path)
+            self.update_dl_done.emit("", "cancelled")
+        except Exception as e:
+            self._safe_remove(part_path)
+            self.update_dl_done.emit("", str(e))
+
+    @staticmethod
+    def _safe_remove(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    def _on_dl_progress(self, recv, total):
+        dlg = self._dl_dialog
+        if dlg is None:
+            return
+        if total > 0:
+            dlg.setRange(0, 100)
+            dlg.setValue(int(recv * 100 / total))
+            dlg.setLabelText(_tr("正在下载新版本…") + f"  {recv / 1048576:.1f} / {total / 1048576:.1f} MB")
+            if recv >= total:
+                dlg.setCancelButton(None)
+        else:
+            dlg.setRange(0, 0)
+            dlg.setLabelText(_tr("正在下载新版本…") + f"  {recv / 1048576:.1f} MB")
+
+    def _on_dl_done(self, path, error):
+        dlg = self._dl_dialog
+        self._dl_dialog = None
+        if dlg is not None:
+            dlg.reset()
+            dlg.close()
+            dlg.deleteLater()
+        if error == "cancelled":
+            return
+        if error:
+            QMessageBox.warning(self.core_win, _tr("下载失败："), error)
+            return
+        if not path:
+            return
+        # 下载完成：提示 → 启动新 exe → 退出旧程序
+        QMessageBox.information(
+            self.core_win, _tr("下载完成"),
+            _tr("下载完成，正在启动新版本并退出当前程序。"))
+        ok = QProcess.startDetached(path, [], EXE_DIR)
+        if ok:
+            QApplication.quit()
+        else:
+            QMessageBox.warning(self.core_win, _tr("下载失败："),
+                                _tr("启动新版本失败，请手动运行：") + path)
 
     @staticmethod
     def _version_gt(a, b):
