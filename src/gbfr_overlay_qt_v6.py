@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 GBFR Overlay Qt Edition v60 — 角色层数/倒计时指示器
@@ -19,7 +19,6 @@ import struct
 import sys
 import threading
 import time
-import traceback
 import urllib.request
 from ctypes import wintypes
 
@@ -82,525 +81,14 @@ DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
 # ============================ Version ============================
-APP_VERSION = "3.61"
-SETTINGS_SCHEMA_VERSION = 89
-APP_TITLE = "GBFR_CooldownIndicator_V361"
+APP_VERSION = "4.01"
+SETTINGS_SCHEMA_VERSION = 90
+APP_TITLE = "GBFR_CooldownIndicator_V401"
 
 # ============================ 三语翻译表（提前定义，供 UI 组件全局使用）===========================
-ZH_TO_EN = {
-    "Overlay 设置": "Overlay Settings",
-    "── 常规 ──": "── General ──",
-    "语言 / Language:": "Language:",
-    "随游戏前后台:": "Game focus:",
-    "游戏在前台时显示，切到后台时自动最小化": "Show when game is focused; minimize when game is in background",
-    "随分辨率放大:": "Resolution scale:",
-    "按当前屏幕宽度自动放大": "Auto scale by current screen width",
-    "尖刺圆隐藏:": "Spike hide:",
-    "无buff时隐藏尖刺圆模块（翻滚/技能UI不受影响）": "Hide spike module when no buff (dodge/skill UI unaffected)",
-    "隐藏时透明度:": "Hidden opacity:",
-    "倒计时字号:": "Timer font size:",
-    "时间胶囊宽度:": "Capsule width:",
-    "胶囊宽度微调(Δ):": "Capsule width Δ:",
-    "尖刺UI不透明度:": "Spike UI opacity:",
-    "翻滚UI不透明度:": "Dodge UI opacity:",
-    "技能CD不透明度:": "Skill CD opacity:",
-    "标题栏状态文字:": "Title bar status text:",
-    "在标题栏显示角色名和buff状态文字": "Show character name and buff status text in title bar",
-    "标题栏不透明度:": "Title bar opacity:",
-    "背景画布不透明度:": "Background opacity:",
-    "── 透明度 ──": "── Opacity ──",
-    "── 背景 ──": "── Background ──",
-    "── 标题栏 ──": "── Title Bar ──",
-    "多buff偏移量:": "Multi-buff offset:",
-    "多buff缩放:": "Multi-buff scale:",
-    "多buff夹角:": "Multi-buff angle:",
-    "Buff 启用/禁用:": "Buff Enable/Disable:",
-    "全选": "Select All",
-    "全不选": "Deselect All",
-    "不显示": "Hidden",
-    "启动位置:": "Start position:",
-    "整体等比缩放:": "UI scale:",
-    "模块缩放:": "Module scale:",
-    "扫描周期 (ms):": "Scan interval (ms):",
-    "── 尖刺(含顶端圆点) ──": "── Spikes (incl. tip bead) ──",
-    "── 圆环 ──": "── Ring ──",
-    "── 外描边 ──": "── Outline ──",
-    "── 布局间距 ──": "── Layout Spacing ──",
-    "── 翻滚图标 ──": "── Dodge Icon ──",
-    "圆半径:": "Circle radius:",
-    "尖刺长度:": "Spike length:",
-    "尖刺根部距圆心:": "Spike root distance:",
-    "尖刺宽度:": "Spike width:",
-    "尖刺腰位置:": "Spike waist position:",
-    "尖刺顶端圆点半径:": "Spike tip bead radius:",
-    "顶端圆点距圆心:": "Bead distance from center:",
-    "整体外描边:": "Outer outline:",
-    "启用整体外描边": "Enable outer outline",
-    "外描边粗细:": "Outer outline width:",
-    "── 倒计时弧线 ──": "── Timer Arc ──",
-    "倒计时样式:": "Timer style:",
-    "圆环": "Ring",
-    "扇形": "Sector",
-    "倒计时弧线内缩:": "Timer arc inset:",
-    "倒计时圆心Y偏移:": "Timer center Y offset:",
-    "层数数字Y偏移:": "Stack number Y offset:",
-    "层数数字X偏移:": "Stack number X offset:",
-    "── 层数数字(无计时) ──": "── Stack Number (No Timer) ──",
-    "── 层数数字(有计时) ──": "── Stack Number (With Timer) ──",
-    "── 倒计时布局 ──": "── Timer Layout ──",
-    "时间胶囊Y偏移:": "Time capsule Y offset:",
-    "时间胶囊宽度:": "Timer capsule width:",
-    "── 计时文字 ──": "── Timer Text ──",
-    "── 倒计时胶囊 ──": "── Timer Capsule ──",
-    "层数数字大小:": "Stack number size:",
-    "层数数字大小 — (计时版):": "Stack number size — (Timer):",
-    "层数数字勾边粗细:": "Stack outline width:",
-    "层数数字勾边粗细 — (计时版):": "Stack outline width — (Timer):",
-    "层数数字X偏移:": "Stack number X offset:",
-    "层数数字X偏移 — (计时版):": "Stack number X offset — (Timer):",
-    "层数数字Y偏移:": "Stack number Y offset:",
-    "层数数字Y偏移 — (计时版):": "Stack number Y offset — (Timer):",
-    "倒计时字体大小:": "Timer font size:",
-    "倒计时文字色:": "Timer text color:",
-    "默认图标:": "Default icon:",
-    "使用内置默认图标": "Use embedded default icon",
-    "浏览...": "Browse...",
-    "翻滚图标绝对路径:": "Dodge icon path:",
-    "翻滚图标缩放:": "Dodge icon scale:",
-    "标题→圆间距:": "Title to circle gap:",
-    "圆→翻滚UI间距:": "Circle to dodge UI gap:",
-    "分割线:": "Divider:",
-    "显示层数/翻滚分割线": "Show stack/roll divider",
-    "分割线不透明度:": "Divider opacity:",
-    "── 内存 ──": "── Memory ──",
-    "ExStatus偏移:": "ExStatus offset:",
-    "── 颜色与不透明度 ──": "── Colors & Opacity ──",
-    "标题栏色:": "Title bar color:",
-    "背景色:": "Background color:",
-    "圆环色(正常):": "Circle color (normal):",
-    "圆环色(满层):": "Circle color (full stack):",
-    "尖刺色(正常):": "Spike color (normal):",
-    "尖刺色(满层):": "Spike color (full stack):",
-    "倒计时弧颜色:": "Timer arc color:",
-    "层数数字色:": "Stack number color:",
-    "层数数字勾边色:": "Stack outline color:",
-    "层数数字色 — (计时版):": "Stack number color — (Timer):",
-    "层数数字勾边色 — (计时版):": "Stack outline color — (Timer):",
-    "外描边色:": "Outline color:",
-    "不透明度": "Opacity",
-    "标题UI色:": "Title UI color:",
-    "Buff名色:": "Buff name color:",
-    "翻滚图标不透明度:": "Dodge icon opacity:",
-    "外部差异化:": "External diff:",
-    "内部差异化:": "Internal diff:",
-    "外部差异化颜色（圆环/尖刺/外描边）": "External color diff (ring/spike/outline)",
-    "内部差异化颜色（弧线/数字/计时文字）": "Internal color diff (arc/text/timer)",
-    "Buff名显示:": "Buff name display:",
-    "在画布上显示Buff名称": "Show buff name on canvas",
-    "Buff名字体大小:": "Buff name font size:",
-    "Buff名位置:": "Buff name position:",
-    "Buff名衬色块宽度微调:": "Buff name bg width adjust:",
-    "── 能力冷却 ──": "── Ability Cooldown ──",
-    "显示能力冷却": "Show Ability Cooldowns",
-    "方形大小:": "Square Size:",
-    "聚散距离:": "Spread Distance:",
-    "扇形颜色:": "Sector Color:",
-    "倒计时文字色:": "Timer Text Color:",
-    "── 冷却完成动画 ──": "── Cooldown Complete Animation ──",
-    "完成色:": "Ready Color:",
-    "放大比例%:": "Scale Up %:",
-    "动画时长ms:": "Animation Duration ms:",
-    "── 能力名称 ──": "── Ability Name ──",
-    "显示能力名称": "Show Ability Name",
-    "字号:": "Font Size:",
-    "倒计时X偏移:": "Timer X Offset:",
-    "倒计时Y偏移:": "Timer Y Offset:",
-    "能力名X偏移:": "Ability Name X Offset:",
-    "能力名Y偏移:": "Ability Name Y Offset:",
-    "衬色块宽微调:": "BG Width Adjust:",
-    "能力名色:": "Ability Name Color:",
-    "恢复默认": "Reset",
-    "确定": "OK",
-    "取消": "Cancel",
-    # ── V203: 4 一级标签 / 二级子页 / 闪光全局化 / 翻滚朝向 ──
-    "全局": "Global",
-    "核心检测模块": "Core Detection",
-    "多buff布局": "Multi-buff Layout",
-    "翻滚模块": "Dodge Module",
-    "能力模块": "Skill Module",
-    "常规": "General",
-    "背景": "Background",
-    "闪光": "Flash",
-    "标题栏": "Title Bar",
-    "快捷键": "Hotkeys",
-    "尖刺与圆环": "Spikes & Ring",
-    "倒计时": "Timer",
-    "层数数字": "Stack Number",
-    "多buff差异化": "Multi-buff",
-    "Buff名字": "Buff Name",
-    "位置与隐藏": "Position & Hide",
-    "Buff启用/禁用": "Buff Enable/Disable",
-    "翻滚图标": "Dodge Icon",
-    "能力冷却": "Ability Cooldown",
-    "能力名称": "Ability Name",
-    "── 扫描 / 缩放 / 内存 ──": "── Scan / Scale / Memory ──",
-    "── 闪光 ──": "── Flash ──",
-    "── 闪光应用模块 ──": "── Flash Apply To ──",
-    "── 隐藏 ──": "── Hide ──",
-    "── 模块位置 ──": "── Module Position ──",
-    "核心模块": "Core",
-    "位置与缩放": "Position & Scale",
-    "── 核心模块位置与缩放 ──": "── Core Position & Scale ──",
-    "── 翻滚模块位置与缩放 ──": "── Dodge Position & Scale ──",
-    "── 能力模块位置与缩放 ──": "── Skill Position & Scale ──",
-    "── 单层buff倒计时胶囊 ──": "── Single-layer Buff Timer Capsule ──",
-    "闪光颜色:": "Flash color:",
-    "背景不透明度:": "Background opacity:",
-    "扇形不透明度:": "Sector opacity:",
-    "边框不透明度:": "Border opacity:",
-    "胶囊不透明度:": "Capsule opacity:",
-    "翻滚朝向:": "Dodge orientation:",
-    "尖刺闪光（核心检测模块）": "Spike flash (core)",
-    "能力冷却完成闪光": "Skill ready flash",
-    "翻滚图标闪光": "Dodge icon flash",
-    "翻滚图标闪光：勾边发光": "Dodge icon flash: outline glow",
-    "圆环": "Ring",
-    "扇形": "Sector",
-    "横放": "Horizontal",
-    "竖放": "Vertical",
-    "关于/更新": "About / Update",
-    "关于": "About",
-    "当前版本：": "Current version:",
-    "状态：": "Status:",
-    "检查更新": "Check for Updates",
-    "前往下载": "Go to Download",
-    "跳过此版本": "Skip this version",
-    "自动检查更新": "Auto check for updates",
-    "更新地址：": "Update URL:",
-    "更新日志：": "Changelog:",
-    "全勾选": "Check All",
-    "全取消": "Uncheck All",
-    "排序方向:": "Order direction:",
-    "越上越靠左": "Top → Left",
-    "越上越靠右": "Top → Right",
-    "── 角色 Buff 顺位与专精门控（每行三勾选框 = 觉醒/真谛/秘义 / 拖动排序 / 可折叠） ──": "── Character Buff Order & Mastery Gating (3 checkboxes = Awakening/Truth/Secret / drag to reorder / collapsible) ──",
-    "拖动排序；勾选专精：全选=常显 / 全不选=常关": "Drag to reorder; tick mastery: all=always show / none=always hide",
-    "已是最新版本": "Already up to date",
-    "── 全局快捷键 ──": "── Global Hotkeys ──",
-    "呼出/隐藏所有窗口：": "Show/Hide All Windows:",
-    "锁定 / 解锁窗口：": "Lock / Unlock Window:",
-    "打开设置：": "Open Settings:",
-    "未设置": "Not set",
-    "设置按键…": "Set Key…",
-    # ── V350 三语补全（设置面板 / 右键菜单 / 快捷键捕获窗）──
-    "启用就绪呼吸光": "Enable Ready Breathing Glow",
-    "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": "Hide entire UI when not in combat (spike/roll/skill UI all)",
-    "核心检测模块（标题栏始终显示，仅内容隐藏）": "Core detection module (title bar stays visible, only content hidden)",
-    "能力冷却模块": "Ability cooldown module",
-    "呼吸频率:": "Breathing rate:",
-    "圆角半径:": "Corner radius:",
-    "放大倍数:": "Zoom factor:",
-    "更新下载地址：": "Update download URL:",
-    "更新检测版本地址：": "Update version-check URL:",
-    "柔和程度:": "Softness:",
-    "标题栏字体大小:": "Title bar font size:",
-    "模块位置:": "Module position:",
-    "边框粗细倍数:": "Border thickness factor:",
-    "非战斗隐藏:": "Hide when not in combat:",
-    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": "The version-check URL above uses GitHub Release CDN (releases/latest/download/version.json), not raw — fast in China and rarely blocked; the exe download URL is read from that version.json's download_url field and auto-filled below, no extra config needed.",
-    "同色系 / 相近": "Similar hue / close",
-    "色环均匀 / 大反差": "Even hue ring / high contrast",
-    "── 在线更新 ──": "── Online Update ──",
-    "── 多buff差异化（按同时监测的buff个数 2/3/4/5；每组：缩放 / 圆心水平间距 / 圆心Delta_Y / 外部差异化颜色 / 内部差异化颜色） ──": "── Multi-buff differentiation (by simultaneous buff count 2/3/4/5; per group: scale / center X spacing / center Delta_Y / outer diff color / inner diff color) ──",
-    "── 就绪呼吸光（冷却完毕提示）──": "── Ready Breathing Glow (cooldown done) ──",
-    "── 扫描 / 内存 ──": "── Scan / Memory ──",
-    "── 模块显示 ──": "── Module Display ──",
-    "── 翻滚警告牌（第6/7次）──": "── Roll Warning Sign (6th/7th) ──",
-    "就绪呼吸光": "Ready Breathing Glow",
-    "检查更新后自动填入，或手动填写 exe 下载直链": "Auto-filled after update check, or enter exe direct link manually",
-    "发现新版本": "New version found",
-    "置顶": "Always on Top",
-    "隐藏": "Hide",
-    "显示": "Show",
-    "捕获快捷键": "Capture Hotkey",
-    "依次按下要绑定的组合键（最多 3 个）\n支持 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向键 等\nCtrl 不再强制，仅作为默认选项": "Press the key combo to bind (up to 3 keys)\nSupports Ctrl / Alt / Shift / Win + Letter / F1-F12 / Arrow keys etc.\nCtrl no longer required; it is only the default option",
-    "生效区（拖动排序）": "Active Zone (drag to reorder)",
-    "隐藏区": "Hidden Zone",
-    "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": "Left = shown, right = hidden; drag to the other side to switch (cannot cross characters)",
-    "（单层buff）": "(single-layer buff)",
-    "等待按键…": "Waiting for key…",
-    "未配置更新地址": "Update URL not configured",
-    "检查失败：": "Check failed:",
-    "跳过 v": "Skip v",
-    "检查中…": "Checking…",
-    "已跳过 v": "Skipped v",
-    "GBFR 指示器": "GBFR Indicator",
-    "正在准备…": "Preparing…",
-    "设置打开失败": "Failed to open settings",
-    "设置窗口构造异常：\n%s": "Settings window build error:\n%s",
-    "宽度拉伸:": "Width stretch:",
-    "高度拉伸:": "Height stretch:",
-    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": "Version-check URL (above) uses GitHub Release CDN (releases/latest/download/version.json), not raw; faster and more stable in China. The exe download URL is read from the download_url field of that version.json and auto-filled below; no extra configuration needed.",
-    "确认操作": "Confirm Action",
-    "热键冲突": "Hotkey Conflict",
-    "确定要{}所有角色的专精勾选框吗？\n（仅影响当前设置，可手动撤销）": "Are you sure you want to {} all characters' mastery checkboxes?\n(This only affects the current setting and can be manually undone.)",
-}
-ZH_TO_TW = {
-    "Overlay 设置": "Overlay 設定",
-    "── 常规 ──": "── 常規 ──",
-    "语言 / Language:": "語言 / Language:",
-    "随游戏前后台:": "隨遊戲前後台:",
-    "游戏在前台时显示，切到后台时自动最小化": "遊戲在前台時顯示，切到後台時自動最小化",
-    "随分辨率放大:": "隨解析度放大:",
-    "按当前屏幕宽度自动放大": "按當前螢幕寬度自動放大",
-    "尖刺圆隐藏:": "尖刺圓隱藏:",
-    "无buff时隐藏尖刺圆模块（翻滚/技能UI不受影响）": "無buff時隱藏尖刺圓模組（翻滾/技能UI不受影響）",
-    "隐藏时透明度:": "隱藏時透明度:",
-    "倒计时字号:": "倒數字號:",
-    "时间胶囊宽度:": "時間膠囊寬度:",
-    "胶囊宽度微调(Δ):": "膠囊寬度微調(Δ):",
-    "尖刺UI不透明度:": "尖刺UI不透明度:",
-    "翻滚UI不透明度:": "翻滾UI不透明度:",
-    "技能CD不透明度:": "技能CD不透明度:",
-    "标题栏状态文字:": "標題列狀態文字:",
-    "在标题栏显示角色名和buff状态文字": "在標題列顯示角色名和buff狀態文字",
-    "标题栏不透明度:": "標題列不透明度:",
-    "背景画布不透明度:": "背景畫布不透明度:",
-    "── 透明度 ──": "── 透明度 ──",
-    "── 背景 ──": "── 背景 ──",
-    "── 标题栏 ──": "── 標題列 ──",
-    "多buff偏移量:": "多buff偏移量:",
-    "多buff缩放:": "多buff縮放:",
-    "多buff夹角:": "多buff夾角:",
-    "Buff 启用/禁用:": "Buff 啟用/禁用:",
-    "全选": "全選",
-    "全不选": "全不選",
-    "不显示": "不顯示",
-    "启动位置:": "啟動位置:",
-    "整体等比缩放:": "整體等比縮放:",
-    "模块缩放:": "模組縮放:",
-    "宽度拉伸:": "寬度拉伸:",
-    "高度拉伸:": "高度拉伸:",
-    "扫描周期 (ms):": "掃描週期 (ms):",
-    "── 尖刺(含顶端圆点) ──": "── 尖刺(含頂端圓點) ──",
-    "── 圆环 ──": "── 圓環 ──",
-    "── 外描边 ──": "── 外描邊 ──",
-    "── 布局间距 ──": "── 佈局間距 ──",
-    "── 翻滚图标 ──": "── 翻滾圖標 ──",
-    "圆半径:": "圓半徑:",
-    "尖刺长度:": "尖刺長度:",
-    "尖刺根部距圆心:": "尖刺根部距圓心:",
-    "尖刺宽度:": "尖刺寬度:",
-    "尖刺腰位置:": "尖刺腰位置:",
-    "尖刺顶端圆点半径:": "尖刺頂端圓點半徑:",
-    "顶端圆点距圆心:": "頂端圓點距圓心:",
-    "整体外描边:": "整體外描邊:",
-    "启用整体外描边": "啟用整體外描邊",
-    "外描边粗细:": "外描邊粗細:",
-    "── 倒计时弧线 ──": "── 倒計時弧線 ──",
-    "倒计时样式:": "倒計時樣式:",
-    "圆环": "圓環",
-    "扇形": "扇形",
-    "倒计时弧线内缩:": "倒計時弧線內縮:",
-    "倒计时圆心Y偏移:": "倒計時圓心Y偏移:",
-    "层数数字Y偏移:": "層數數字Y偏移:",
-    "层数数字X偏移:": "層數數字X偏移:",
-    "── 层数数字(无计时) ──": "── 層數數字(無計時) ──",
-    "── 层数数字(有计时) ──": "── 層數數字(有計時) ──",
-    "── 倒计时布局 ──": "── 倒計時佈局 ──",
-    "时间胶囊Y偏移:": "時間膠囊Y偏移:",
-    "时间胶囊宽度:": "時間膠囊寬度:",
-    "── 计时文字 ──": "── 計時文字 ──",
-    "── 倒计时胶囊 ──": "── 倒計時膠囊 ──",
-    "层数数字大小:": "層數數字大小:",
-    "层数数字大小 — (计时版):": "層數數字大小 — (計時版):",
-    "层数数字勾边粗细:": "層數數字勾邊粗細:",
-    "层数数字勾边粗细 — (计时版):": "層數數字勾邊粗細 — (計時版):",
-    "层数数字X偏移 — (计时版):": "層數數字X偏移 — (計時版):",
-    "层数数字Y偏移 — (计时版):": "層數數字Y偏移 — (計時版):",
-    "倒计时字体大小:": "倒計時字體大小:",
-    "倒计时文字色:": "倒計時文字色:",
-    "默认图标:": "預設圖標:",
-    "使用内置默认图标": "使用內建預設圖標",
-    "浏览...": "瀏覽...",
-    "翻滚图标绝对路径:": "翻滾圖標絕對路徑:",
-    "翻滚图标缩放:": "翻滾圖標縮放:",
-    "标题→圆间距:": "標題→圓間距:",
-    "圆→翻滚UI间距:": "圓→翻滾UI間距:",
-    "分割线:": "分割線:",
-    "显示层数/翻滚分割线": "顯示層數/翻滾分割線",
-    "分割线不透明度:": "分割線不透明度:",
-    "── 内存 ──": "── 記憶體 ──",
-    "ExStatus偏移:": "ExStatus偏移:",
-    "── 颜色与不透明度 ──": "── 顏色與不透明度 ──",
-    "标题栏色:": "標題列色:",
-    "背景色:": "背景色:",
-    "圆环色(正常):": "圓環色(正常):",
-    "圆环色(满层):": "圓環色(滿層):",
-    "尖刺色(正常):": "尖刺色(正常):",
-    "尖刺色(满层):": "尖刺色(滿層):",
-    "倒计时弧颜色:": "倒計時弧顏色:",
-    "层数数字色:": "層數數字色:",
-    "层数数字勾边色:": "層數數字勾邊色:",
-    "层数数字色 — (计时版):": "層數數字色 — (計時版):",
-    "层数数字勾边色 — (计时版):": "層數數字勾邊色 — (計時版):",
-    "外描边色:": "外描邊色:",
-    "不透明度": "不透明度",
-    "标题UI色:": "標題UI色:",
-    "Buff名色:": "Buff名色:",
-    "翻滚图标不透明度:": "翻滾圖標不透明度:",
-    "外部差异化:": "外部差異化:",
-    "内部差异化:": "內部差異化:",
-    "外部差异化颜色（圆环/尖刺/外描边）": "外部差異化顏色（圓環/尖刺/外描邊）",
-    "内部差异化颜色（弧线/数字/计时文字）": "內部差異化顏色（弧線/數字/計時文字）",
-    "Buff名显示:": "Buff名顯示:",
-    "在画布上显示Buff名称": "在畫布上顯示Buff名稱",
-    "Buff名字体大小:": "Buff名字體大小:",
-    "Buff名位置:": "Buff名位置:",
-    "Buff名衬色块宽度微调:": "Buff名襯色塊寬度微調:",
-    "── 能力冷却 ──": "── 能力冷卻 ──",
-    "显示能力冷却": "顯示能力冷卻",
-    "方形大小:": "方形大小:",
-    "聚散距离:": "聚散距離:",
-    "扇形颜色:": "扇形顏色:",
-    "倒计时文字色:": "倒計時文字色:",
-    "── 冷却完成动画 ──": "── 冷卻完成動畫 ──",
-    "完成色:": "完成色:",
-    "放大比例%:": "放大比例%:",
-    "动画时长ms:": "動畫時長ms:",
-    "── 能力名称 ──": "── 能力名稱 ──",
-    "显示能力名称": "顯示能力名稱",
-    "字号:": "字號:",
-    "倒计时X偏移:": "倒數X偏移:",
-    "倒计时Y偏移:": "倒數Y偏移:",
-    "能力名X偏移:": "能力名X偏移:",
-    "能力名Y偏移:": "能力名Y偏移:",
-    "衬色块宽微调:": "襯色塊寬微調:",
-    "能力名色:": "能力名色:",
-    "恢复默认": "恢復預設",
-    "确定": "確定",
-    "取消": "取消",
-    # ── V203: 4 一级标签 / 二级子页 / 闪光全局化 / 翻滚朝向 ──
-    "全局": "全域",
-    "核心检测模块": "核心檢測模組",
-    "多buff布局": "多buff佈局",
-    "翻滚模块": "翻滾模組",
-    "能力模块": "能力模組",
-    "常规": "常規",
-    "背景": "背景",
-    "闪光": "閃光",
-    "标题栏": "標題列",
-    "快捷键": "快速鍵",
-    "尖刺与圆环": "尖刺與圓環",
-    "倒计时": "倒計時",
-    "层数数字": "層數數字",
-    "多buff差异化": "多buff差異化",
-    "Buff名字": "Buff名字",
-    "位置与隐藏": "位置與隱藏",
-    "Buff启用/禁用": "Buff啟用/禁用",
-    "翻滚图标": "翻滾圖標",
-    "能力冷却": "能力冷卻",
-    "能力名称": "能力名稱",
-    "── 扫描 / 缩放 / 内存 ──": "── 掃描 / 縮放 / 記憶體 ──",
-    "── 闪光 ──": "── 閃光 ──",
-    "── 闪光应用模块 ──": "── 閃光應用模組 ──",
-    "── 隐藏 ──": "── 隱藏 ──",
-    "── 模块位置 ──": "── 模組位置 ──",
-    "核心模块": "核心模組",
-    "位置与缩放": "位置與縮放",
-    "── 核心模块位置与缩放 ──": "── 核心模組位置與縮放 ──",
-    "── 翻滚模块位置与缩放 ──": "── 翻滾模組位置與縮放 ──",
-    "── 能力模块位置与缩放 ──": "── 能力模組位置與縮放 ──",
-    "── 单层buff倒计时胶囊 ──": "── 單層buff倒數膠囊 ──",
-    "闪光颜色:": "閃光顏色:",
-    "背景不透明度:": "背景不透明度:",
-    "扇形不透明度:": "扇形不透明度:",
-    "边框不透明度:": "邊框不透明度:",
-    "胶囊不透明度:": "膠囊不透明度:",
-    "翻滚朝向:": "翻滾朝向:",
-    "尖刺闪光（核心检测模块）": "尖刺閃光（核心檢測模組）",
-    "能力冷却完成闪光": "能力冷卻完成閃光",
-    "翻滚图标闪光": "翻滾圖標閃光",
-    "翻滚图标闪光：勾边发光": "翻滾圖標閃光：勾邊發光",
-    "圆环": "圓環",
-    "扇形": "扇形",
-    "横放": "橫放",
-    "竖放": "豎放",
-    "关于/更新": "關於/更新",
-    "关于": "關於",
-    "当前版本：": "目前版本：",
-    "状态：": "狀態：",
-    "检查更新": "檢查更新",
-    "前往下载": "前往下載",
-    "跳过此版本": "跳過此版本",
-    "自动检查更新": "自動檢查更新",
-    "更新地址：": "更新地址：",
-    "更新日志：": "更新日誌：",
-    "全勾选": "全勾選",
-    "全取消": "全取消",
-    "排序方向:": "排序方向:",
-    "越上越靠左": "越上越靠左",
-    "越上越靠右": "越上越靠右",
-    "── 角色 Buff 顺位与专精门控（每行三勾选框 = 觉醒/真谛/秘义 / 拖动排序 / 可折叠） ──": "── 角色 Buff 順位與專精門控（每行三勾選框 = 覺醒/真諦/秘義 / 拖動排序 / 可折疊） ──",
-    "拖动排序；勾选专精：全选=常显 / 全不选=常关": "拖動排序；勾選專精：全選=常顯 / 全不選=常關",
-    "已是最新版本": "已是最新版本",
-    "── 全局快捷键 ──": "── 全域快速鍵 ──",
-    "呼出/隐藏所有窗口：": "呼出/隱藏所有視窗：",
-    "锁定 / 解锁窗口：": "鎖定 / 解鎖視窗：",
-    "打开设置：": "開啟設定：",
-    "未设置": "未設定",
-    "设置按键…": "設定按鍵…",
-    # ── V350 三语补全（设置面板 / 右键菜单 / 快捷键捕获窗）──
-    "启用就绪呼吸光": "啟用就緒呼吸光",
-    "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": "未進入戰鬥時隱藏整個UI（尖刺圓／翻滾／技能UI 全部）",
-    "核心检测模块（标题栏始终显示，仅内容隐藏）": "核心偵測模組（標題列始終顯示，僅內容隱藏）",
-    "能力冷却模块": "能力冷卻模組",
-    "呼吸频率:": "呼吸頻率：",
-    "圆角半径:": "圓角半徑：",
-    "放大倍数:": "放大倍數：",
-    "更新下载地址：": "更新下載位址：",
-    "更新检测版本地址：": "更新偵測版本位址：",
-    "柔和程度:": "柔和程度：",
-    "标题栏字体大小:": "標題列字型大小：",
-    "模块位置:": "模組位置：",
-    "边框粗细倍数:": "邊框粗細倍數：",
-    "非战斗隐藏:": "非戰鬥隱藏：",
-    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": "偵測版本位址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，國內快速且不易被牆；exe 下載位址從該 version.json 的 download_url 欄位讀取並自動填入下方，無需另外設定。",
-    "同色系 / 相近": "同色系／相近",
-    "色环均匀 / 大反差": "色環均勻／大反差",
-    "── 在线更新 ──": "── 線上更新 ──",
-    "── 多buff差异化（按同时监测的buff个数 2/3/4/5；每组：缩放 / 圆心水平间距 / 圆心Delta_Y / 外部差异化颜色 / 内部差异化颜色） ──": "── 多buff差異化（按同時監測的buff個數 2/3/4/5；每組：縮放／圓心水平間距／圓心Delta_Y／外部差異化顏色／內部差異化顏色） ──",
-    "── 就绪呼吸光（冷却完毕提示）──": "── 就緒呼吸光（冷卻完畢提示）──",
-    "── 扫描 / 内存 ──": "── 掃描／記憶體 ──",
-    "── 模块显示 ──": "── 模組顯示 ──",
-    "── 翻滚警告牌（第6/7次）──": "── 翻滾警告牌（第6/7次）──",
-    "就绪呼吸光": "就緒呼吸光",
-    "检查更新后自动填入，或手动填写 exe 下载直链": "檢查更新後自動填入，或手動填寫 exe 下載直鏈",
-    "发现新版本": "發現新版本",
-    "置顶": "永遠置頂",
-    "隐藏": "隱藏",
-    "显示": "顯示",
-    "捕获快捷键": "擷取快捷鍵",
-    "依次按下要绑定的组合键（最多 3 个）\n支持 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向键 等\nCtrl 不再强制，仅作为默认选项": "依序按下要綁定的組合鍵（最多 3 個）\n支援 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向鍵 等\nCtrl 不再強制，僅作為預設選項",
-    "生效区（拖动排序）": "生效區（拖動排序）",
-    "隐藏区": "隱藏區",
-    "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": "左欄=顯示，右欄=隱藏；拖到另一側切換（不可跨角色）",
-    "（单层buff）": "（單層buff）",
-    "等待按键…": "等待按鍵…",
-    "未配置更新地址": "未配置更新位址",
-    "检查失败：": "檢查失敗：",
-    "跳过 v": "跳過 v",
-    "检查中…": "檢查中…",
-    "已跳过 v": "已跳過 v",
-    "GBFR 指示器": "GBFR 指示器",
-    "正在准备…": "正在準備…",
-    "设置打开失败": "設定開啟失敗",
-    "设置窗口构造异常：\n%s": "設定視窗建構異常：\n%s",
-    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": "偵測版本位址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，國內快速且不易被牆；exe 下載位址從該 version.json 的 download_url 欄位讀取並自動填入下方，無需另外設定。",
-    "确认操作": "確認操作",
-    "热键冲突": "熱鍵衝突",
-    "确定要{}所有角色的专精勾选框吗？\n（仅影响当前设置，可手动撤销）": "確定要{}所有角色的專精勾選框嗎？\n（僅影響目前設定，可手動撤銷）",
-}
+from i18n_loader import UI_TRANS
+ZH_TO_EN = {k: v.get("en", k) for k, v in UI_TRANS.items()}
+ZH_TO_TW = {k: v.get("zh_tw", k) for k, v in UI_TRANS.items()}
 
 def _tr(zh, lang=None):
     """按当前语言返回翻译；lang 缺省时取 retranslate_ui 维护的全局语言。"""
@@ -888,219 +376,12 @@ ID_DRAGON_PARENT_EXTRA = 0x70
 ID_POWER_SUB = -0x3C22B10          # f32 0~1，异能槽
 ID_CELLS_SUB = -0x3C22B18          # u32 0~4，龙人格子
 ID_OVERDRIVE_SUB = -0x198D9D8      # f32 0~1，神威槽
+ID_OVERDRIVE_STATUS_ID = 30        # 神威一体 status id（ExStatus 槽位内 sid），用于 has_overdrive 判定；V350 起的模块级常量，重构时随 buff_data_generated 简化丢失，V370 补回
 ID_HIDDEN_OFF = 0x1CB34            # f32 0~4，隐藏槽（actor 直接偏移）
 
 # 巴萨拉卡（PL1700）古洛诺斯槽保持倒计时：actor 直接偏移（f32）
 # 来源：gbfr_vaseraga_freeze_monitor.py 实测确认
 VASERAGA_FREEZE_OFF = 0x1CAF0     # f32，古洛诺斯槽保持剩余秒数（仅冻结中>0）
-
-_profile_siegfried = {
-    "buffs": [
-        {"zh": "漆黑血涌", "zh_tw": "黑色血潮", "en": "Dark Zeal",
-         "stack_status_id": 65, "timer_status_id": 65,
-         "timer_display": "any_stack"},
-        {"zh": "拂晓", "zh_tw": "拂曉", "en": "Daybreak",
-         "stack_status_id": 144, "timer_status_id": 144,
-         "timer_display": "any_stack", "single_layer": True},
-    ]
-}
-_profile_gallanza = {
-    "buffs": [
-        {"zh": "武夫", "zh_tw": "荒事", "en": "Wild Showman",
-         "stack_status_id": 0x72, "timer_status_id": 0x72,
-         "timer_display": "any_stack"},
-        {"zh": "回旋王", "zh_tw": "絕好勢", "en": "Ultimatum",
-         "stack_status_id": 112, "timer_status_id": 112,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_ferry = {
-    "buffs": [
-        {"zh": "幽缘", "zh_tw": "幽緣", "en": "Spiritbond",
-         "stack_status_id": 79, "timer_status_id": 79,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_lancelot = {
-    "buffs": [
-        {"zh": "连击", "zh_tw": "連擊", "en": "Avalanche",
-         "stack_status_id": 0x69, "timer_status_id": 0x69,
-         "timer_display": "any_stack"},
-    ]
-}
-# 伊德神威一体 ExStatus 标志（用于判断神威槽/隐藏槽是否生效）
-ID_OVERDRIVE_STATUS_ID = 0x1E  # 30
-
-_profile_id = {
-    "buffs": [
-        # 紫银之力：常显（人形态/龙人态/神威一体态均存在）
-        {"zh": "紫银之力", "zh_tw": "紫銀之力", "en": "Heliotrope Aura",
-         "stack_status_id": 0x3C, "timer_status_id": 0x3C,
-         "timer_display": "any_stack"},
-        # 神威一体（单层buff）：仅神威一体形态存在（require overdrive = 有神威一体 ExStatus）
-        {"zh": "神威一体", "zh_tw": "神威一體", "en": "Godmight",
-         "stack_status_id": ID_OVERDRIVE_STATUS_ID, "timer_status_id": ID_OVERDRIVE_STATUS_ID,
-         "timer_display": "any_stack", "single_layer": True, "require": "overdrive"},
-        # 龙人化（单层buff）：仅龙人态存在（require dragon_form）
-        {"zh": "龙人化", "zh_tw": "龍人化", "en": "Dragonform",
-         "stack_status_id": 29, "timer_status_id": 29,
-         "timer_display": "any_stack", "single_layer": True, "require": "dragon_form"},
-        # 隐藏槽：非 ExStatus 裸值（actor 直接偏移）；仅神威一体形态有意义（require overdrive）
-        {"zh": "隐藏槽", "zh_tw": "隱藏槽", "en": "Hidden Gauge",
-         "raw_source": {"kind": "id_direct", "off": ID_HIDDEN_OFF, "fmt": "f32"},
-         "gauge_mode": "float", "max_stacks": 4, "timer_display": "any_stack", "require": "overdrive"},
-    ]
-}
-_profile_captain = {
-    "buffs": [
-        {"zh": "Class等级", "zh_tw": "Class等級", "en": "Class Level",
-         "raw_source": {"kind": "class_state", "ptr_off": CLASS_STATE_PTR_OFF,
-                        "rank_off": CLASS_RANK_OFF},
-         "max_stacks": 4, "timer_display": "any_stack"},
-    ]
-}
-_profile_tweyen = {
-    "buffs": [
-        {"zh": "致命一击强化", "zh_tw": "致命一擊強化", "en": "Enhanced Clincher",
-         "stack_status_id": 0x7F, "timer_status_id": 0x7F,
-         "timer_display": "any_stack"},
-        {"zh": "煌矢", "zh_tw": "煌矢", "en": "Piercing Gleam",
-         "stack_status_id": 109, "timer_status_id": 109,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_vaseraga = {
-    "buffs": [
-        {"zh": "冥刃", "zh_tw": "冥刃", "en": "Ebony Glint",
-         "stack_status_id": 0x52, "timer_status_id": 0x52,
-         "timer_display": "any_stack"},
-        {"zh": "不死之身", "zh_tw": "不死之身", "en": "Undying",
-         "stack_status_id": 0x1F, "timer_status_id": 0x1F,
-         "timer_display": "any_stack", "single_layer": True},
-        {"zh": "古洛诺斯之力", "zh_tw": "格羅諾斯解放", "en": "Grynoth Unleashed",
-         "stack_status_id": 88, "timer_status_id": 88,
-         "timer_display": "any_stack"},
-        {"zh": "加攻buff", "zh_tw": "加攻buff", "en": "DMG↑",
-         "stack_status_id": 42, "timer_status_id": 42,
-         "timer_display": "any_stack"},
-        # 古洛诺斯槽保持（单层）：actor+0x1CAF0 直接偏移，常驻显示（冷却中也显示，仅冻结中倒计时）
-        {"zh": "古洛诺斯槽保持", "zh_tw": "古洛諾斯槽保持", "en": "Grynoth Gauge Hold",
-         "raw_source": {"kind": "actor_timer", "off": VASERAGA_FREEZE_OFF, "fmt": "f32", "max": 10.0},
-         "single_layer": True, "timer_display": "any_stack"},
-    ]
-}
-_profile_io = {
-    "buffs": [
-        {"zh": "星梦V强化", "zh_tw": "星夢V強化", "en": "Superstar",
-         "stack_status_id": 71, "timer_status_id": 71,
-         "timer_display": "any_stack"},
-        {"zh": "专注", "zh_tw": "全神貫注", "en": "Focused",
-         "stack_status_id": 27, "timer_status_id": 27,
-         "timer_display": "any_stack", "single_layer": True},
-    ]
-}
-_profile_maglielle = {
-    "buffs": [
-        {"zh": "超凡艺术", "zh_tw": "極致戰藝", "en": "Arts Superior",
-         "stack_status_id": 87, "timer_status_id": 87,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_catalina = {
-    "buffs": [
-        {"zh": "苍刃", "zh_tw": "蒼刃", "en": "Blade Blue",
-         "stack_status_id": 69, "timer_status_id": 69,
-         "timer_display": "any_stack"},
-        {"zh": "双壁突击", "zh_tw": "雙重強襲", "en": "Dual Raid",
-         "stack_status_id": 139, "timer_status_id": 139,
-         "timer_display": "any_stack"},
-        {"zh": "阿瑞斯强袭", "zh_tw": "艾瑞斯強襲", "en": "Ares Surge",
-         "stack_status_id": 68, "timer_status_id": 68,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_rosetta = {
-    "buffs": [
-        {"zh": "落花无情强化", "zh_tw": "花散強化", "en": "Lost Love Bloomed",
-         "stack_status_id": 98, "timer_status_id": 98,
-         "timer_display": "any_stack", "single_layer": True},
-        {"zh": "螺旋玫瑰强化", "zh_tw": "螺旋玫瑰強化", "en": "Spiral Rose Bloomed",
-         "stack_status_id": 97, "timer_status_id": 97,
-         "timer_display": "any_stack", "single_layer": True},
-    ]
-}
-_profile_zeta = {
-    "buffs": [
-        {"zh": "跃空强化", "zh_tw": "浮空強化", "en": "Loop Master",
-         "stack_status_id": 0x5E, "timer_status_id": 0x5E,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_cagliostro = {
-    "buffs": [
-        {"zh": "岩塌强化", "zh_tw": "大崩壞強化", "en": "Super Collapse",
-         "stack_status_id": 0x56, "timer_status_id": 0x56,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_percival = {
-    "buffs": [
-        {"zh": "红莲之刃", "zh_tw": "紅蓮之刃", "en": "Molten Edge",
-         "stack_status_id": 0x55, "timer_status_id": 0x55,
-         "timer_display": "any_stack"},
-        {"zh": "征战之剑强化++", "zh_tw": "征戰＋＋強化", "en": "Stoked Charge",
-         "stack_status_id": 83, "timer_status_id": 83,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_sandalphon = {
-    "buffs": [
-        {"zh": "无限之辉", "zh_tw": "無限光", "en": "Limitless Light",
-         "stack_status_id": 0x6A, "timer_status_id": 0x6A,
-         "timer_display": "any_stack", "single_layer": True},
-        {"zh": "极彩羽翼", "zh_tw": "極彩之羽", "en": "Chromatic Wings",
-         "stack_status_id": 45, "timer_status_id": 45,
-         "timer_display": "any_stack", "single_layer": True},
-        {"zh": "白辉祝福", "zh_tw": "白輝之加護", "en": "Lucent Refuge",
-         "stack_status_id": 107, "timer_status_id": 107,
-         "timer_display": "any_stack"},
-    ]
-}
-_profile_seofon = {
-    "buffs": [
-        {"zh": "剑王", "zh_tw": "劍王", "en": "Sovereign",
-         "stack_status_id": 0x74, "timer_status_id": 0x74,
-         "timer_display": "any_stack"},
-        {"zh": "星海", "zh_tw": "星海", "en": "Star Sea",
-         "stack_status_id": 0x75, "timer_status_id": 0x75,
-         "timer_display": "any_stack"},
-        {"zh": "集谛", "zh_tw": "集諦", "en": "Samudaya",
-         "stack_status_id": 133, "timer_status_id": 133,
-         "timer_display": "any_stack"},
-    ]
-}
-
-# ============================ 通用 Buff（全角色生效的状态效果）============================
-_profile_general = {
-    "buffs": [
-        {"zh": "再生", "zh_tw": "再生", "en": "Regen",
-         "stack_status_id": 5, "timer_status_id": 5, "timer_display": "any_stack"},
-        {"zh": "无敌buff", "zh_tw": "無敵buff", "en": "Invincibility",
-         "stack_status_id": 6, "timer_status_id": 6, "timer_display": "any_stack", "single_layer": True},
-        {"zh": "追击buff", "zh_tw": "追擊buff", "en": "Supplementary DMG",
-         "stack_status_id": 7, "timer_status_id": 7, "timer_display": "any_stack"},
-        {"zh": "霸体", "zh_tw": "霸體", "en": "Stout Heart",
-         "stack_status_id": 8, "timer_status_id": 8, "timer_display": "any_stack"},
-        {"zh": "挺身而出", "zh_tw": "挺身而出", "en": "Substitute",
-         "stack_status_id": 10, "timer_status_id": 10, "timer_display": "any_stack", "single_layer": True},
-        {"zh": "弱化免疫", "zh_tw": "弱化免疫", "en": "Debuff Immunity",
-         "stack_status_id": 17, "timer_status_id": 17, "timer_display": "any_stack"},
-        {"zh": "暴击率Up", "zh_tw": "暴擊率Up", "en": "Critical Hit Rate↑",
-         "stack_status_id": 23, "timer_status_id": 23, "timer_display": "any_stack"},
-        {"zh": "豪胆or自动复活", "zh_tw": "豪膽or自動復活", "en": "Guts/Auto-Rez",
-         "stack_status_id": 25, "timer_status_id": 25, "timer_display": "any_stack", "single_layer": True},
-    ]
-}
 
 BUFF_PROFILES = buff_data_generated.BUFF_PROFILES
 MASTERY_BRANCHES = buff_data_generated.MASTERY_BRANCHES   # 每角色三系专精列名（三语）
@@ -1927,17 +1208,30 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
                     "gauge_mode": "float", "gauge_value": float(v),
                 }
             elif rs == "actor_timer":
-                # 巴萨拉卡古洛诺斯槽保持：actor+VASERAGA_FREEZE_OFF f32，常驻显示（冷却中也显示，仅冻结中倒计时）
+                # 巴萨拉卡古洛诺斯槽 / 芙劳「转世的恩宠」等长驻资源倒计时：
+                # actor+off f32，仅读数>0.01 时视为激活并倒计时；上限自我学习（仅向上）。
+                # 指定 cap_setting 时各自使用独立的学习上限键（如 grace_max / kronos_freeze_max），
+                # 学习机制相同（首次上升沿捕获、之后仅向上），但数值互不干扰。
                 off = bc.get("off", VASERAGA_FREEZE_OFF)
                 v = read_f32(handle, read_base + off)
                 if v is None or math.isnan(v) or math.isinf(v):
                     v = 0.0
                 timer = float(v) if v > 0.01 else None
-                if timer is not None and timer > kronos_max:
-                    kronos_max = timer
+                cap_key = bc.get("cap_setting")
+                if cap_key:
+                    cur_cap = float(duration_max.get(cap_key, 0.0) or 0.0)
+                    if timer is not None and timer > cur_cap:
+                        cur_cap = timer
+                        duration_max[cap_key] = cur_cap
+                    timer_max = cur_cap if cur_cap > 0 else 30.0
+                else:
+                    if timer is not None and timer > kronos_max:
+                        kronos_max = timer
+                    duration_max["kronos_freeze"] = kronos_max
+                    timer_max = kronos_max
                 entry = {
                     "index": idx, "zh": bc["zh"], "zh_tw": bc.get("zh_tw", bc["zh"]), "en": bc["en"],
-                    "stacks": 1, "max_stacks": 1, "timer": timer, "timer_max": kronos_max,
+                    "stacks": 1, "max_stacks": 1, "timer": timer, "timer_max": timer_max,
                     "timer_display": bc.get("timer_display", "any_stack"),
                 }
             else:
@@ -1989,7 +1283,7 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
     return {"status": "ok", "dodge": dodge or 0, "char_type": char_type,
             "charid_hash": charid_hash, "pl_id": pl_id, "buffs": buffs_out,
             "raw_locked": new_locked,
-            "duration_max": {"kronos_freeze": kronos_max, "class_duration": class_dur_max}}
+            "duration_max": duration_max}
 
 
 def _resolve_id_actor(handle, actor):
@@ -2286,6 +1580,7 @@ DEFAULT_SETTINGS = {
     "single_timer_text_color_opacity": 100,
     "spike_hide_when_no_buff": True,
     "spike_hidden_opacity": 0,
+    "hide_spikes_and_beads": False,
     "out_of_combat_hide": False,
     "out_of_combat_opacity": 0,
     "show_titlebar_status": True,
@@ -2623,6 +1918,25 @@ class MasteryBuffGroup(QWidget):
             if i < len(labels):
                 labels[i].setText(self._branch_name(br, lang))
 
+    def refresh_items(self, lang):
+        """刷新每行 buff 名称为当前语言。"""
+        self.lang = lang
+        buffs = self.profile.get("buffs", [])
+        for r in range(self.list.count()):
+            item = self.list.item(r)
+            idx = item.data(Qt.UserRole)
+            if idx is None or idx < 0 or idx >= len(buffs):
+                continue
+            bc = buffs[idx]
+            nm = bc.get(lang, bc.get("zh", ""))
+            w = self.list.itemWidget(item)
+            if w is None:
+                continue
+            for child in w.findChildren(QLabel):
+                if child.text():
+                    child.setText(nm)
+                    break
+
     # ---------- 键 ----------
     def _bkey(self, idx):
         return f"{self.canon}_{idx}"
@@ -2644,7 +1958,7 @@ class MasteryBuffGroup(QWidget):
         w = QWidget()
         lay = QHBoxLayout(w); lay.setContentsMargins(4, 0, 4, 0); lay.setSpacing(8)
         lay.setAlignment(Qt.AlignVCenter)
-        nm = bc.get("zh", "")
+        nm = bc.get(self.lang, bc.get("zh", ""))
         lbl = QLabel(nm); lbl.setStyleSheet("color:#dce8f8;font-size:12px;")
         lbl.setMinimumWidth(130)
         lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -2832,7 +2146,10 @@ class SettingsDialog(QDialog):
 
     def __init__(self, parent, settings, ctrl=None):
         super().__init__(parent)
-        self.setWindowTitle(_tr("Overlay 设置"))
+        # 先同步全局语言：构造过程中任何异常弹窗都必须用用户当前语言
+        global _CURRENT_LANG
+        _CURRENT_LANG = settings.get("language", "zh")
+        self.setWindowTitle(_tr("Overlay 设置") + f" v{APP_VERSION}")
         self.setMinimumWidth(1120)
         self.setMaximumHeight(760)
         self.resize(1120, 760)
@@ -3127,6 +2444,9 @@ class SettingsDialog(QDialog):
         cf.addRow("顶端圆点距圆心:", self.spike_bead_pos)
         self._add_color_row(cf, "spike_color_normal", "尖刺色(正常):")
         self._add_color_row(cf, "spike_color_lv7", "尖刺色(满层):")
+        self.hide_spikes_beads_chk = QCheckBox(_tr("隐藏尖刺与装饰小球（仅保留圆环+倒计时+文字）"))
+        self.hide_spikes_beads_chk.setChecked(bool(self.settings.get("hide_spikes_and_beads", DEFAULT_SETTINGS["hide_spikes_and_beads"])))
+        cf.addRow(self.hide_spikes_beads_chk)
         f.addRow(card)
         card, cf = make_card(f, "── 圆环 ──")
         self.circle_radius = QSpinBox(); self.circle_radius.setRange(30, 120); self.circle_radius.setValue(int(self.settings.get("circle_radius", DEFAULT_SETTINGS["circle_radius"])))
@@ -3202,7 +2522,11 @@ class SettingsDialog(QDialog):
         f = make_sub_tab(c_sub, "多buff布局")
         card, cf = make_card(f, "── 多buff差异化（按同时监测的buff个数 2/3/4/5；每组：缩放 / 圆心水平间距 / 圆心Delta_Y / 外部差异化颜色 / 内部差异化颜色） ──")
 
-        def _mb_slider(target, label, key, default, rmin, rmax, suffix, value_scale=1):
+        def _mb_slider(target, label_key, key, default, rmin, rmax, suffix, value_scale=1):
+            label_text = _tr(label_key)
+            if "{}" in label_text:
+                label_text = label_text.format(cnt)
+            lbl = QLabel(label_text)
             sl = QSlider(Qt.Horizontal); sl.setRange(rmin, rmax)
             sp = QSpinBox(); sp.setRange(rmin, rmax); sp.setSuffix(suffix)
             # value_scale>1 时，settings 里存的是浮点比例（如 0.68），UI 显示整数（如 68）
@@ -3213,41 +2537,51 @@ class SettingsDialog(QDialog):
             sl.valueChanged.connect(self._emit_changed)
             row = QHBoxLayout(); row.setContentsMargins(0, 0, 0, 0); row.setSpacing(4)
             row.addWidget(sl); row.addWidget(sp)
-            c = QWidget(); c.setLayout(row); target.addRow(label, c)
-            return sl, sp
+            c = QWidget(); c.setLayout(row); target.addRow(lbl, c)
+            return sl, sp, lbl
 
-        def _mb_check(target, label, key, default):
+        def _mb_check(target, label_key, key, default):
+            lbl = QLabel(_tr(label_key).format(cnt))
             cb = QCheckBox(); cb.setChecked(bool(self.settings.get(key, default)))
             cb.stateChanged.connect(self._emit_changed)
-            target.addRow(label, cb)
-            return cb
+            target.addRow(lbl, cb)
+            return cb, lbl
 
         self.multi_buff_ctrls = {}
+        self.multi_buff_labels = {}  # (cnt, key) -> QLabel / QGroupBox
         for cnt in (2, 3, 4, 5):
             # 每个 buff 个数各包一个小组框，实现不同个数之间的隔离
-            gb = QGroupBox(f"{cnt} 个 buff 同屏")
+            gb = QGroupBox(_tr("{} 个 buff 同屏").format(cnt))
+            self.multi_buff_labels[(cnt, "group_title")] = gb
             gb.setStyleSheet("QGroupBox{border:1px solid #3a4a66;border-radius:6px;margin-top:6px;"
                              "padding-top:10px;color:#cfe0ff;font-weight:bold;font-size:11px;}"
                              "QGroupBox::title{subcontrol-origin:margin;left:10px;padding:0 4px;}")
             gcf = QFormLayout(); gcf.setContentsMargins(8, 8, 8, 8); gcf.setSpacing(4)
             gb.setLayout(gcf)
-            ctrl = {}
-            ctrl["scale_sl"], ctrl["scale_sp"] = _mb_slider(gcf, f"缩放{cnt}:", f"multi_buff_scale_{cnt}", DEFAULT_SETTINGS[f"multi_buff_scale_{cnt}"], 20, 100, "%")
-            ctrl["hgap_sl"], ctrl["hgap_sp"] = _mb_slider(gcf, f"圆心水平间距{cnt}:", f"multi_buff_hgap_{cnt}", DEFAULT_SETTINGS[f"multi_buff_hgap_{cnt}"], 20, 400, "px")
-            ctrl["dy_sl"], ctrl["dy_sp"] = _mb_slider(gcf, f"圆心Delta_Y{cnt}:", f"multi_buff_dy_{cnt}", DEFAULT_SETTINGS[f"multi_buff_dy_{cnt}"], -300, 300, "px")
-            ctrl["ext_cb"] = _mb_check(gcf, f"外部差异化颜色{cnt}:", f"multi_buff_ext_color_{cnt}", DEFAULT_SETTINGS[f"multi_buff_ext_color_{cnt}"])
-            ctrl["int_cb"] = _mb_check(gcf, f"内部差异化颜色{cnt}:", f"multi_buff_int_color_{cnt}", DEFAULT_SETTINGS[f"multi_buff_int_color_{cnt}"])
+            ctrl = {"gb": gb}
+            ctrl["scale_sl"], ctrl["scale_sp"], self.multi_buff_labels[(cnt, "scale")] = _mb_slider(
+                gcf, "缩放{}:", f"multi_buff_scale_{cnt}", DEFAULT_SETTINGS[f"multi_buff_scale_{cnt}"], 20, 100, "%")
+            ctrl["hgap_sl"], ctrl["hgap_sp"], self.multi_buff_labels[(cnt, "hgap")] = _mb_slider(
+                gcf, "圆心水平间距{}:", f"multi_buff_hgap_{cnt}", DEFAULT_SETTINGS[f"multi_buff_hgap_{cnt}"], 20, 400, "px")
+            ctrl["dy_sl"], ctrl["dy_sp"], self.multi_buff_labels[(cnt, "dy")] = _mb_slider(
+                gcf, "圆心Delta_Y{}:", f"multi_buff_dy_{cnt}", DEFAULT_SETTINGS[f"multi_buff_dy_{cnt}"], -300, 300, "px")
+            ctrl["ext_cb"], self.multi_buff_labels[(cnt, "ext_color")] = _mb_check(
+                gcf, "外部差异化颜色{}:", f"multi_buff_ext_color_{cnt}", DEFAULT_SETTINGS[f"multi_buff_ext_color_{cnt}"])
+            ctrl["int_cb"], self.multi_buff_labels[(cnt, "int_color")] = _mb_check(
+                gcf, "内部差异化颜色{}:", f"multi_buff_int_color_{cnt}", DEFAULT_SETTINGS[f"multi_buff_int_color_{cnt}"])
             # 颜色分布模式：下拉选单 + 同色系间距（仅同色系启用）
             mode_cb = QComboBox()
-            mode_cb.addItem("色环均匀 / 大反差", "uniform")
-            mode_cb.addItem("同色系 / 相近", "monochrome")
+            mode_cb.addItem(_tr("色环均匀 / 大反差"), "uniform")
+            mode_cb.addItem(_tr("同色系 / 相近"), "monochrome")
             cur_mode = self.settings.get(f"multi_buff_color_mode_{cnt}", DEFAULT_SETTINGS[f"multi_buff_color_mode_{cnt}"])
             mode_cb.setCurrentIndex(0 if cur_mode == "uniform" else 1)
             mode_cb.currentIndexChanged.connect(self._emit_changed)
-            gcf.addRow(f"颜色分布模式{cnt}:", mode_cb)
+            mode_lbl = QLabel(_tr("颜色分布模式{}:").format(cnt))
+            self.multi_buff_labels[(cnt, "mode")] = mode_lbl
+            gcf.addRow(mode_lbl, mode_cb)
             ctrl["mode_cb"] = mode_cb
-            ctrl["mono_span_sl"], ctrl["mono_span_sp"] = _mb_slider(
-                gcf, f"同色系间距{cnt}:", f"multi_buff_mono_span_{cnt}",
+            ctrl["mono_span_sl"], ctrl["mono_span_sp"], self.multi_buff_labels[(cnt, "mono_span")] = _mb_slider(
+                gcf, "同色系间距{}:", f"multi_buff_mono_span_{cnt}",
                 DEFAULT_SETTINGS[f"multi_buff_mono_span_{cnt}"], 0, 60, "°")
             ctrl["mono_span_sl"].setEnabled(cur_mode == "monochrome")
             ctrl["mono_span_sp"].setEnabled(cur_mode == "monochrome")
@@ -3314,8 +2648,8 @@ class SettingsDialog(QDialog):
         f.addRow(card)
         # ── 翻滚警告牌（V273 五项可调）──
         card, cf = make_card(f, "── 翻滚警告牌（第6/7次）──")
-        self.warning_size_sld, self.warning_size_spn = _mb_slider(cf, "警告牌相对尺寸:", "warning_size_scale", int(DEFAULT_SETTINGS["warning_size_scale"] * 100), 30, 100, "%", value_scale=100)
-        self.warning_bw_sld, self.warning_bw_spn = _mb_slider(cf, "红边宽度占比:", "warning_outline_width", int(DEFAULT_SETTINGS["warning_outline_width"] * 100), 10, 50, "%", value_scale=100)
+        self.warning_size_sld, self.warning_size_spn, _ = _mb_slider(cf, "警告牌相对尺寸:", "warning_size_scale", int(DEFAULT_SETTINGS["warning_size_scale"] * 100), 30, 100, "%", value_scale=100)
+        self.warning_bw_sld, self.warning_bw_spn, _ = _mb_slider(cf, "红边宽度占比:", "warning_outline_width", int(DEFAULT_SETTINGS["warning_outline_width"] * 100), 10, 50, "%", value_scale=100)
         self.warning_corner_spn = QSpinBox(); self.warning_corner_spn.setRange(0, 30); self.warning_corner_spn.setSuffix(" px"); self.warning_corner_spn.setValue(int(self.settings.get("warning_corner_radius", DEFAULT_SETTINGS["warning_corner_radius"])))
         cf.addRow("圆角半径:", self.warning_corner_spn)
         self._add_color_row(cf, "warning_outline_color", "红边色:", with_opacity=False)
@@ -3480,7 +2814,7 @@ class SettingsDialog(QDialog):
                 text = tw_to_zh[text]
             return target_map.get(text, text)
 
-        self.setWindowTitle(_translate_text("Overlay 设置"))
+        self.setWindowTitle(_translate_text("Overlay 设置") + f" v{APP_VERSION}")
         if hasattr(self, "settings_tabs") and hasattr(self, "_top_tabs_zh"):
             for i, name in enumerate(self._top_tabs_zh):
                 if i < self.settings_tabs.count():
@@ -3505,6 +2839,11 @@ class SettingsDialog(QDialog):
             translated = _translate_text(text)
             if translated != text:
                 button.setText(translated)
+        for gb in self.findChildren(QGroupBox):
+            text = gb.title()
+            translated = _translate_text(text)
+            if translated != text:
+                gb.setTitle(translated)
 
         if hasattr(self, "timer_style"):
             ring_idx = self.timer_style.findData("ring")
@@ -3538,13 +2877,31 @@ class SettingsDialog(QDialog):
             if r_idx >= 0:
                 self.buff_order_direction_combo.setItemText(r_idx, r_text)
 
-        # V350：补全此前漏翻的控件
+        # V350/V373：补全此前漏翻的控件
         if hasattr(self, "multi_buff_ctrls"):
-            for _c in self.multi_buff_ctrls.values():
+            for _cnt, _c in self.multi_buff_ctrls.items():
                 _mcb = _c.get("mode_cb")
                 if _mcb is not None:
                     _mcb.setItemText(0, _tr("色环均匀 / 大反差"))
                     _mcb.setItemText(1, _tr("同色系 / 相近"))
+        # V373：多 buff 分组 label / QGroupBox 标题按当前语言刷新
+        if hasattr(self, "multi_buff_labels"):
+            for (_cnt, _key), _w in self.multi_buff_labels.items():
+                if _key == "group_title":
+                    _w.setTitle(_tr("{} 个 buff 同屏").format(_cnt))
+                else:
+                    _map = {
+                        "scale": "缩放{}:",
+                        "hgap": "圆心水平间距{}:",
+                        "dy": "圆心Delta_Y{}:",
+                        "ext_color": "外部差异化颜色{}:",
+                        "int_color": "内部差异化颜色{}:",
+                        "mode": "颜色分布模式{}:",
+                        "mono_span": "同色系间距{}:",
+                    }
+                    _tmpl = _map.get(_key)
+                    if _tmpl:
+                        _w.setText(_tr(_tmpl).format(_cnt))
         if hasattr(self, "download_url_le"):
             self.download_url_le.setPlaceholderText(_tr("检查更新后自动填入，或手动填写 exe 下载直链"))
 
@@ -3552,6 +2909,7 @@ class SettingsDialog(QDialog):
         if hasattr(self, "buff_order_groups"):
             for pl_id, group in self.buff_order_groups.items():
                 group.refresh_title(lang)
+                group.refresh_items(lang)
 
     def _add_color_row(self, form, key, label, with_opacity=True):
         """创建一行：颜色按钮 + 不透明度标签 + 不透明度微调框。"""
@@ -3615,7 +2973,7 @@ class SettingsDialog(QDialog):
 
     def _connect_live_signals(self):
         widgets = [
-            self.lang, self.auto_focus_minimize, self.resolution_auto_scale, self.spike_hide_chk, self.spike_hidden_op_spn, self.show_titlebar_status, self.titlebar_font_size_spn, self.icon_use_default,
+            self.lang, self.auto_focus_minimize, self.resolution_auto_scale, self.spike_hide_chk, self.spike_hidden_op_spn, self.hide_spikes_beads_chk, self.show_titlebar_status, self.titlebar_font_size_spn, self.icon_use_default,
             self.core_scale_slider, self.core_scale_spin, self.roll_scale_slider, self.roll_scale_spin, self.skill_scale_slider, self.skill_scale_spin,
             self.scan, self.circle_radius, self.spike_length, self.spike_axis_pos,
             self.spike_width, self.spike_waist_pos, self.spike_bead_radius, self.spike_bead_pos,
@@ -3728,6 +3086,7 @@ class SettingsDialog(QDialog):
         self.resolution_auto_scale.setChecked(DEFAULT_SETTINGS["resolution_auto_scale"])
         self.spike_hide_chk.setChecked(DEFAULT_SETTINGS["spike_hide_when_no_buff"])
         self.spike_hidden_op_spn.setValue(DEFAULT_SETTINGS["spike_hidden_opacity"])
+        self.hide_spikes_beads_chk.setChecked(DEFAULT_SETTINGS["hide_spikes_and_beads"])
         self.ooc_hide_chk.setChecked(DEFAULT_SETTINGS["out_of_combat_hide"])
         self.ooc_op_spn.setValue(DEFAULT_SETTINGS["out_of_combat_opacity"])
         self.show_titlebar_status.setChecked(DEFAULT_SETTINGS["show_titlebar_status"])
@@ -3855,6 +3214,7 @@ class SettingsDialog(QDialog):
         self.settings["resolution_auto_scale"] = self.resolution_auto_scale.isChecked()
         self.settings["spike_hide_when_no_buff"] = self.spike_hide_chk.isChecked()
         self.settings["spike_hidden_opacity"] = self.spike_hidden_op_spn.value()
+        self.settings["hide_spikes_and_beads"] = self.hide_spikes_beads_chk.isChecked()
         self.settings["out_of_combat_hide"] = self.ooc_hide_chk.isChecked()
         self.settings["out_of_combat_opacity"] = self.ooc_op_spn.value()
         self.settings["show_titlebar_status"] = self.show_titlebar_status.isChecked()
@@ -4555,15 +3915,23 @@ class GBFROverlayQt(QObject):
         self.dodge_icon_size = max(4, int(self.SHRIMP_BASE_SIZE * scale / 100))
 
         # ── 核心检测模块画布（标题栏 + 尖刺圆 + buff），不含翻滚/技能 ──
-        spike_outer_extent = max(0, int((1.0 + self.spike_axis_pos) * self.spike_len))
-        bead_outer_extent = self.spike_bead_radius + max(0, int(abs(self.spike_bead_pos) * self.spike_len))
+        hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
         outline_pad = max(0, self.indicator_outline_width + 2)
-        spike_side_extent = spike_outer_extent + max(self.spike_w // 2, self.spike_bead_radius) + outline_pad
-        core_required_w = (self.circle_r + max(spike_side_extent, bead_outer_extent) + outline_pad + 10) * 2
+        if hide_spikes:
+            spike_outer_extent = 0
+            bead_outer_extent = 0
+            spike_side_extent = outline_pad
+            spike_top_pad = outline_pad
+            spike_bottom_pad = outline_pad
+        else:
+            spike_outer_extent = max(0, int((1.0 + self.spike_axis_pos) * self.spike_len))
+            bead_outer_extent = self.spike_bead_radius + max(0, int(abs(self.spike_bead_pos) * self.spike_len))
+            spike_side_extent = spike_outer_extent + max(self.spike_w // 2, self.spike_bead_radius) + outline_pad
+            spike_top_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
+            spike_bottom_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
+        core_required_w = (self.circle_r + max(spike_side_extent, bead_outer_extent if not hide_spikes else 0) + outline_pad + 10) * 2
         # 标题栏诊断文字完整显示，整体宽度给足
         self.core_canvas_w = max(self.CANVAS_W, int(core_required_w))
-        spike_top_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
-        spike_bottom_pad = max(self.spike_len, spike_outer_extent, bead_outer_extent) + outline_pad
         self.core_canvas_h = (
             self.TITLE_BAR_H
             + self.circle_pad_title
@@ -4578,7 +3946,7 @@ class GBFROverlayQt(QObject):
         base_h = self.core_canvas_h
         self.core_canvas_h = int(base_h * mult)
         self.circle_cy = int(base_cy + (self.core_canvas_h - base_h) / 2.0)
-        self.dragon_bottom_y = self.circle_cy + self.circle_r + self.spike_len
+        self.dragon_bottom_y = self.circle_cy + self.circle_r + (0 if hide_spikes else self.spike_len)
 
         # ── 翻滚模块画布（独立窗口，横/竖可选）──
         roll_pad = 6
@@ -4706,16 +4074,20 @@ class GBFROverlayQt(QObject):
                     # 选“越上越左”它在最左、选“越上越右”它在最右，颜色始终跟着该 buff 走。
                     rank_idx = (m - 1 - i) if rtl else i
                     override = self._make_index_color_override(rank_idx, cfg)
-                    self._render_buff_ui(painter, buff, ix, iy, r, is_lv7, scale=scale, color_override=override)
+                    self._render_buff_ui(painter, buff, ix, iy, r, is_lv7, scale=scale,
+                                         color_override=override, color_index=rank_idx)
                     self._draw_buff_name(painter, buff, ix, iy, r, scale, color_override=override)
         else:
             # 无任何可显示buff：绘制空的尖刺圆模块（受 spike_hidden 控制，可隐藏/变暗）
-            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=True)
+            hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
+            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=not hide_spikes)
             self._draw_circle(painter, cx, cy, r, False)
 
-    def _render_buff_ui(self, painter, buff, cx, cy, r, is_lv7, scale=1.0, color_override=None):
+    def _render_buff_ui(self, painter, buff, cx, cy, r, is_lv7, scale=1.0,
+                         color_override=None, color_index=0):
         """渲染一个完整的 buff UI 元素（圆环+尖刺+倒计时+中心文字）。"""
         is_single_layer = self._is_buff_single_layer(buff)
+        hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
         painter.save()
         if scale != 1.0:
             painter.translate(cx, cy)
@@ -4723,14 +4095,15 @@ class GBFROverlayQt(QObject):
             painter.translate(-cx, -cy)
 
         self._draw_glow(painter, cx, cy, r, is_lv7, color_override=color_override)
-        include_spikes = not is_single_layer
+        include_spikes = not is_single_layer and not hide_spikes
         self._draw_indicator_outer_outline(painter, cx, cy, r, is_lv7,
                                            include_spikes=include_spikes,
                                            buff=buff, color_override=color_override)
-        if not is_single_layer:
+        if not is_single_layer and not hide_spikes:
             self._draw_spikes(painter, cx, cy, r, is_lv7, buff=buff, color_override=color_override)
         self._draw_circle(painter, cx, cy, r, is_lv7, color_override=color_override)
-        self._draw_timer_progress(painter, cx, cy, r, is_lv7, buff=buff, color_override=color_override)
+        self._draw_timer_progress(painter, cx, cy, r, is_lv7, buff=buff,
+                                   color_override=color_override, color_index=color_index)
         self._draw_center_text(painter, cx, cy, r, is_lv7, buff=buff,
                                is_single_layer=is_single_layer, color_override=color_override)
         painter.restore()
@@ -4847,12 +4220,7 @@ class GBFROverlayQt(QObject):
                     try:
                         self._draw_ready_breath(painter, sx, sy, s, base_opacity)
                     except Exception:
-                        try:
-                            _logp = os.path.join(EXE_DIR, "breath_debug.log")
-                            with open(_logp, "a", encoding="utf-8") as _bf:
-                                _bf.write("EXC: " + traceback.format_exc())
-                        except Exception:
-                            pass
+                        pass
         # 第三遍：统一把所有技能名称绘制在最顶层（置于顶层）
         if bool(self.settings.get("skill_cd_show_name", True)):
             for i, (sx, sy) in enumerate(positions):
@@ -5148,6 +4516,12 @@ class GBFROverlayQt(QObject):
         if cfg["int"]:
             for key in self.INTERNAL_COLOR_KEYS:
                 override[key] = rotate_hue(self.settings.get(key, "#ffffff"), deg)
+        # 倒计时扇形(arc_color)始终随多buff差异化着色：它是中央最显眼的计时元素，
+        # 之前只归在 INTERNAL 里，一旦关闭「内部差异化颜色」开关扇形就不变色，
+        # 与圆环/尖刺(外部)的变色脱节。这里让扇形只要「任一差异化」开启就跟随，
+        # 其余内部色(数字/计时文字)仍受 int 开关控制。
+        if "arc_color" not in override and (cfg["ext"] or cfg["int"]):
+            override["arc_color"] = rotate_hue(self.settings.get("arc_color", "#55ff00"), deg)
         return override
 
     def _get_color(self, key, color_override=None):
@@ -5236,8 +4610,6 @@ class GBFROverlayQt(QObject):
             texts = {"zh": "能力冷却已隐藏", "zh_tw": "能力冷卻已隱藏", "en": "Skill CD hidden"}
         elif reason == "no_game":
             return  # 不显示「等待游戏...」占位文字，仅保留窗口背景以便拖动/缩放
-        elif reason == "no_char":
-            texts = {"zh": "未检测到角色", "zh_tw": "未偵測到角色", "en": "No character"}
         elif reason == "init":
             texts = {"zh": "初始化中...", "zh_tw": "初始化中...", "en": "Initializing..."}
         else:
@@ -5312,6 +4684,19 @@ class GBFROverlayQt(QObject):
                     painter.setFont(QFont("Segoe UI", font_size, QFont.Bold))
                     painter.drawText(text_rect, Qt.AlignHCenter | Qt.AlignVCenter, status_text)
 
+            # 版本号（最小化按钮左侧，小字，跟随图标色/不透明度）
+            ver_font = QFont("Segoe UI", 7, QFont.Medium)
+            painter.setFont(ver_font)
+            ver_text = f"v{APP_VERSION}"
+            ver_metrics = QFontMetrics(ver_font)
+            ver_w = ver_metrics.horizontalAdvance(ver_text)
+            ver_h = ver_metrics.height()
+            ver_x = minimize_rect.x() - ver_w - 6
+            ver_y = minimize_rect.y() + (minimize_rect.height() - ver_h) // 2
+            if ver_x > 2:  # 只有空间够时才画（避免与窗口边缘重叠）
+                painter.setPen(QColor(self.settings.get("icon_color", "#7f8fa6")))
+                painter.drawText(QRect(ver_x, ver_y, ver_w, ver_h), Qt.AlignLeft | Qt.AlignVCenter, ver_text)
+
             # 按下态凹陷背景（在画图标前先铺底）
             for name, rect in (("minimize", minimize_rect), ("settings", settings_rect), ("exit", exit_rect)):
                 if pressed == name:
@@ -5374,17 +4759,22 @@ class GBFROverlayQt(QObject):
         mastery_seg = ""
         cur = getattr(self, "current_mastery", None)
         if cur and self.pl_id and self.pl_id in MASTERY_BRANCHES:
-            cat_zh = {"awakening": "觉醒", "truth": "真谛", "secret": "秘义"}.get(cur, "")
+            cat_base = {"awakening": "觉醒", "truth": "真谛", "secret": "秘义"}.get(cur, "")
+            cat_label = _tr(cat_base, lang) if cat_base else ""
             branch_info = MASTERY_BRANCHES[self.pl_id].get(cur, {})
             branch_name = branch_info.get(lang, branch_info.get("zh", "")) if isinstance(branch_info, dict) else ""
             # 剥前缀：zh="真谛："/"觉醒："/"秘义："，en="Essence: "/"Insight: "/"Crux: "
-            for prefix in (cat_zh + "：", cat_zh + ":",
-                           {"awakening": "Insight", "truth": "Essence", "secret": "Crux"}.get(cur, "") + ": "):
-                if branch_name.startswith(prefix):
+            prefixes = [
+                cat_base + "：", cat_base + ":",
+                _tr(cat_base, "zh_tw") + "：",
+                {"awakening": "Insight", "truth": "Essence", "secret": "Crux"}.get(cur, "") + ": ",
+            ]
+            for prefix in prefixes:
+                if prefix and branch_name.startswith(prefix):
                     branch_name = branch_name[len(prefix):].lstrip()
                     break
-            if cat_zh and branch_name:
-                mastery_seg = f"-{cat_zh}: {branch_name} "
+            if cat_label and branch_name:
+                mastery_seg = f"-{cat_label}: {branch_name} "
         if not self.active_buffs:
             return f"{char_name}{mastery_seg}"
         buff_parts = []
@@ -5521,8 +4911,6 @@ class GBFROverlayQt(QObject):
             return
         max_stacks = self._buff_max_stacks(buff)
         visible_spikes = min(max(int(buff.get("stacks", 0)), 0), max_stacks)
-        if visible_spikes <= 0:
-            return
         key = "spike_color_lv7" if is_lv7 else "spike_color_normal"
         spike_color = qcolor(self._get_color(key, color_override))
         painter.save()
@@ -5533,8 +4921,9 @@ class GBFROverlayQt(QObject):
         outline_c = QColor(spike_color).darker(180)
         outline_c.setAlpha(150)
 
-        # 层数增加 → 本buff新出现的尖刺（index >= from）复用冷却完成动画设置做闪光
-        # 键必须与 tick 存储侧 _bkey(idx, group) 一致（pl_id 优先，回退 char_type），否则存读不匹配→不闪
+        # 尖刺闪光：层数增加时新出现尖刺(index>=from)闪光；层数回退时消失的尖刺(index>=from, from=回退后层数)
+        # 也会以闪光呈现后消失。flash 记录含 from(闪烁起点索引) 与 to(动画期间需要绘制到的最高尖刺索引)。
+        # 键必须与 tick 存储侧 _bkey(idx, group) 一致（pl_id 优先，回退 char_type），否则存读不匹配→不闪。
         _pl = self.pl_id
         if not _pl and self.char_type in CHAR_TYPE_TO_PL:
             _pl = CHAR_TYPE_TO_PL[self.char_type]
@@ -5549,6 +4938,7 @@ class GBFROverlayQt(QObject):
         flash_color = None
         anim_scale = 1.0
         flash_from = 0
+        flash_to = visible_spikes
         if flash:
             dur = int(self.settings.get("flash_duration_ms", 400))
             now_ms = int(time.time() * 1000)
@@ -5562,10 +4952,17 @@ class GBFROverlayQt(QObject):
                     anim_scale = ready_scale - (ready_scale - 1.0) * ((progress - 0.3) / 0.7)
                 flash_color = qcolor(self.settings.get("flash_color", "#ffffff"))
                 flash_from = flash["from"]
+                flash_to = max(visible_spikes, int(flash.get("to", visible_spikes)))
             else:
                 self._spike_flash.pop(bkey, None)
 
-        for i in range(visible_spikes):
+        # 即使当前层数归零，只要存在回退闪光(from<to)，也要把消失的尖刺画出来并闪光
+        draw_count = max(visible_spikes, flash_to)
+        if draw_count <= 0:
+            painter.restore()
+            return
+
+        for i in range(draw_count):
             angle = -90 + i * (360.0 / max_stacks)
             points = self._calc_spike_points(cx, cy, r, angle)
             path = QPainterPath()
@@ -5685,7 +5082,8 @@ class GBFROverlayQt(QObject):
     # ================================================================
     #  绘制：倒计时进度（圆环 / 扇形，半径可调）
     # ================================================================
-    def _draw_timer_progress(self, painter, cx, cy, r, is_lv7, buff=None, color_override=None):
+    def _draw_timer_progress(self, painter, cx, cy, r, is_lv7, buff=None,
+                             color_override=None, color_index=0):
         if not buff:
             return
         if not self._buff_has_timer(buff):
@@ -5707,7 +5105,23 @@ class GBFROverlayQt(QObject):
         painter.save()
         painter.setOpacity(arc_opacity)
 
-        arc_hex = self._get_color("arc_color", color_override)
+        # 扇形颜色：三级优先取 arc_color
+        #   1. color_override 字典（_make_index_color_override 生成，按用户配的 color_mode/mono_span 旋转）
+        #   2. color_index 直接算（绕过 override 字典的兜底，同样按用户配置算 deg）
+        #   3. 设置默认值
+        arc_hex = None
+        if color_override:
+            arc_hex = color_override.get("arc_color")
+        if not arc_hex and color_index > 0:
+            base = self.settings.get("arc_color", "#55ff00")
+            cfg = self._multi_buff_cfg(min(len(self.active_buffs), 5))
+            if cfg.get("color_mode") == "monochrome":
+                deg = (color_index * cfg.get("mono_span", 15)) % 360
+            else:
+                deg = self._MB_HUE_OFFSETS.get(color_index, (color_index * 72) % 360)
+            arc_hex = rotate_hue(base, deg)
+        if not arc_hex:
+            arc_hex = self._get_color("arc_color", color_override)
         if style == "sector":
             fill = qcolor(arc_hex)
             painter.setPen(Qt.NoPen)
@@ -5796,8 +5210,25 @@ class GBFROverlayQt(QObject):
         has_timer = self._buff_has_timer(buff)
 
         if is_single_layer:
-            # 单层buff：只有倒计时胶囊，居中显示（使用「单层buff倒计时胶囊」独立样式）
-            if has_timer:
+            # 单层资源槽（如芙劳「转世的恩宠」）：gauge_mode=float 时中心显示浮点值；
+            # 其余单层 buff 只有倒计时胶囊。无 timer 且无 gauge 则不画中心文字。
+            if is_float_gauge:
+                num_offset_x = int(self.settings.get("center_text_offset_x", 0))
+                num_offset_y = int(self.settings.get("center_text_offset_y", 0))
+                gv = buff.get("gauge_value")
+                if isinstance(gv, (int, float)):
+                    if buff.get("max_stacks", 1) == 1:
+                        text = f"{gv:.2f}"
+                    else:
+                        text = f"{gv:.1f}" if gv != int(gv) else str(int(gv))
+                else:
+                    text = "--"
+                font = QFont("Segoe UI", max(14, int(self.settings.get("dh_font_size", DEFAULT_SETTINGS["dh_font_size"])) - 4), QFont.Bold)
+                text_color = self._get_color("text_color", color_override)
+                text_rect = QRect(cx - r + num_offset_x, cy - r - num_offset_y, r * 2, r * 2)
+                self._draw_centered_outlined_text(painter, text, text_rect, font, text_color,
+                                                  color_override=color_override)
+            elif has_timer:
                 timer_font_setting = int(self.settings.get("single_timer_font_size", DEFAULT_SETTINGS["single_timer_font_size"]))
                 if timer_font_setting > 0:
                     timer_val = buff["timer"]
@@ -6207,14 +5638,6 @@ class GBFROverlayQt(QObject):
         try:
             dlg = SettingsDialog(self.core_win, self.settings, ctrl=self)
         except Exception as e:
-            import traceback as _tb
-            err = _tb.format_exc()
-            try:
-                _logp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings_error.log")
-                with open(_logp, "a", encoding="utf-8") as _f:
-                    _f.write(err + "\n")
-            except Exception:
-                pass
             QMessageBox.critical(self.core_win, _tr("设置打开失败"), _tr("设置窗口构造异常：\n%s") % e)
             return
         dlg.settings_changed.connect(self._apply_live_settings)
@@ -6494,7 +5917,11 @@ class GBFROverlayQt(QObject):
         duration_max = {
             "kronos_freeze": float(self.settings.get("kronos_freeze_max", 10.0) or 10.0),
             "class_duration": float(self.settings.get("class_duration_max", 0.0) or 0.0),
+            "grace_max": float(self.settings.get("grace_max", 0.0) or 0.0),
         }
+        # 调用前快照存储值：read_overlay_data 会原地写入 duration_max 同一对象，
+        # 学习时必须拿「本帧观察值」比「调用前的存储值」，否则 new_dmax 与 duration_max 是同一对象、自比恒 False。
+        prev_dmax = dict(duration_max)
         snap = read_overlay_data(self.handle, self.pptr, raw_locked=self._raw_locked_addrs, duration_max=duration_max)
         self._raw_locked_addrs = snap.get("raw_locked", {})
 
@@ -6503,8 +5930,14 @@ class GBFROverlayQt(QObject):
 
         # 古洛诺斯槽保持（巴萨拉卡）：剩余秒经 actor+0x1CAF0 读取；最大值自我学习（仅向上）。
         new_dmax = snap.get("duration_max", {})
-        if new_dmax.get("kronos_freeze") and new_dmax["kronos_freeze"] > duration_max["kronos_freeze"]:
+        if new_dmax.get("kronos_freeze") and new_dmax["kronos_freeze"] > prev_dmax["kronos_freeze"]:
             self.settings["kronos_freeze_max"] = new_dmax["kronos_freeze"]
+            dmax_changed = True
+
+        # 芙劳「转世的恩宠」倒计时上限：独立学习（仅向上），与古洛诺斯槽学习机制一致，
+        # 但上限数值彼此独立——首次上升沿（读数首次跳变到正值）即作为基准，之后仅当读数更高才更新。
+        if new_dmax.get("grace_max") and new_dmax["grace_max"] > prev_dmax["grace_max"]:
+            self.settings["grace_max"] = new_dmax["grace_max"]
             dmax_changed = True
 
         # 团长 Class 倒计时（古兰/姬塔）上限：仅自动学习，不再提供手动输入框。
@@ -6599,7 +6032,11 @@ class GBFROverlayQt(QObject):
                 cur = int(buff.get("stacks", 0))
                 prev = self._prev_buff_stacks.get(bkey, 0)
                 if cur > prev:
-                    self._spike_flash[bkey] = {"start": now_ms, "from": prev}
+                    self._spike_flash[bkey] = {"start": now_ms, "from": prev, "to": cur}
+                elif cur < prev:
+                    # 层数回退：消失的尖刺（index 从 cur 到 prev-1）全部闪光。
+                    # from=当前层数(新低)，to=回退前的旧层数；绘制时这些多出来的尖刺以闪光呈现后消失。
+                    self._spike_flash[bkey] = {"start": now_ms, "from": cur, "to": prev}
                 new_prev[bkey] = cur
             self._prev_buff_stacks = new_prev
             # 清理已结束的闪光记录
@@ -6739,14 +6176,25 @@ class GBFROverlayQt(QObject):
     def _on_update_checked(self, info):
         if info.get("has_update"):
             try:
-                _ver = info.get('latest_version')
-                if _CURRENT_LANG == "en":
-                    _body = f"v{_ver} available, see Settings → About"
-                elif _CURRENT_LANG == "zh_tw":
-                    _body = f"v{_ver} 可用，請至 設定 → 關於 查看"
-                else:
-                    _body = f"v{_ver} 可用，请在设置 → 关于 查看"
-                self.tray_icon.showMessage(_tr("发现新版本"), _body, QSystemTrayIcon.Information, 8000)
+                latest = str(info.get("latest_version", "")).strip()
+                msg = QMessageBox(self.core_win)
+                msg.setIcon(QMessageBox.Information)
+                msg.setWindowTitle(_tr("发现新版本"))
+                msg.setText(_tr("发现新版本") + (f" v{latest}" if latest else "") + "！")
+                msg.setInformativeText(_tr("是否前往下载？更新日志可在 设置 → 关于 查看。"))
+                btn_dl = msg.addButton(_tr("去下载"), QMessageBox.AcceptRole)
+                btn_skip = msg.addButton(_tr("跳过此版本"), QMessageBox.RejectRole)
+                msg.addButton(_tr("稍后"), QMessageBox.NoRole)
+                msg.setDefaultButton(btn_dl)
+                msg.exec()
+                clicked = msg.clickedButton()
+                if clicked is btn_dl:
+                    url = (info.get("download_url") or "").strip()
+                    if url:
+                        QDesktopServices.openUrl(QUrl(url))
+                elif clicked is btn_skip:
+                    self.settings["skip_version"] = latest
+                    save_settings(self.settings)
             except Exception:
                 pass
         dlg = getattr(self, "settings_dialog", None)
