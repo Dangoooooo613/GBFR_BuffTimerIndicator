@@ -1,4 +1,9 @@
 [zh]
+== v20.12 ==
+- **修复设置弹窗深色主题下的黑色字看不清（QComboBox 弹出项 + EXE 同步文本框）**：原全局 setStyleSheet 只给 QComboBox 的「已选中行」设了 `color:#fff`，弹出项 `QComboBox QAbstractItemView` 走的是 Qt 的 OS 默认主题（浅色背景 + 黑色字），所以点开语言下拉看到的 `zh / zh_tw / en` 是黑字一片；EXE 同步列表的 `QPlainTextEdit` 根本不在 setStyleSheet 覆盖范围里，Qt 默认给的就是黑字。已在全局样式表补齐：QPlainTextEdit 文字 `#dce8f8`（与 QLabel 一致）、QComboBox 弹出视图背景 `#242c40` / 文字 `#ffffff` / 选中态 `#3a4860`，展开后字体看得清。
+- **语言下拉菜单硬编码为「简体中文 / 繁体中文（繁体的） / English」三项**：之前下拉里直接是 `zh / zh_tw / en` 这三字语言代码，像没翻译的占位符；现在改为三行固定文字 + `addItem(text, userData)` 把 `zh / zh_tw / en` 存在 userData 里，运行时改读 `currentData()`。**任何语言模式下这三项都保持原样不翻译**（retranslate_ui 走 findChildren(QLabel/QCheckBox/QPushButton/QLineEdit)，不会动 QComboBox 内部 item）。DEFAULT_SETTINGS 默认 `language` 改为 `"zh"`，新装用户首启即简体中文。
+- 版本号 +1（V2011 → V2012，标题栏自报 20.12），schema 92 → 93。
+
 == v20.11 ==
 - **将 dist 设置文件全部烘焙进软件内置 DEFAULT_SETTINGS（出厂默认即等于你当前调好的配置）**：用 `dist/overlay_settings.json` 的每一项实际值覆盖 `DEFAULT_SETTINGS`（共 196 项，逐项核对零不一致）；刻意排除已删除的开机自启键 `autostart_enabled`，并在 `load_settings()` 中主动 `data.pop` 剔除旧存档残留，避免随合并写回磁盘。现在删掉外部 `overlay_settings.json` 也能原样复现你的布局。
 - 版本号 +1（V2010 → V2011，标题栏自报 20.11），schema 91 → 92。
@@ -49,6 +54,11 @@
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v20.12 ==
+- **修復設定彈窗深色主題下的黑色字看不清（QComboBox 彈出項 + EXE 同步文本框）**：原全局 setStyleSheet 僅給 QComboBox 的「已選中行」設了 `color:#fff`，彈出項 `QComboBox QAbstractItemView` 走的是 Qt 的 OS 預設主題（淺色背景 + 黑色字），所以點開語言下拉看到的 `zh / zh_tw / en` 是黑字一片；EXE 同步清單的 `QPlainTextEdit` 根本不在 setStyleSheet 覆蓋範圍裡，Qt 預設給的就是黑字。已在全域樣式表補齊：QPlainTextEdit 文字 `#dce8f8`（與 QLabel 一致）、QComboBox 彈出視圖背景 `#242c40` / 文字 `#ffffff` / 選中態 `#3a4860`，展開後字體看得清。
+- **語言下拉選單硬編碼為「簡體中文 / 繁體中文（繁體的） / English」三項**：之前下拉裡直接是 `zh / zh_tw / en` 這三字語言代碼，像沒翻譯的佔位符；現在改為三行固定文字 + `addItem(text, userData)` 把 `zh / zh_tw / en` 存在 userData 裡，執行時改讀 `currentData()`。**任何語言模式下這三項都保持原樣不翻譯**（retranslate_ui 走 findChildren(QLabel/QCheckBox/QPushButton/QLineEdit)，不會動 QComboBox 內部 item）。DEFAULT_SETTINGS 預設 `language` 改為 `"zh"`，新裝使用者首啟即簡體中文。
+- 版本號 +1（V2011 → V2012，標題欄自報 20.12），schema 92 → 93。
+
 == v20.11 ==
 - **將 dist 設定檔全部烘焙進軟體內建 DEFAULT_SETTINGS（出廠預設即等於你目前調好的設定）**：用 `dist/overlay_settings.json` 的每一項實際值覆蓋 `DEFAULT_SETTINGS`（共 196 項，逐項核對零不一致）；刻意排除已刪除的開機自啟鍵 `autostart_enabled`，並在 `load_settings()` 中主動 `data.pop` 剔除舊存檔殘留，避免隨合併寫回磁碟。現在刪掉外部 `overlay_settings.json` 也能原樣復現你的佈局。
 - 版本號 +1（V2010 → V2011，標題欄自報 20.11），schema 91 → 92。
@@ -99,6 +109,11 @@
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+== v20.12 ==
+- **Fixed unreadable black-on-dark text in the settings dialog (QComboBox drop-down items + EXE-sync plain text box)**: the old global setStyleSheet only set `color:#fff` on QComboBox's *selected* row, so its `QComboBox QAbstractItemView` drop-down fell back to Qt's OS default theme (light background, black text) and the `zh / zh_tw / en` items looked like a black blob. The EXE-sync `QPlainTextEdit` wasn't covered by the stylesheet at all, so Qt default gave it black text too. The global stylesheet now also covers QPlainTextEdit (text `#dce8f8`, matching QLabel) and QComboBox's drop-down view (background `#242c40`, text `#ffffff`, selection `#3a4860`).
+- **Language drop-down is now hard-coded to three labels: 「简体中文 / 繁体中文（繁体的） / English」**: the previous list just showed the raw language codes `zh / zh_tw / en` like untranslated placeholders. The three labels are now fixed text + `addItem(text, userData)` so the actual `zh / zh_tw / en` codes live in userData and the runtime reads `currentData()`. **These three labels stay the same in every language mode** (retranslate_ui only walks findChildren(QLabel/QCheckBox/QPushButton/QLineEdit), never QComboBox items). DEFAULT_SETTINGS `language` default is now `"zh"`, so fresh installs start in Simplified Chinese.
+- Version +1 (V2011 -> V2012, title bar reports 20.12), schema 92 -> 93.
+
 == v20.11 ==
 - **Baked the entire dist settings file into the exe's built-in DEFAULT_SETTINGS (factory default now equals your currently tuned config)**: every entry of `dist/overlay_settings.json` (196 items, verified zero mismatches) overwrites DEFAULT_SETTINGS; the removed "Launch at Windows startup" key `autostart_enabled` is intentionally excluded, and `load_settings()` now actively `data.pop`s it to strip leftovers from old saves so they don't get written back via the merge. Deleting the external `overlay_settings.json` still reproduces your layout exactly.
 - Version +1 (V2010 -> V2011, title bar reports 20.11), schema 91 -> 92.

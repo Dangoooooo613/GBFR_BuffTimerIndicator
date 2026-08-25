@@ -100,10 +100,10 @@ def _detect_build_no():
 
 # 版本号单一来源：由 exe 文件名（V700 → 7.00）推导，标题栏与自动更新共用同一基线，
 # 重建换名即自动更新，无需手动改常量。解析失败时回退到下方兜底值。
-_BUILD_NO = 2011  # 标题栏自报 20.11 / V2011；+1 递增（V2010->V2011）
+_BUILD_NO = 2012  # 标题栏自报 20.12 / V2012；+1 递增（V2011->V2012）
 APP_VERSION = ("%d.%02d" % (_BUILD_NO // 100, _BUILD_NO % 100)) if _BUILD_NO is not None else "7.00"
 APP_TITLE = ("GBFR_CooldownIndicator_V%d" % _BUILD_NO) if _BUILD_NO is not None else "GBFR_CooldownIndicator_V700"
-SETTINGS_SCHEMA_VERSION = 92
+SETTINGS_SCHEMA_VERSION = 93
 
 # ============================ 三语翻译表（提前定义，供 UI 组件全局使用）===========================
 from i18n_loader import UI_TRANS
@@ -1718,7 +1718,7 @@ SPIKE_HIDDEN_KEYS = {
 # ============================ Settings ============================
 DEFAULT_SETTINGS = {
     "settings_schema_version": SETTINGS_SCHEMA_VERSION,
-    "language": "en",
+    "language": "zh",
     "scan_ms": 20,
     "circle_radius": 40,
     "spike_length": 64,
@@ -2401,7 +2401,10 @@ class SettingsDialog(QDialog):
         self.setStyleSheet(
             "QDialog{background:#1a2030;color:#dbe7ff;}"
             "QLabel{color:#aab6d0;}"
-            "QLineEdit,QSpinBox,QComboBox{background:#242c40;color:#fff;border:1px solid #3a4860;padding:3px;border-radius:4px;}"
+            "QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox,QPlainTextEdit{background:#242c40;color:#dce8f8;border:1px solid #3a4860;padding:3px;border-radius:4px;}"
+            "QPlainTextEdit{color:#dce8f8;}"
+            "QComboBox QAbstractItemView{background:#242c40;color:#ffffff;selection-background-color:#3a4860;selection-color:#ffffff;border:1px solid #3a4860;outline:0;}"
+            "QComboBox::drop-down{border:none;}"
             "QPushButton{background:#2a3450;color:#fff;border:1px solid #3a4860;padding:5px 15px;border-radius:4px;}"
             "QPushButton:hover{background:#3a4860;}"
             "QCheckBox{color:#ffffff; spacing:8px;}"
@@ -2528,9 +2531,17 @@ class SettingsDialog(QDialog):
         # 常规
         f = make_sub_tab(g_sub, "常规")
         card, cf = make_card(f, "── 常规 ──")
+        # 语言下拉菜单：硬编码三项 + userData 存语言代码（zh/zh_tw/en）。
+        # 任何语言下三项文字保持不变，运行时直接读 currentData() 取语言代码。
         self.lang = QComboBox()
-        self.lang.addItems(["zh", "zh_tw", "en"])
-        self.lang.setCurrentText(self.settings.get("language", "zh"))
+        self.lang.addItem("简体中文", "zh")
+        self.lang.addItem("繁体中文（繁体的）", "zh_tw")
+        self.lang.addItem("English", "en")
+        _lang_cur = self.settings.get("language", "zh")
+        _lang_idx = self.lang.findData(_lang_cur)
+        if _lang_idx < 0:
+            _lang_idx = 0  # 兜底：未知语言代码时落到简体中文
+        self.lang.setCurrentIndex(_lang_idx)
         cf.addRow("语言 / Language:", self.lang)
         self.auto_focus_minimize = QCheckBox("游戏在前台时显示，切到后台时自动最小化")
         self.auto_focus_minimize.setChecked(bool(self.settings.get("auto_focus_minimize", DEFAULT_SETTINGS["auto_focus_minimize"])))
@@ -3064,7 +3075,7 @@ class SettingsDialog(QDialog):
         self.retranslate_ui()
     def retranslate_ui(self, *_):
         """根据语言下拉框刷新设置弹窗文本。"""
-        lang = self.lang.currentText() if hasattr(self, "lang") else self.settings.get("language", "zh")
+        lang = self.lang.currentData() if hasattr(self, "lang") else self.settings.get("language", "zh")
         global _CURRENT_LANG
         _CURRENT_LANG = lang
 
@@ -3372,7 +3383,7 @@ class SettingsDialog(QDialog):
             return
         self._suppress_emit = True
         self.settings = dict(DEFAULT_SETTINGS)
-        self.lang.setCurrentText(DEFAULT_SETTINGS["language"])
+        self.lang.setCurrentIndex(max(0, self.lang.findData(DEFAULT_SETTINGS["language"])))
         self.auto_focus_minimize.setChecked(DEFAULT_SETTINGS["auto_focus_minimize"])
         self.resolution_auto_scale.setChecked(DEFAULT_SETTINGS["resolution_auto_scale"])
         self.spike_hide_chk.setChecked(DEFAULT_SETTINGS["spike_hide_when_no_buff"])
@@ -3504,7 +3515,7 @@ class SettingsDialog(QDialog):
         self._emit_changed()
 
     def get_settings(self):
-        self.settings["language"] = self.lang.currentText()
+        self.settings["language"] = self.lang.currentData() or "zh"
         self.settings["auto_focus_minimize"] = self.auto_focus_minimize.isChecked()
         self.settings["resolution_auto_scale"] = self.resolution_auto_scale.isChecked()
         self.settings["spike_hide_when_no_buff"] = self.spike_hide_chk.isChecked()

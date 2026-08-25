@@ -30,18 +30,18 @@ Desktop.ini
 /overlay_settings.json
 /ptr_cache.txt
 
-# ---- 历史 spec / 旧版构建残留（仅保留当前 V2011.spec） ----
+# ---- 历史 spec / 旧版构建残留（仅保留当前 V2012.spec） ----
 GBFR_CooldownIndicator_V*.spec
-!GBFR_CooldownIndicator_V2011.spec
+!GBFR_CooldownIndicator_V2012.spec
 GBFR_BuffTimer*.spec
 GBFR_BattleFlagFinder.spec
 GBFR_ClassFinder*.spec
 GBFR_ClassProbe*.spec
 version.json.example
 
-# ---- 二进制：默认忽略；放行当前发布版 exe（最新版 V2011） ----
+# ---- 二进制：默认忽略；放行当前发布版 exe（最新版 V2012） ----
 *.exe
-!GBFR_CooldownIndicator_V2011.exe
+!GBFR_CooldownIndicator_V2012.exe
 
 # ---- 数据文件 GBFR_Character_Skills_Buffs.json ----
 # 构建时由 spec 的 datas 从仓库根目录读取（pyinstaller 重新打包需要），
