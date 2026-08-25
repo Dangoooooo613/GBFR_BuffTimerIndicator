@@ -1,0 +1,48 @@
+# ============================================================
+# GBFR CooldownIndicator —— 仓库忽略规则（保持仓库干净）
+# 原则：源码 / 资源 / 文档 / 当前发布版 exe 进仓库；
+#       构建临时文件、旧版 exe、运行期生成数据、开发备份 一律忽略。
+# ============================================================
+
+# ---- Python / 构建产物（不进仓库） ----
+__pycache__/
+*.py[cod]
+*.class
+build/
+dist/
+src_backups/
+*.log
+*.spec.bak
+
+# ---- 虚拟环境 / IDE / OS ----
+venv/
+env/
+.venv/
+.vscode/
+.idea/
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- 运行期自动生成的数据（启动后由软件写出，不进仓库） ----
+/overlay_settings.json
+/ptr_cache.txt
+
+# ---- 历史 spec / 旧版构建残留（仅保留当前 V2011.spec） ----
+GBFR_CooldownIndicator_V*.spec
+!GBFR_CooldownIndicator_V2011.spec
+GBFR_BuffTimer*.spec
+GBFR_BattleFlagFinder.spec
+GBFR_ClassFinder*.spec
+GBFR_ClassProbe*.spec
+version.json.example
+
+# ---- 二进制：默认忽略；放行当前发布版 exe（最新版 V2011） ----
+*.exe
+!GBFR_CooldownIndicator_V2011.exe
+
+# ---- 数据文件 GBFR_Character_Skills_Buffs.json ----
+# 构建时由 spec 的 datas 从仓库根目录读取（pyinstaller 重新打包需要），
+# 且已打包进 exe 内部，故强制跟踪；不要在此忽略它。

@@ -1,0 +1,149 @@
+[zh]
+== v20.11 ==
+- **将 dist 设置文件全部烘焙进软件内置 DEFAULT_SETTINGS（出厂默认即等于你当前调好的配置）**：用 `dist/overlay_settings.json` 的每一项实际值覆盖 `DEFAULT_SETTINGS`（共 196 项，逐项核对零不一致）；刻意排除已删除的开机自启键 `autostart_enabled`，并在 `load_settings()` 中主动 `data.pop` 剔除旧存档残留，避免随合并写回磁盘。现在删掉外部 `overlay_settings.json` 也能原样复现你的布局。
+- 版本号 +1（V2010 → V2011，标题栏自报 20.11），schema 91 → 92。
+== v20.10 ==
+- **新增「显示启动画面」开关（全局 → 常规，默认开启）**：就是开这个软件时那个读条启动画面。开启 = 维持现状（启动显示进度条）；关闭 = 启动时不显示该启动画面，直接进主界面。去掉之前误加的「开机自动启动」后，这里把「启动条」真正做成可开关。
+- **修复内部表盘差异化遗漏（仅层数 / 无倒计时）**：当一个表盘内部只有层数数字（没有倒计时弧）时，可见的彩色元素只剩「层数数字」+「它的勾边」。之前层数数字默认白色（零饱和度），而 rotate_hue 对白色是空操作 → 数字永远白色、不参与差异化，只有勾边变色，破坏「同色系」一致性。现改为：开启内部差异化时，若数字颜色旋转无效，则改用「同色系勾边」的色相生成亮色填充，让数字也参与差异化，且与勾边同色系可辨。
+- **i18n 补漏（exe 同步 + 新功能）**：补齐「EXE 同步列表」标签 / 占位符 / 提示 tooltip、「标题↔圆间距」tooltip、以及新增「显示启动画面」开关标签的英文与繁中翻译（此前这些串未进翻译表，英文 / 繁中模式下显示中文）。检测更新状态机的几个状态文本此前已覆盖，本次确认无误。
+- 版本号 +1（V2009 → V2010，标题栏自报 20.10）。
+
+== v20.09 ==
+- **删除「开机自动启动（登录 Windows 后自动运行本程序）」复选框**：V2007 引入的 HKCU Run 注册表写入/移除功能是被我误加的 —— 你说的其实是「启动条」（开这个软件时的进度条 / 启动画面），与 Windows 开机自启完全不同。本版把设置面板「全局 → 常规」里的 `autostart_chk` 复选框、`_apply_autostart()` 函数、启动时和保存时两处注册表写入逻辑、DEFAULT_SETTINGS 里的 `autostart_enabled` 默认值，全部删除干净。已升级老用户也无残留风险：保存逻辑已删，软件不会再写注册表；如果你想清理本机残留的 HKCU 项，可手动执行 `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v GBFR_CooldownIndicator /f`。
+- 版本号 +1（V2008 -> V2009，标题栏自报 20.09）。
+
+== v20.08 ==
+- **修复「尖刺（含顶端圆点）/ 圆环 / 外描边」卡片所有数值选项完全失效 + 无实时反馈**：这些控件的 valueChanged/stateChanged 信号确实接到 _emit_changed → get_settings()，但画布尺寸 / 尖刺参数 / 翻滚 / 技能 这套计算一直被错误地放在 `_migrate_pos_res()`（一次性位置迁移函数）末尾，*只在启动时跑一次*。设置面板里改尖刺长度 / 根部位置 / 宽度 / 腰位置 / 圆点半径 / 圆点位置 → `_after_settings_changed` → `recalc_layout()` → 啥都没刷新，外观毫无变化。
+  本版把这段「每帧布局」真正该跑的代码整体搬回 `recalc_layout()` 函数体（紧接 `self.circle_r = ...` 之后），函数注释同步更新。现在改尖刺/圆环/外描边任意一项，画布与窗口尺寸会立即按新值重算，实时反馈可用。
+- **「标题↔圆间距」加 tooltip 解释**：这是「标题栏色」卡片里的 `circle_pad_title` 像素 SpinBox（标题栏底色行与圆环画布之间的垂直间距，默认 0 表示贴在一起）。先加 `setMinimumWidth(110)` 防窄列被挤，再加 setToolTip 说明字段意义。
+- 版本号 +1（V2007 -> V2008，标题栏自报 20.08）。
+== v20.07 ==
+- **EXE 同步列表输入框改为多行（约 5 行高）**：原单行滚动框改为多行文本框，可直接粘贴多个 exe 路径，用分号或换行分隔，方便查看与编辑。
+- **新增「开机自动启动」开关（默认开启）**：位于「全局 → 常规」。开启时通过 HKCU「运行」注册表项写入本程序启动项，登录 Windows 后自动运行；关闭即移除该项（无需管理员权限）。
+- 版本号 +1（V2006 -> V2007，标题栏自报 20.07）。
+== v20.06 ==
+- **回退 EXE 同步启动方式（修复 V2005 启动失败）**：V2005 改用 `subprocess.Popen` 启动同步列表中的 exe，但 `CreateProcess` 在 exe 需要提权时不会弹 UAC、直接失败（WinError 740），导致 GBFR Logs 这类需要提权的程序启动不了。V2006 恢复 `os.startfile`（ShellExecute）：既能正常弹 UAC 提权，又通过 `lpDirectory` 正确设置起始位置（工作目录），与双击 .lnk 完全一致。V2005 引入的「省略 `||工作目录` 时兜底到 exe 同目录」修复保留。
+- 版本号 +1（V2005 -> V2006，标题栏自报 20.06）。== v20.05 ==
+- **修复 EXE 同步「起始位置」真正生效**：上一版用 `os.startfile(path, cwd=...)` 传工作目录，但 Windows 对 .exe 走 ShellExecute 时不保证把 cwd 设为子进程工作目录，导致同步拉起的程序（如 GBFR Logs）跑到了指示器自身目录下（而非 exe 同目录）。现改用 `subprocess.Popen([path], cwd=...)`（CreateProcess 的 lpCurrentDirectory），保证子进程以指定起始位置运行，与双击 .lnk 完全一致。同时把「省略 `||工作目录` 时默认用 exe 同目录」的兜底逻辑移到 if 之外，此前该兜底只在写了 `||` 时才生效，导致你那种没写 `||` 的旧配置完全拿不到工作目录。
+- 版本号 +1（V2004 -> V2005，标题栏自报 20.05）。
+== v20.04 ==
+- **EXE 同步「起始位置」**：为「EXE 同步列表」增加工作目录支持。每条可附加 `||工作目录` 指定同步启动时的起始目录（等同 .lnk 的「起始位置」字段，省略则固定在 exe 同目录）；出厂默认值已为 GBFR Logs 配上 `C:\Program Files\GBFR Logs\`。
+- **程序图标统一**：打包时指定 `icon=assets/app_icon.ico`，让 exe 文件图标与系统托盘图标、设置卡标题栏图标保持一致（此前 exe 文件用的是 PyInstaller 默认图标，与后两者不同）。现在三处统一为 `app_icon.ico`。
+- 版本号 +1（V2003 -> V2004，标题栏自报 20.04）。
+
+== v20.03 ==
+- **写死 ExStatus 偏移**：移除了核心检测设置面板里的「ExStatus偏移」SpinBox 控件。偏移值现在固定为 **0xAF8（2808）**，唯一数据源是源码常量 `ACTOR_EX_STATUS`。之前的控件本身是"摆设"——`read_exstatus_buffs()` 始终使用硬编码默认值，从未读取过该设置。
+- **修复英文模式下 Changelog 泄露中文**：当语言设为英文时，「关于/更新」页的更新日志区域仍可能显示从远端 GitHub Release 的 `version.json` 拉取到的中文内容（其 `en` 字段包含历史中文条目）。新增 CJK 检测防护函数 `_safe_remote_changelog`，当 `lang="en"` 但远端文本含 CJK 字符时自动降级为本地内嵌的干净英文日志。两条更新路径（`retranslate_ui` 和 `refresh_update_ui`）均已防护。
+
+== v20.02 ==
+- 修复「标题栏第一行（图标按钮行）缩进」失效：V2000 回退到 V713 基线时，渲染代码被一并回退成写死 _margin=6，导致设置项 titlebar_icon_indent 成了「死设置」（改了也没用），第一行图标/版本号永远贴边。本版在 _calc_icon_btn_rects() 重新读取该设置：靠左时 lock_x = _margin + 缩进、靠右时 lock_x = 画布宽 - _margin - 图标宽 - 缩进（锁定态单图标同样内缩），居中不变。设置面板补回「图标行缩进」SpinBox 并接入保存/重置/实时信号链路。i18n 标签（图标行缩进 / 圖標行縮進 / Icon row indent）此前已存在，本轮无需改动。
+- 版本号 +1（V2001 -> V2002，标题栏自报 20.02）。
+
+== v20.01 ==
+- 在「buff 启用/禁用」列表里，为【每个角色】追加「造成伤害UP」(Damage Dealt Up，游戏内 status id = 42) buff，默认启用并加入显示顺位。数据源来自 GBFR_BuffMonitor 项目的 buff_attrs.json（偏移 0x2A(42)，单层 buff，是否专属=false 即全角色通用）；已交叉验证该偏移的十进制即指示器的 sid。buff 定义写入 i18n.json 的 BUFF_PROFILES（每角色 buffs 列表），并在出厂默认与 dist/overlay_settings.json 中为每角色新增 PLxxxx_N 的 buff_enabled / buff_order / buff_mastery 键。
+- 版本号 +1（V2000 -> V2001，标题栏自报 20.01）。
+
+== v20.00 ==
+- 基于 V713 基线回退重建：丢弃此前 V714 离屏超采样（效果差）与 V720 第6/7次翻滚强制黄色闪光（效果不好）两次改动，回到 V713 标题栏内缩 + 状态行/图标行缩进基线。
+- 把 dist/overlay_settings.json 里的【全部参数】逐条烘焙进 exe 的 DEFAULT_SETTINGS，作为全新安装的出厂默认：颜色/透明度/尖刺/闪光/警告牌/各模块位置与缩放/翻滚/buff 启用·顺位·专精门控/多buff差异化/技能冷却/热键/更新等 195 项全部内置，删掉外部设置文件也能原样复现用户调好的布局。其中 update_download_url 写死指向 V2000（避免沿用旧文件里的 V680 过期地址）。
+- 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
+
+[zh_tw]
+== v20.11 ==
+- **將 dist 設定檔全部烘焙進軟體內建 DEFAULT_SETTINGS（出廠預設即等於你目前調好的設定）**：用 `dist/overlay_settings.json` 的每一項實際值覆蓋 `DEFAULT_SETTINGS`（共 196 項，逐項核對零不一致）；刻意排除已刪除的開機自啟鍵 `autostart_enabled`，並在 `load_settings()` 中主動 `data.pop` 剔除舊存檔殘留，避免隨合併寫回磁碟。現在刪掉外部 `overlay_settings.json` 也能原樣復現你的佈局。
+- 版本號 +1（V2010 → V2011，標題欄自報 20.11），schema 91 → 92。
+== v20.10 ==
+- **新增「顯示啟動畫面」開關（全域 → 常規，預設開啟）**：就是開這個軟體時那個讀條啟動畫面。開啟 = 維持現狀（啟動顯示進度條）；關閉 = 啟動時不顯示該啟動畫面，直接進主介面。去掉之前誤加的「開機自動啟動」後，這裡把「啟動條」真正做成可開關。
+- **修復內部錶盤差異化遺漏（僅層數 / 無倒數）**：當一個錶盤內部只有層數數字（沒有倒數弧）時，可見的彩色元素只剩「層數數字」+「它的勾邊」。之前層數數字預設白色（零飽和度），而 rotate_hue 對白色是空操作 → 數字永遠白色、不參與差異化，只有勾邊變色，破壞「同色系」一致性。現改為：開啟內部差異化時，若數字顏色旋轉無效，則改用「同色系勾邊」的色相生成亮色填充，讓數字也參與差異化，且與勾邊同色系可辨。
+- **i18n 補漏（exe 同步 + 新功能）**：補齊「EXE 同步清單」標籤 / 佔位符 / 提示 tooltip、「標題題↔圓間距」tooltip、以及新增「顯示啟動畫面」開關標籤的英文與繁中翻譯（此前這些串未進翻譯表，英文 / 繁中模式下顯示中文）。檢測更新狀態機的幾個狀態文字此前已覆蓋，本次確認無誤。
+- 版本號 +1（V2009 → V2010，標題欄自報 20.10）。
+
+== v20.09 ==
+- **刪除「開機自動啟動（登入 Windows 後自動執行本程式）」複選框**：V2007 引入的 HKCU Run 登錄檔寫入/移除功能是被我誤加的 —— 你說的其實是「啟動條」（開這個軟體時的進度條 / 啟動畫面），與 Windows 開機自啟完全不同。本版把設定面板「全域 → 常規」裡的 `autostart_chk` 複選框、`_apply_autostart()` 函式、啟動時和儲存時兩處登錄檔寫入邏輯、DEFAULT_SETTINGS 裡的 `autostart_enabled` 預設值，全部刪除乾淨。已升級老用戶也無殘留風險：儲存邏輯已刪，軟體不會再寫登錄檔；如果你想清理本機殘留的 HKCU 項，可手動執行 `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v GBFR_CooldownIndicator /f`。
+- 版本號 +1（V2008 -> V2009，標題欄自報 20.09）。
+
+== v20.08 ==
+- **修復「尖刺（含頂端圓點）/ 圓環 / 外描邊」卡片所有數值選項完全失效 + 無即時回饋**：這些控制項的 valueChanged/stateChanged 訊號確實接到 _emit_changed → get_settings()，但畫布尺寸 / 尖刺參數 / 翻滾 / 技能 這套計算一直被錯誤地放在 `_migrate_pos_res()`（一次性位置遷移函式）末尾，*只在啟動時跑一次*。設定面板裡改尖刺長度 / 根部位置 / 寬度 / 腰位置 / 圓點半徑 / 圓點位置 → `_after_settings_changed` → `recalc_layout()` → 啥都沒重新整理，外觀毫無變化。
+  本版把這段「每幀佈局」真正該跑的程式碼整體搬回 `recalc_layout()` 函式體（緊接 `self.circle_r = ...` 之後），函式註解同步更新。現在改尖刺/圓環/外描邊任一項，畫布與視窗尺寸會立即按新值重算，即時回饋可用。
+- **「標題↔圓間距」加 tooltip 解釋**：這是「標題欄色」卡片裡的 `circle_pad_title` 像素 SpinBox（標題欄底色行與圓環畫布之間的垂直間距，預設 0 表示貼在一起）。先加 `setMinimumWidth(110)` 防窄列被擠，再加 setToolTip 說明欄位意義。
+- 版本號 +1（V2007 -> V2008，標題欄自報 20.08）。
+== v20.07 ==
+- **EXE 同步清單輸入框改為多行（約 5 行高）**：原單行捲動框改為多行文字框，可直接貼上多個 exe 路徑，用分號或換行分隔，方便檢視與編輯。
+- **新增「開機自動啟動」開關（預設開啟）**：位於「全域 → 常規」。開啟時透過 HKCU「執行」登錄檔項寫入本程式啟動項，登入 Windows 後自動執行；關閉即移除該項（無需管理員權限）。
+- 版本號 +1（V2006 -> V2007，標題欄自報 20.07）。
+== v20.06 ==
+- **回退 EXE 同步啟動方式（修復 V2005 啟動失敗）**：V2005 改用 `subprocess.Popen` 啟動同步清單中的 exe，但 `CreateProcess` 在 exe 需要提權時不會彈 UAC、直接失敗（WinError 740），導致 GBFR Logs 這類需要提權的程式啟動不了。V2006 恢復 `os.startfile`（ShellExecute）：既能正常彈 UAC 提權，又透過 `lpDirectory` 正確設定起始位置（工作目錄），與雙擊 .lnk 完全一致。V2005 引入的「省略 `||工作目錄` 時兜底到 exe 同目錄」修復保留。
+- 版本號 +1（V2005 -> V2006，標題欄自報 20.06）。== v20.05 ==
+- **修復 EXE 同步「起始位置」真正生效**：上一版用 `os.startfile(path, cwd=...)` 傳工作目錄，但 Windows 對 .exe 走 ShellExecute 時不保證把 cwd 設為子程序工作目錄，導致同步拉起的程序（如 GBFR Logs）跑到了指示器自身目錄下（而非 exe 同目錄）。現改用 `subprocess.Popen([path], cwd=...)`（CreateProcess 的 lpCurrentDirectory），保證子程序以指定起始位置執行，與雙擊 .lnk 完全一致。同時把「省略 `||工作目錄` 時預設用 exe 同目錄」的兜底邏輯移到 if 之外，此前該兜底只在寫了 `||` 時才生效，導致你那種沒寫 `||` 的舊設定完全拿不到工作目錄。
+- 版本號 +1（V2004 -> V2005，標題欄自報 20.05）。
+== v20.04 ==
+- **EXE 同步「起始位置」**：為「EXE 同步列表」增加工作目錄支援。每條可附加 `||工作目錄` 指定同步啟動時的起始目錄（等同 .lnk 的「起始位置」欄位，省略則固定在 exe 同目錄）；出廠預設值已為 GBFR Logs 配上 `C:\Program Files\GBFR Logs\`。
+- **程式圖示統一**：打包時指定 `icon=assets/app_icon.ico`，讓 exe 檔案圖示與系統托盤圖示、設定卡標題列圖示保持一致（此前 exe 檔案用的是 PyInstaller 預設圖示，與後兩者不同）。現在三處統一為 `app_icon.ico`。
+- 版本號 +1（V2003 -> V2004，標題欄自報 20.04）。
+
+== v20.03 ==
+- **寫死 ExStatus 偏移**：移除了核心檢測設定面板裡的「ExStatus偏移」Spinbox 控件。偏移值現在固定為 **0xAF8（2808）**，唯一數據源是原始碼常量 `ACTOR_EX_STATUS`。之前的控件本身是「擺設」——`read_exstatus_buffs()` 始終使用硬編碼預設值，從未讀取過該設定。
+- **修復英文模式下 Changelog 洩漏中文**：當語言設為英文時，「關於/更新」頁的更新日誌區域仍可能顯示從遠端 GitHub Release 的 `version.json` 拉取到的中文內容（其 `en` 欄位包含歷史中文條目）。新增 CJK 檢測防護函式 `_safe_remote_changelog`，當 `lang="en"` 但遠端文字含 CJK 字元時自動降級為本地內嵌的乾淨英文日誌。兩條更新路徑（`retranslate_ui` 和 `refresh_update_ui`）均已防護。
+
+== v20.02 ==
+- 修復「標題列第一行（圖示按鈕行）縮進」失效：V2000 回退到 V713 基線時，渲染程式碼被一併回退成寫死 _margin=6，導致設定項 titlebar_indent 成了「死設定」（改了也沒用），第一行圖示/版本號永遠貼邊。本版在 _calc_icon_btn_rects() 重新讀取該設定：靠左時 lock_x = _margin + 縮進、靠右時 lock_x = 畫布寬 - _margin - 圖示寬 - 縮進（鎖定態單圖示同樣內縮），居中不變。設定面板補回「圖標行縮進」SpinBox 並接入儲存/重設/即時訊號鏈路。i18n 標籤（圖標行縮進 / 圖標行縮進 / Icon row indent）此前已存在，本輪無需改動。
+- 版本號 +1（V2001 -> V2002，標題列自報 20.02）。
+
+== v20.01 ==
+- 在「buff 啟用/停用」清單裡，為【每個角色】追加「造成傷害UP」(Damage Dealt Up，遊戲內 status id = 42) buff，預設啟用並加入顯示順位。資料來源為 GBFR_BuffMonitor 專案的 buff_attrs.json（偏移 0x2A(42)，單層 buff，是否專屬=false 即全角色通用）；已交叉驗證該偏移的十進位即指示器的 sid。buff 定義寫入 i18n.json 的 BUFF_PROFILES（每角色 buffs 清單），並在出廠預設與 dist/overlay_settings.json 中為每角色新增 PLxxxx_N 的 buff_enabled / buff_order / buff_mastery 鍵。
+- 版本號 +1（V2000 -> V2001，標題列自報 20.01）。
+
+== v20.00 ==
+- 基於 V713 基線回退重建：捨棄此前 V714 離屏超取樣（效果差）與 V720 第6/7次翻滾強制黃色閃光（效果不好）兩次改動，回到 V713 標題欄內縮 + 狀態行/圖標行縮進基線。
+- 把 dist/overlay_settings.json 裡的【全部參數】逐條烘焙進 exe 的 DEFAULT_SETTINGS，作為全新安裝的出廠預設：顏色/透明度/尖刺/閃光/警告牌/各模組位置與縮放/翻滾/buff 啟用·順位·專精門控/多buff差異化/技能冷卻/熱鍵/更新等 195 項全部內置，刪掉外部設定檔也能原樣復現用戶調好的佈局。其中 update_download_url 寫死指向 V2000（避免沿用舊檔案裡的 V680 過期地址）。
+- 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
+
+[en]
+== v20.11 ==
+- **Baked the entire dist settings file into the exe's built-in DEFAULT_SETTINGS (factory default now equals your currently tuned config)**: every entry of `dist/overlay_settings.json` (196 items, verified zero mismatches) overwrites DEFAULT_SETTINGS; the removed "Launch at Windows startup" key `autostart_enabled` is intentionally excluded, and `load_settings()` now actively `data.pop`s it to strip leftovers from old saves so they don't get written back via the merge. Deleting the external `overlay_settings.json` still reproduces your layout exactly.
+- Version +1 (V2010 -> V2011, title bar reports 20.11), schema 91 -> 92.
+== v20.10 ==
+- **Added "Show startup splash screen" toggle (Global -> General, on by default)**: this is the progress-bar splash shown while the app is launching. On = current behavior (splash with progress bar at launch); Off = no splash at launch, goes straight to the main UI. After removing the mistakenly-added "Launch at Windows startup", this finally makes the "startup bar" a real on/off toggle.
+- **Fixed internal-dial differentiation leak (stack-count only / no countdown)**: when a dial's interior shows only the stack number (no countdown arc), the only colored elements are the number and its outline. The stack number defaults to white (zero saturation), and rotate_hue is a no-op on white -> the number stayed white and never differentiated, leaving only the outline to change color and breaking the same-color-family consistency. Now, when internal differentiation is on and the number color fails to rotate, it derives a bright tint from the outline's hue family, so the number also differentiates and stays distinguishable from the outline.
+- **i18n fixes (EXE sync + new feature)**: added English / Traditional-Chinese translations for the EXE-sync list label, placeholder and tooltip, the Title<->Circle gap tooltip, and the new splash-toggle label (these strings were never in the translation table, so they showed Chinese under en/zh_tw). The update-status state-machine strings were already covered and confirmed correct.
+- Version +1 (V2009 -> V2010, title bar reports 20.10).
+
+== v20.09 ==
+- **Removed the "Launch at Windows startup (auto-run this app after logging into Windows)" checkbox**: the HKCU Run registry write/remove feature added in V2007 was a misunderstanding -- you actually meant a "startup bar" (a progress bar / splash screen shown while the app is launching), which is completely different from Windows boot-time auto-start. This build deletes the `autostart_chk` checkbox in "Global -> General", the `_apply_autostart()` function, the two registry write sites (at startup and at save-time), and the `autostart_enabled` default in DEFAULT_SETTINGS -- all removed cleanly. Already-upgraded users have no residual risk: the save-site write is gone, so the app will not re-create the registry entry; if you want to clean up the leftover entry in your local registry, run `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v GBFR_CooldownIndicator /f` manually.
+- Version +1 (V2008 -> V2009, title bar reports 20.09).
+
+== v20.08 ==
+- **Fixed "Spikes (incl. tip beads) / Circle / Outer outline" card: all numeric controls were non-functional with no live preview**. The valueChanged/stateChanged of those widgets were correctly wired into _emit_changed -> get_settings(), but the canvas size / spike parameters / roll / skill-canvas calculations had been incorrectly placed at the tail of `_migrate_pos_res()` -- a one-shot position-migration function that only runs once at startup. As a result, changing spike length / root position / width / waist / bead radius / bead position in the settings dialog triggered `_after_settings_changed -> recalc_layout()` which actually did nothing -- nothing visually changed.
+  This build moves that "per-frame layout" code back into the `recalc_layout()` method body (right after `self.circle_r = ...`) and updates the docstrings. Now any change to spike / circle / outline parameters instantly recomputes canvas and window sizes, with live preview working.
+- **Tooltip added to "Title-Circle spacing"** (`circle_pad_title`, the Title-bar color card pixel SpinBox for the vertical gap between the title-bar background row and the circle canvas -- default 0 means they sit flush). Also `setMinimumWidth(110)` so the box is not squeezed in narrow columns.
+- Version +1 (V2007 -> V2008, title bar reports 20.08).
+== v20.07 ==
+- **EXE sync list input is now multi-line (~5 rows tall)**: the old single-line scrolling box is now a multi-line text box; you can paste multiple EXE paths separated by semicolons or newlines, easier to view and edit.
+- **Added "Launch at Windows startup" toggle (on by default)**: under Global → General. When on, it writes the app's entry to the HKCU "Run" registry key so it auto-runs after you log into Windows; turn off to remove the entry (no admin needed).
+- Version +1 (V2006 -> V2007, title bar reports 20.07).
+== v20.06 ==
+- **Reverted the EXE sync launcher (fixed V2005 launch failure)**: V2005 switched to `subprocess.Popen` to launch synced EXEs, but `CreateProcess` does not trigger UAC elevation and fails directly (WinError 740) when a program needs elevation -- so elevation-requiring apps like GBFR Logs failed to launch. V2006 restores `os.startfile` (ShellExecute): it elevates correctly via UAC and sets the start-in directory via `lpDirectory`, exactly like double-clicking a .lnk. The V2005 fallback fix (omitting `||working_directory` defaults to the EXE's own directory) is kept.
+- Version +1 (V2005 -> V2006, title bar reports 20.06).== v20.05 ==
+- **Fixed the EXE sync "Start in" directory actually being applied**: the previous build passed the working directory via `os.startfile(path, cwd=...)`, but on Windows `ShellExecute` does not reliably set the child process's current directory for an `.exe`, so synced programs (e.g. GBFR Logs) launched in the indicator's own directory instead of their own. Now the launcher uses `subprocess.Popen([path], cwd=...)` (CreateProcess `lpCurrentDirectory`), which guarantees the child runs with the specified start-in directory -- exactly like double-clicking a .lnk. Also moved the fallback so that omitting `||working_directory` always defaults to the EXE's own directory (previously the fallback only applied when `||` was present, so old saved settings without `||` got no working directory at all).
+- Version +1 (V2004 -> V2005, title bar reports 20.05).
+== v20.04 ==
+- **EXE sync "Start in" directory**: added working-directory support to the EXE sync list. Each entry may append `||working_directory` to set its start-in directory (equivalent to a .lnk's "Start in" field; omit to default to the EXE's own directory). The factory default now sets GBFR Logs' start-in to `C:\Program Files\GBFR Logs\`.
+- **Unified program icon**: the build now sets `icon=assets/app_icon.ico`, so the exe file icon matches the system tray icon and the settings dialog title-bar icon (previously the exe used PyInstaller's default icon, which differed). All three now use `app_icon.ico`.
+- Version +1 (V2003 -> V2004, title bar reports 20.04).
+
+== v20.03 ==
+- **Hardcoded ExStatus offset**: Removed the ExStatus offset SpinBox from the settings panel (Core Detection tab). The offset is now fixed at **0xAF8 (2808)** as the sole source of truth (ACTOR_EX_STATUS constant). The previous UI control was non-functional anyway -- read_exstatus_buffs() always used the hardcoded default and never read the setting value.
+- **Fixed changelog Chinese leak in English mode**: When the language is set to English, the About/Update changelog area could still display Chinese text fetched from the remote GitHub release version.json (whose en key contained historical Chinese entries). Added a CJK-detection guard (_safe_remote_changelog) that automatically falls back to the clean local embedded changelog when lang=en but the remote text contains CJK characters. Both update paths (retranslate_ui and refresh_update_ui) are now protected.
+
+== v20.02 ==
+- Fixed the **title-bar first row (icon button row) indent** being non-functional: when V2000 reverted to the V713 baseline, the render code was also reverted to a hardcoded `_margin = 6`, turning the `titlebar_icon_indent` setting into a dead setting (changing it did nothing) -- the first-row icons / version text stayed flush to the edge. This build re-reads the setting inside `_calc_icon_btn_rects()`: left align -> lock_x = _margin + indent, right align -> lock_x = canvas_w - _margin - icon_w - indent (the locked single-icon state is also indented), center unchanged. The settings panel regains the "Icon row indent" SpinBox, wired into save / reset / live-signal. The i18n label (Icon row indent) already existed and needed no change.
+- Version +1 (V2001 -> V2002, title bar reports 20.02).
+
+== v20.01 ==
+- Added the **Damage Dealt Up** buff (in-game status id = 42) to the enable/disable list of **every character**, enabled by default and added to the display order. Sourced from GBFR_BuffMonitor's buff_attrs.json (offset 0x2A(42), single-layer buff, not character-exclusive); cross-verified that the decimal offset matches the indicator's sid. Buff definitions written into i18n.json BUFF_PROFILES (per-character buffs list), with new PLxxxx_N keys for buff_enabled / buff_order / buff_mastery in both factory defaults and dist/overlay_settings.json.
+- Version +1 (V2000 -> V2001, title bar reports 20.01).
+
+== v20.00 ==
+- Rebuilt from V713 baseline: discarded both V714 offscreen supersampling (poor results) and V720 forced yellow flash on roll #6-#7 (poor results), returning to the V713 title-bar indent + status/icon-row indent baseline.
+- Baked all ~195 parameters from dist/overlay_settings.json into exe DEFAULT_SETTINGS as factory defaults: colors/transparency/spikes/flashes/warning signs/module positions & scales/rolls/buff enable-order-mastery gates/multi-buff diff/skill cooldowns/hotkeys/update URL etc. all built-in; deleting external settings file still reproduces user-tuned layout exactly. The update_download_url is hardcoded to point to V2000 (avoiding stale V680 address from old files).
+- Version jumped to 2000 per user request (V713 -> V2000, title bar reports 20.00).

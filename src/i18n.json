@@ -1,0 +1,3431 @@
+{
+  "meta": {
+    "schema": 89,
+    "note": "GBFR CooldownIndicator 三语单一真源；zh=简中, zh_tw=繁中, en=英文"
+  },
+  "chars": {
+    "PL0000": {
+      "zh": "古兰",
+      "zh_tw": "葛蘭",
+      "en": "Gran"
+    },
+    "PL0100": {
+      "zh": "姬塔",
+      "zh_tw": "吉塔",
+      "en": "Djeeta"
+    },
+    "PL0200": {
+      "zh": "卡塔莉娜",
+      "zh_tw": "卡塔莉娜",
+      "en": "Katalina"
+    },
+    "PL0300": {
+      "zh": "拉卡姆",
+      "zh_tw": "拉卡姆",
+      "en": "Rackam"
+    },
+    "PL0400": {
+      "zh": "伊欧",
+      "zh_tw": "伊歐",
+      "en": "Io"
+    },
+    "PL0500": {
+      "zh": "欧根",
+      "zh_tw": "尤金",
+      "en": "Eugen"
+    },
+    "PL0600": {
+      "zh": "萝赛塔",
+      "zh_tw": "蘿賽塔",
+      "en": "Rosetta"
+    },
+    "PL0700": {
+      "zh": "菲莉",
+      "zh_tw": "菲莉",
+      "en": "Ferry"
+    },
+    "PL0800": {
+      "zh": "兰斯洛特",
+      "zh_tw": "蘭斯洛特",
+      "en": "Lancelot"
+    },
+    "PL0900": {
+      "zh": "巴恩",
+      "zh_tw": "范恩",
+      "en": "Vane"
+    },
+    "PL1000": {
+      "zh": "珀西瓦尔",
+      "zh_tw": "帕西瓦爾",
+      "en": "Percival"
+    },
+    "PL1100": {
+      "zh": "齐格飞",
+      "zh_tw": "齊格菲",
+      "en": "Siegfried"
+    },
+    "PL1200": {
+      "zh": "夏洛特",
+      "zh_tw": "夏綠蒂",
+      "en": "Charlotta"
+    },
+    "PL1300": {
+      "zh": "尤达拉哈",
+      "zh_tw": "尤達爾拉哈",
+      "en": "Yodarha"
+    },
+    "PL1400": {
+      "zh": "娜露梅",
+      "zh_tw": "娜魯梅亞",
+      "en": "Narmaya"
+    },
+    "PL1500": {
+      "zh": "冈达葛萨",
+      "zh_tw": "剛特克澤",
+      "en": "Ghandagoza"
+    },
+    "PL1600": {
+      "zh": "塞达",
+      "zh_tw": "瑟塔",
+      "en": "Zeta"
+    },
+    "PL1700": {
+      "zh": "巴萨拉卡",
+      "zh_tw": "巴薩拉加",
+      "en": "Vaseraga"
+    },
+    "PL1800": {
+      "zh": "卡莉奥丝特罗",
+      "zh_tw": "卡莉歐斯托蘿",
+      "en": "Cagliostro"
+    },
+    "PL1900": {
+      "zh": "伊德",
+      "zh_tw": "伊度",
+      "en": "Id"
+    },
+    "PL2100": {
+      "zh": "圣德芬",
+      "zh_tw": "聖德芬",
+      "en": "Sandalphon"
+    },
+    "PL2200": {
+      "zh": "希耶提",
+      "zh_tw": "席耶提",
+      "en": "Seofon"
+    },
+    "PL2300": {
+      "zh": "索恩",
+      "zh_tw": "蘇恩",
+      "en": "Tweyen"
+    },
+    "PL2400": {
+      "zh": "伽兰查",
+      "zh_tw": "伽藍薩",
+      "en": "Gallanza"
+    },
+    "PL2500": {
+      "zh": "玛琪拉菲菈",
+      "zh_tw": "瑪姬拉芙莉爾",
+      "en": "Maglielle"
+    },
+    "PL2600": {
+      "zh": "贝阿朵丽丝",
+      "zh_tw": "貝雅特麗絲",
+      "en": "Beatrix"
+    },
+    "PL2700": {
+      "zh": "尤斯提斯",
+      "zh_tw": "尤斯堤斯",
+      "en": "Eustace"
+    },
+    "PL2800": {
+      "zh": "芙劳",
+      "zh_tw": "芙拉烏",
+      "en": "Fraux"
+    },
+    "PL2900": {
+      "zh": "菲迪埃尔",
+      "zh_tw": "菲迪耶爾",
+      "en": "Fediel"
+    }
+  },
+  "buffs": {
+    "PL0000": [
+      {
+        "sid": 66,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "不屈攻刃",
+        "zh_tw": "不屈攻刃",
+        "en": "Combat Healer"
+      },
+      {
+        "sid": 135,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "领袖庇佑",
+        "zh_tw": "領袖風範",
+        "en": "Charisma"
+      },
+      {
+        "sid": -1,
+        "raw_source": "class_state",
+        "single_layer": false,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "Class等级",
+        "zh_tw": "Class Lv",
+        "en": "Adept Arts Level"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0200": [
+      {
+        "sid": 68,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "阿瑞斯强袭",
+        "zh_tw": "艾瑞斯強襲",
+        "en": "Ares Surge"
+      },
+      {
+        "sid": 69,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "苍刃",
+        "zh_tw": "蒼刃",
+        "en": "Blade Blue"
+      },
+      {
+        "sid": 139,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "双壁突击",
+        "zh_tw": "雙重強襲",
+        "en": "Dual Raid"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0300": [
+      {
+        "sid": 70,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "靶心狙击强化",
+        "zh_tw": "靶心狙擊強化",
+        "en": "Super Bull's Eye Blast"
+      },
+      {
+        "sid": 38,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "双发子弹",
+        "zh_tw": "雙連擊",
+        "en": "Double Tap"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0400": [
+      {
+        "sid": 26,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "魔力漩涡",
+        "zh_tw": "魔力漩渦",
+        "en": "Mystic Vortex"
+      },
+      {
+        "sid": 27,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "专注",
+        "zh_tw": "全神貫注",
+        "en": "Focused"
+      },
+      {
+        "sid": 71,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "星梦V强化",
+        "zh_tw": "星夢之術V強化",
+        "en": "Superstar"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0500": [
+      {
+        "sid": 72,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "瞄准模式强化",
+        "zh_tw": "瞄準模式強化",
+        "en": "Sniper Elite"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0600": [
+      {
+        "sid": 28,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "铁娘子",
+        "zh_tw": "鐵處女",
+        "en": "Iron Maiden"
+      },
+      {
+        "sid": 98,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "落花无情强化",
+        "zh_tw": "花散強化",
+        "en": "Lost Love Bloomed"
+      },
+      {
+        "sid": 97,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "螺旋玫瑰强化",
+        "zh_tw": "螺旋玫瑰強化",
+        "en": "Spiral Rose Bloomed"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0700": [
+      {
+        "sid": 78,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "托愿",
+        "zh_tw": "被託付的願望",
+        "en": "Loving Trust"
+      },
+      {
+        "sid": 79,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "幽缘",
+        "zh_tw": "幽緣",
+        "en": "Spiritbond"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0800": [
+      {
+        "sid": 105,
+        "single_layer": false,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "连击",
+        "zh_tw": "連擊",
+        "en": "Avalanche"
+      },
+      {
+        "sid": 103,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "攻击类能力强化",
+        "zh_tw": "傷害技能強化",
+        "en": "Enhanced Damage Skills"
+      },
+      {
+        "sid": 104,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "连击收招强化",
+        "zh_tw": "連技終擊強化",
+        "en": "Enhanced Combo Finishers"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0900": [
+      {
+        "sid": 136,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "巨斧连击强化",
+        "zh_tw": "衝擊連技強化",
+        "en": "Booming Beatdown"
+      },
+      {
+        "sid": 91,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "勇士奋起",
+        "zh_tw": "勇士的奮起",
+        "en": "Heroic Vigor"
+      },
+      {
+        "sid": 93,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "强化回馈",
+        "zh_tw": "協同增幅",
+        "en": "Synergy Boost"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1000": [
+      {
+        "sid": 83,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "征战之剑++强化",
+        "zh_tw": "征戰＋＋強化",
+        "en": "Stoked Charge"
+      },
+      {
+        "sid": 85,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "红莲之刃",
+        "zh_tw": "紅蓮之刃",
+        "en": "Molten Edge"
+      },
+      {
+        "sid": 137,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "炎狼",
+        "zh_tw": "炎狼",
+        "en": "Flame Wolf"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1100": [
+      {
+        "sid": 144,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "拂晓",
+        "zh_tw": "拂曉",
+        "en": "Daybreak"
+      },
+      {
+        "sid": 64,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "屠龙之心",
+        "zh_tw": "滅龍的鼓動",
+        "en": "Dragonsbane Pulse"
+      },
+      {
+        "sid": 65,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "漆黑血涌",
+        "zh_tw": "黑色血潮",
+        "en": "Dark Zeal"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1200": [
+      {
+        "sid": 74,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "崇高指令",
+        "zh_tw": "高潔秩序",
+        "en": "Noble Order"
+      },
+      {
+        "sid": 75,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "钻石之心",
+        "zh_tw": "鑽石之心",
+        "en": "Diamond Cutter"
+      },
+      {
+        "sid": 76,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "神圣追击",
+        "zh_tw": "神聖追擊",
+        "en": "Divine Justice"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1300": [
+      {
+        "sid": 89,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "读秒之刃",
+        "zh_tw": "奪秒之刃",
+        "en": "Flash Cut"
+      },
+      {
+        "sid": 90,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "攻守易形",
+        "zh_tw": "固守反攻",
+        "en": "Payback"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1400": [
+      {
+        "sid": 62,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "源氏起手式强化",
+        "zh_tw": "源氏之架式強化",
+        "en": "Enhanced Dawnfly"
+      },
+      {
+        "sid": 61,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "神乐起手式强化",
+        "zh_tw": "神樂之架式強化",
+        "en": "Enhanced Freeflutter"
+      },
+      {
+        "sid": 63,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "无限蝶",
+        "zh_tw": "無限蝶",
+        "en": "Kaleidoscope"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1500": [
+      {
+        "sid": 77,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "残拳",
+        "zh_tw": "無影拳",
+        "en": "Ultrafist"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1600": [
+      {
+        "sid": 94,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "跃空强化",
+        "zh_tw": "浮空強化",
+        "en": "Loop Master"
+      },
+      {
+        "sid": 95,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "阿尔贝斯之力",
+        "zh_tw": "亞爾貝斯解放",
+        "en": "Arvess Unleashed"
+      },
+      {
+        "sid": 96,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "阿尔贝斯螺旋枪强化",
+        "zh_tw": "亞爾貝斯揮擊強化",
+        "en": "Heavy Hammer"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1700": [
+      {
+        "sid": 31,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "不死之身",
+        "zh_tw": "不死之身",
+        "en": "Undying"
+      },
+      {
+        "sid": 88,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "古洛诺斯之力",
+        "zh_tw": "格羅諾斯解放",
+        "en": "Grynoth Unleashed"
+      },
+      {
+        "sid": 82,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "冥刃",
+        "zh_tw": "冥刃",
+        "en": "Ebony Glint"
+      },
+      {
+        "sid": 138,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "蚀魂魔刃",
+        "zh_tw": "蝕魂之刃",
+        "en": "Blood-Drinking Blade"
+      },
+      {
+        "sid": -3,
+        "raw_source": "actor_timer",
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "古洛诺斯槽保持",
+        "zh_tw": "古洛諾斯槽保持",
+        "en": "Grynoth Gauge Hold"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1800": [
+      {
+        "sid": 86,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "岩塌强化",
+        "zh_tw": "大崩壞強化",
+        "en": "Super Collapse"
+      },
+      {
+        "sid": 33,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "幻术光影",
+        "zh_tw": "夢幻景象",
+        "en": "Phantasmagoria"
+      },
+      {
+        "sid": 92,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "真理",
+        "zh_tw": "真理",
+        "en": "Truth"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL1900": [
+      {
+        "sid": 60,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "紫银之力",
+        "zh_tw": "紫銀之力",
+        "en": "Heliotrope Aura"
+      },
+      {
+        "sid": 30,
+        "no_reserve": true,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "神威一体",
+        "zh_tw": "神威一體",
+        "en": "Godmight"
+      },
+      {
+        "sid": -2,
+        "raw_source": "id_direct",
+        "gated_by_sid": 30,
+        "single_layer": false,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "隐藏槽",
+        "zh_tw": "隱藏槽",
+        "en": "Hidden Gauge"
+      },
+      {
+        "sid": 29,
+        "pct_cap": 40.0,
+        "require": "dragon_form",
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "龙人化",
+        "zh_tw": "龍人化",
+        "en": "Dragonform"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2100": [
+      {
+        "sid": 106,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "无限之辉",
+        "zh_tw": "無限光",
+        "en": "Limitless Light"
+      },
+      {
+        "sid": 107,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "白辉祝福",
+        "zh_tw": "白輝之加護",
+        "en": "Lucent Refuge"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2200": [
+      {
+        "sid": 133,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "集谛",
+        "zh_tw": "集諦",
+        "en": "Samudaya"
+      },
+      {
+        "sid": 116,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "剑王",
+        "zh_tw": "劍王",
+        "en": "Sovereign"
+      },
+      {
+        "sid": 117,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "星海",
+        "zh_tw": "星海",
+        "en": "Star Sea"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2300": [
+      {
+        "sid": 109,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "煌矢",
+        "zh_tw": "煌矢",
+        "en": "Piercing Gleam"
+      },
+      {
+        "sid": 43,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "狙击",
+        "zh_tw": "狙擊",
+        "en": "Deadshot"
+      },
+      {
+        "sid": 127,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "致命一击强化",
+        "zh_tw": "致命一擊強化",
+        "en": "Enhanced Clincher"
+      },
+      {
+        "sid": 110,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "晓光一箭",
+        "zh_tw": "曉光一箭",
+        "en": "Dawnray"
+      },
+      {
+        "sid": 111,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "封缚钝簇",
+        "zh_tw": "封縛鈍箭",
+        "en": "Dull Point"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2400": [
+      {
+        "sid": 46,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "铁衣玉碎",
+        "zh_tw": "鎧散牙",
+        "en": "Deathmatch Finale"
+      },
+      {
+        "sid": 114,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "武夫",
+        "zh_tw": "荒事",
+        "en": "Wild Showman"
+      },
+      {
+        "sid": 112,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "回旋王",
+        "zh_tw": "絕好勢",
+        "en": "Ultimatum"
+      },
+      {
+        "sid": 113,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "晕转向",
+        "zh_tw": "魅世終威",
+        "en": "Fall Flat"
+      },
+      {
+        "sid": 115,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "莽夫",
+        "zh_tw": "武者無畏",
+        "en": "Daredevil"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2500": [
+      {
+        "sid": 87,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "超凡艺术",
+        "zh_tw": "極致戰藝",
+        "en": "Arts Superiór"
+      },
+      {
+        "sid": 52,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "英勇颂歌",
+        "zh_tw": "英勇聖歌",
+        "en": "Battle Hymn"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2600": [
+      {
+        "sid": 47,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "针指零时",
+        "zh_tw": "午時之刻",
+        "en": "Näed Nulli"
+      },
+      {
+        "sid": 49,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "针指四时",
+        "zh_tw": "四時之刻",
+        "en": "Näed Nelja"
+      },
+      {
+        "sid": 48,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "针指七时",
+        "zh_tw": "八時之刻",
+        "en": "Näed Seitset"
+      },
+      {
+        "sid": 50,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "新星跃升",
+        "zh_tw": "驟昇新星",
+        "en": "Rising Nova"
+      },
+      {
+        "sid": 99,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "针指零时强化",
+        "zh_tw": "午時之刻強化",
+        "en": "Näed Nulli Excel"
+      },
+      {
+        "sid": 101,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "针指四时强化",
+        "zh_tw": "四時之刻強化",
+        "en": "Näed Nelja Excel"
+      },
+      {
+        "sid": 100,
+        "single_layer": true,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "针指七时强化",
+        "zh_tw": "八時之刻強化",
+        "en": "Näed Seitset Excel"
+      },
+      {
+        "sid": 102,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "恩布拉斯克之力",
+        "zh_tw": "艾姆布拉斯解放",
+        "en": "Embrasque Unleashed"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2700": [
+      {
+        "sid": 118,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "弗拉梅克之力",
+        "zh_tw": "弗拉梅格解放",
+        "en": "Flamek Unleashed"
+      },
+      {
+        "sid": 53,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "戏火",
+        "zh_tw": "浴火之戲",
+        "en": "Play with Fire"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2800": [
+      {
+        "sid": 119,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "正位强化",
+        "zh_tw": "正位強化",
+        "en": "Enhanced Upright"
+      },
+      {
+        "sid": 121,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "正位强化+",
+        "zh_tw": "正位強化＋",
+        "en": "Enhanced Upright+"
+      },
+      {
+        "sid": 122,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "逆位强化+",
+        "zh_tw": "逆位強化＋",
+        "en": "Enhanced Reversed+"
+      },
+      {
+        "sid": 120,
+        "single_layer": true,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "逆位强化",
+        "zh_tw": "逆位強化",
+        "en": "Enhanced Reversed"
+      },
+      {
+        "sid": -1,
+        "raw_source": "actor_timer",
+        "off": 118212,
+        "cap_setting": "grace_max",
+        "zh": "转世的恩宠",
+        "zh_tw": "轉世的恩寵",
+        "en": "Enchantress's Blessing",
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL2900": [
+      {
+        "sid": 123,
+        "single_layer": false,
+        "awakening": true,
+        "truth": false,
+        "secret": false,
+        "zh": "连击收招强化",
+        "zh_tw": "連技終擊強化",
+        "en": "Enhanced Combo Finishers"
+      },
+      {
+        "sid": 124,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "暗灾",
+        "zh_tw": "闇禍",
+        "en": "Malice"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ],
+    "PL0100": [
+      {
+        "sid": 66,
+        "single_layer": false,
+        "awakening": false,
+        "truth": true,
+        "secret": false,
+        "zh": "不屈攻刃",
+        "zh_tw": "不屈攻刃",
+        "en": "Combat Healer"
+      },
+      {
+        "sid": 135,
+        "single_layer": false,
+        "awakening": false,
+        "truth": false,
+        "secret": true,
+        "zh": "领袖庇佑",
+        "zh_tw": "領袖風範",
+        "en": "Charisma"
+      },
+      {
+        "sid": -1,
+        "raw_source": "class_state",
+        "single_layer": false,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "zh": "Class等级",
+        "zh_tw": "Class Lv",
+        "en": "Adept Arts Level"
+      },
+      {
+        "sid": 42,
+        "single_layer": true,
+        "awakening": false,
+        "truth": false,
+        "secret": false,
+        "zh": "造成伤害UP",
+        "zh_tw": "造成傷害UP",
+        "en": "Damage Dealt Up"
+      }
+    ]
+  },
+  "mastery": {
+    "PL0000": {
+      "awakening": {
+        "zh": "觉醒：Class Lv强化",
+        "zh_tw": "覺醒：Class Lv強化",
+        "en": "Insight: Artfully Adept"
+      },
+      "truth": {
+        "zh": "真谛：回复类能力强化",
+        "zh_tw": "精髓：回復技能強化",
+        "en": "Essence: Combat Healer"
+      },
+      "secret": {
+        "zh": "秘义：挺身而出特化",
+        "zh_tw": "奧祕：挺身掩護專精",
+        "en": "Crux: The Substitute"
+      }
+    },
+    "PL0100": {
+      "awakening": {
+        "zh": "觉醒：Class Lv强化",
+        "zh_tw": "覺醒：Class Lv強化",
+        "en": "Insight: Artfully Adept"
+      },
+      "truth": {
+        "zh": "真谛：回复类能力强化",
+        "zh_tw": "精髓：回復技能強化",
+        "en": "Essence: Combat Healer"
+      },
+      "secret": {
+        "zh": "秘义：挺身而出特化",
+        "zh_tw": "奧祕：挺身掩護專精",
+        "en": "Crux: The Substitute"
+      }
+    },
+    "PL0200": {
+      "awakening": {
+        "zh": "觉醒：阿瑞斯在场特化",
+        "zh_tw": "覺醒：艾瑞斯持續時間專精",
+        "en": "Insight: Forever Ares"
+      },
+      "truth": {
+        "zh": "真谛：阿瑞斯强袭特化",
+        "zh_tw": "精隨：艾瑞斯強襲專精",
+        "en": "Essence: Army of Two"
+      },
+      "secret": {
+        "zh": "秘义：苍刃",
+        "zh_tw": "奧祕：蒼刃",
+        "en": "Crux: Blade Blue"
+      }
+    },
+    "PL0300": {
+      "awakening": {
+        "zh": "觉醒：靶心狙击强化",
+        "zh_tw": "覺醒：靶心狙擊強化",
+        "en": "Insight: Precision Blasting"
+      },
+      "truth": {
+        "zh": "真谛：送葬火舌强化",
+        "zh_tw": "精髓：造棺者強化",
+        "en": "Essence: Expert Coffinmaker"
+      },
+      "secret": {
+        "zh": "秘义：战地余波特化",
+        "zh_tw": "奧祕：間接傷害專精",
+        "en": "Crux: Collateral Risk"
+      }
+    },
+    "PL0400": {
+      "awakening": {
+        "zh": "觉醒：专注强化",
+        "zh_tw": "覺醒：全神貫注強化",
+        "en": "Insight: Pure Concentration"
+      },
+      "truth": {
+        "zh": "真谛：魔法连锁",
+        "zh_tw": "精髓：魔法連擊",
+        "en": "Essence: Magic Chain"
+      },
+      "secret": {
+        "zh": "秘义：花耀七闪特化",
+        "zh_tw": "奧祕：繁花七綻專精",
+        "en": "Crux: Flowery Seven Overload"
+      }
+    },
+    "PL0500": {
+      "awakening": {
+        "zh": "觉醒：瞄准模式强化",
+        "zh_tw": "覺醒：瞄準模式強化",
+        "en": "Insight: Flawless Vision"
+      },
+      "truth": {
+        "zh": "真谛：榴弹拳法",
+        "zh_tw": "精髓：榴彈拳",
+        "en": "Essence: Grenade Punch"
+      },
+      "secret": {
+        "zh": "秘义：剧毒榴弹强化",
+        "zh_tw": "奧祕：毒榴彈強化",
+        "en": "Crux: Spitting Venom"
+      }
+    },
+    "PL0600": {
+      "awakening": {
+        "zh": "觉醒：玫瑰镇魂曲",
+        "zh_tw": "覺醒：玫瑰鎮魂曲",
+        "en": "Insight: Rose Requiem"
+      },
+      "truth": {
+        "zh": "真谛：强化&弱化效果特化",
+        "zh_tw": "精髓：強化＆弱化專精",
+        "en": "Essence: Battlefield Cultivator"
+      },
+      "secret": {
+        "zh": "秘义：玫瑰强化",
+        "zh_tw": "奧祕：薔薇強化",
+        "en": "Crux: Fortified Roses"
+      }
+    },
+    "PL0700": {
+      "awakening": {
+        "zh": "觉醒：宠物强化",
+        "zh_tw": "覺醒：寵物強化",
+        "en": "Insight: Phantastic Pets"
+      },
+      "truth": {
+        "zh": "真谛：孤高幽灵",
+        "zh_tw": "精髓：孤高的幽靈",
+        "en": "Essence: Self-Reliant Ghost"
+      },
+      "secret": {
+        "zh": "秘义：辅助特化",
+        "zh_tw": "奧祕：支援專精",
+        "en": "Crux: Spirited Support"
+      }
+    },
+    "PL0800": {
+      "awakening": {
+        "zh": "觉醒：精准收招特化",
+        "zh_tw": "覺醒：精準終擊專精",
+        "en": "Insight: Finish with Perfection"
+      },
+      "truth": {
+        "zh": "真谛：躲避强化",
+        "zh_tw": "精髓：閃避強化",
+        "en": "Essence: Artful Dodger"
+      },
+      "secret": {
+        "zh": "秘义：攻击类能力高速化",
+        "zh_tw": "奧祕：傷害技能高速化",
+        "en": "Crux: Skill Acceleration"
+      }
+    },
+    "PL0900": {
+      "awakening": {
+        "zh": "觉醒：挑衅＋",
+        "zh_tw": "覺醒：敵對心＋",
+        "en": "Insight: Growing Hostility"
+      },
+      "truth": {
+        "zh": "真谛：我助人人",
+        "zh_tw": "精髓：為眾人而戰",
+        "en": "Essence: Team Player"
+      },
+      "secret": {
+        "zh": "秘义：勇往直前",
+        "zh_tw": "奧祕：剛毅不屈",
+        "en": "Crux: Resolve"
+      }
+    },
+    "PL1000": {
+      "awakening": {
+        "zh": "觉醒：蓄力攻击强化",
+        "zh_tw": "覺醒：蓄力攻擊強化",
+        "en": "Insight: Charge Forth"
+      },
+      "truth": {
+        "zh": "真谛：红莲之刃",
+        "zh_tw": "精髓：紅蓮之刃",
+        "en": "Essence: Molten Edge"
+      },
+      "secret": {
+        "zh": "秘义：蓄力反击特化",
+        "zh_tw": "奧祕：蓄力反制專精",
+        "en": "Crux: Parry Me This"
+      }
+    },
+    "PL1100": {
+      "awakening": {
+        "zh": "觉醒：精准攻击特化",
+        "zh_tw": "覺醒：精準攻擊專精",
+        "en": "Insight: Perfect Striker"
+      },
+      "truth": {
+        "zh": "真谛：攻击类能力强化",
+        "zh_tw": "精髓：傷害技能強化",
+        "en": "Essence: Skilled Slayer"
+      },
+      "secret": {
+        "zh": "秘义：死境之剑",
+        "zh_tw": "奧祕：險境之刃",
+        "en": "Crux: Fueled by Pain"
+      }
+    },
+    "PL1200": {
+      "awakening": {
+        "zh": "觉醒：崇高之姿强化",
+        "zh_tw": "覺醒：高潔戰勢強化",
+        "en": "Insight: Noblest Stance"
+      },
+      "truth": {
+        "zh": "真谛：正面对决",
+        "zh_tw": "精髓：正面對決",
+        "en": "Essence: Charge!"
+      },
+      "secret": {
+        "zh": "秘义：所向披靡特化",
+        "zh_tw": "奧祕：所向披靡專精",
+        "en": "Crux: I Am Invincible"
+      }
+    },
+    "PL1300": {
+      "awakening": {
+        "zh": "觉醒：三幕心得",
+        "zh_tw": "覺醒：三幕的領悟",
+        "en": "Insight: Triple Shroud Savvy"
+      },
+      "truth": {
+        "zh": "真谛：疾攻",
+        "zh_tw": "精髓：迅疾",
+        "en": "Essence: Speed Runner"
+      },
+      "secret": {
+        "zh": "秘义：霞返",
+        "zh_tw": "奧祕：霞返",
+        "en": "Crux: Deft Deflection"
+      }
+    },
+    "PL1400": {
+      "awakening": {
+        "zh": "觉醒：起手式切换强化",
+        "zh_tw": "覺醒：架式切換強化",
+        "en": "Insight: Paradigm Shift"
+      },
+      "truth": {
+        "zh": "真谛：一击必杀",
+        "zh_tw": "精髓：一擊必殺",
+        "en": "Essence: One Cut, One Kill"
+      },
+      "secret": {
+        "zh": "秘义：无二无三特化",
+        "zh_tw": "奧祕：無二無三專精",
+        "en": "Crux: Devoted to Devotion"
+      }
+    },
+    "PL1500": {
+      "awakening": {
+        "zh": "觉醒：直冲重拳",
+        "zh_tw": "覺醒：超正拳擊",
+        "en": "Insight: Super Raging Fist"
+      },
+      "truth": {
+        "zh": "真谛：威武雄姿特化",
+        "zh_tw": "精髓：雄武見得專精",
+        "en": "Essence: Roaring Lion"
+      },
+      "secret": {
+        "zh": "秘义：直冲绝技拳",
+        "zh_tw": "奧祕：正拳絕技",
+        "en": "Crux: Raging Technique"
+      }
+    },
+    "PL1600": {
+      "awakening": {
+        "zh": "觉醒：跃空连击强化",
+        "zh_tw": "覺醒：浮空連技強化",
+        "en": "Insight: Intense Loops"
+      },
+      "truth": {
+        "zh": "真谛：攻击类能力强化",
+        "zh_tw": "精髓：傷害技能強化",
+        "en": "Essence: One with Skills"
+      },
+      "secret": {
+        "zh": "秘义：反击特化",
+        "zh_tw": "奧祕：反擊專精",
+        "en": "Crux: Out for Revenge"
+      }
+    },
+    "PL1700": {
+      "awakening": {
+        "zh": "觉醒：普攻连击特化",
+        "zh_tw": "覺醒：連技專精",
+        "en": "Insight: Hooked on Combos"
+      },
+      "truth": {
+        "zh": "真谛：蓄力攻击特化",
+        "zh_tw": "精髓：蓄力攻擊專精",
+        "en": "Essence: Large and In Charge"
+      },
+      "secret": {
+        "zh": "秘义：蓄力反击特化",
+        "zh_tw": "奧祕：蓄力反制專精",
+        "en": "Crux: Punishing Parries"
+      }
+    },
+    "PL1800": {
+      "awakening": {
+        "zh": "觉醒：弱化连击爆发",
+        "zh_tw": "覺醒：弱化連技增幅",
+        "en": "Insight: Crippling Combos"
+      },
+      "truth": {
+        "zh": "真谛：岩塌强化",
+        "zh_tw": "精髓：大崩壞強化",
+        "en": "Essence: Super Collapse"
+      },
+      "secret": {
+        "zh": "秘义：回复&辅助强化",
+        "zh_tw": "奧祕：回復支援強化",
+        "en": "Crux: Alchemedic"
+      }
+    },
+    "PL1900": {
+      "awakening": {
+        "zh": "觉醒：神威一体强化",
+        "zh_tw": "覺醒：神威一體強化",
+        "en": "Insight: Faith in Godmight"
+      },
+      "truth": {
+        "zh": "真谛：龙人化强化",
+        "zh_tw": "精髓：龍人化強化",
+        "en": "Essence: Faith in Dragonform"
+      },
+      "secret": {
+        "zh": "秘义：神愿之力特化",
+        "zh_tw": "奧祕：神能解放專精",
+        "en": "Crux: Path of Vengeance"
+      }
+    },
+    "PL2100": {
+      "awakening": {
+        "zh": "觉醒：誓约十二羽翼",
+        "zh_tw": "覺醒：約定之十二羽翼",
+        "en": "Insight: Promising Wings"
+      },
+      "truth": {
+        "zh": "真谛：白辉祝福",
+        "zh_tw": "精髓：白輝之加護",
+        "en": "Essence: Finding Refuge"
+      },
+      "secret": {
+        "zh": "秘义：审判之钟",
+        "zh_tw": "奧祕：審判之鐘",
+        "en": "Crux: Bell Tolls for Thee"
+      }
+    },
+    "PL2200": {
+      "awakening": {
+        "zh": "觉醒：剑神召唤强化",
+        "zh_tw": "覺醒：劍神量條強化",
+        "en": "Insight: Fueling the Avatar"
+      },
+      "truth": {
+        "zh": "真谛：剑雨",
+        "zh_tw": "精髓：劍之雨",
+        "en": "Essence: Sword Tempest"
+      },
+      "secret": {
+        "zh": "秘义：剑神切换特化",
+        "zh_tw": "奧祕：劍神切換專精",
+        "en": "Crux: Tag Team"
+      }
+    },
+    "PL2300": {
+      "awakening": {
+        "zh": "觉醒：多重瞄准射击特化",
+        "zh_tw": "覺醒：多重鎖定射擊專精",
+        "en": "Insight: Hail to Multilock"
+      },
+      "truth": {
+        "zh": "真谛：致命一击强化",
+        "zh_tw": "精髓：致命一擊強化",
+        "en": "Essence: Clinching Victory"
+      },
+      "secret": {
+        "zh": "秘义：二王之诤特化",
+        "zh_tw": "奧祕：二王的鬥諍專精",
+        "en": "Crux: Two-Crown's Master"
+      }
+    },
+    "PL2400": {
+      "awakening": {
+        "zh": "觉醒：铁衣玉碎强化",
+        "zh_tw": "覺醒：鎧散牙強化",
+        "en": "Insight: Extreme Deathmatch"
+      },
+      "truth": {
+        "zh": "真谛：回旋枪强化",
+        "zh_tw": "精髓：大風車強化",
+        "en": "Essence: Turbo Turbine"
+      },
+      "secret": {
+        "zh": "秘义：武夫",
+        "zh_tw": "奧祕：荒事",
+        "en": "Crux: Put On a Show"
+      }
+    },
+    "PL2500": {
+      "awakening": {
+        "zh": "觉醒：魔剑之舞强化",
+        "zh_tw": "覺醒：魔劍操舞強化",
+        "en": "Insight: Ardent Dancer"
+      },
+      "truth": {
+        "zh": "真谛：超凡系列强化",
+        "zh_tw": "精髓：極致系列強化",
+        "en": "Essence: Superlative Sorcery"
+      },
+      "secret": {
+        "zh": "秘义：刃重结界",
+        "zh_tw": "奧祕：刃重結界",
+        "en": "Crux: Sword Veil Guardianship"
+      }
+    },
+    "PL2600": {
+      "awakening": {
+        "zh": "觉醒：啖因果特化",
+        "zh_tw": "覺醒：吞噬因果專精",
+        "en": "Insight: Hungry for Causality"
+      },
+      "truth": {
+        "zh": "真谛：三相时钟强化",
+        "zh_tw": "精髓：三角時計強化",
+        "en": "Essence: On the Clock"
+      },
+      "secret": {
+        "zh": "秘义：能力连锁",
+        "zh_tw": "奧祕：技能連擊",
+        "en": "Crux: Skill Chain"
+      }
+    },
+    "PL2700": {
+      "awakening": {
+        "zh": "觉醒：近距离射击特化",
+        "zh_tw": "覺醒：近身射擊專精",
+        "en": "Insight: Keep Your Foes Closer"
+      },
+      "truth": {
+        "zh": "真谛：奔雷",
+        "zh_tw": "精髓：雷轟",
+        "en": "Essence: Lightning Soldier"
+      },
+      "secret": {
+        "zh": "秘义：完美射击",
+        "zh_tw": "奧祕：完美射擊",
+        "en": "Crux: Perfectionist"
+      }
+    },
+    "PL2800": {
+      "awakening": {
+        "zh": "觉醒：正逆位强化",
+        "zh_tw": "覺醒：戰勢強化",
+        "en": "Insight: Flip the Tides"
+      },
+      "truth": {
+        "zh": "真谛：煌煌之力",
+        "zh_tw": "精髓：鮮烈之力",
+        "en": "Essence: Allure of Strength"
+      },
+      "secret": {
+        "zh": "秘义：恶魔的低语",
+        "zh_tw": "奧祕：惡魔的甜言蜜語",
+        "en": "Crux: A Deal with The Devil"
+      }
+    },
+    "PL2900": {
+      "awakening": {
+        "zh": "觉醒：连击收招强化",
+        "zh_tw": "覺醒：連技終擊強化",
+        "en": "Insight: Finishing Touch"
+      },
+      "truth": {
+        "zh": "真谛：“黑”之侵蚀",
+        "zh_tw": "精髓：「黑」之侵蝕",
+        "en": "Essence: Corrosive Black"
+      },
+      "secret": {
+        "zh": "秘义：理外暗灾",
+        "zh_tw": "奧祕：理外之闇禍",
+        "en": "Crux: Hands of Malice"
+      }
+    }
+  },
+  "ui": {
+    "── EXE 同步 ──": {
+      "zh_tw": "── EXE 同步 ──",
+      "en": "── EXE Sync ──"
+    },
+    "EXE 同步列表 (分号分隔):": {
+      "zh_tw": "EXE 同步清單 (分號分隔):",
+      "en": "EXE sync list (semicolon-separated):"
+    },
+    "标题栏对齐:": {
+      "zh_tw": "標題欄對齊:",
+      "en": "Title bar alignment:"
+    },
+    "靠左": {
+      "zh_tw": "靠左",
+      "en": "Left"
+    },
+    "居中": {
+      "zh_tw": "居中",
+      "en": "Center"
+    },
+    "靠右": {
+      "zh_tw": "靠右",
+      "en": "Right"
+    },
+    "多个 exe 的绝对路径，用分号分隔。程序启动时逐个检测：未运行则启动，已运行则关闭。": {
+      "zh_tw": "多個 exe 的絕對路徑，用分號分隔。程式啟動時逐個檢測：未執行則啟動，已執行則關閉。",
+      "en": "Absolute paths of multiple EXEs, separated by semicolons. At startup each is checked: launched if not running, terminated if already running."
+    },
+    "多个 exe 绝对路径，分号分隔": {
+      "zh_tw": "多個 exe 絕對路徑，分號分隔",
+      "en": "Multiple exe absolute paths, separated by semicolons"
+    },
+    "── 隐藏 ──": {
+      "zh_tw": "── 隱藏 ──",
+      "en": "── Hide ──"
+    },
+    "越上越靠右": {
+      "zh_tw": "越上越靠右",
+      "en": "Top → Right"
+    },
+    "尖刺根部距圆心:": {
+      "zh_tw": "尖刺根部距圓心:",
+      "en": "Spike root distance:"
+    },
+    "状态：": {
+      "zh_tw": "狀態：",
+      "en": "Status:"
+    },
+    "动画时长ms:": {
+      "zh_tw": "動畫時長ms:",
+      "en": "Animation Duration ms:"
+    },
+    "核心检测模块": {
+      "zh_tw": "核心檢測模組",
+      "en": "Core Detection"
+    },
+    "── 层数数字(无计时) ──": {
+      "zh_tw": "── 層數數字(無計時) ──",
+      "en": "── Stack Number (No Timer) ──"
+    },
+    "自动检查更新": {
+      "zh_tw": "自動檢查更新",
+      "en": "Auto check for updates"
+    },
+    "热键冲突": {
+      "zh_tw": "熱鍵衝突",
+      "en": "Hotkey Conflict"
+    },
+    "翻滚图标": {
+      "zh_tw": "翻滾圖標",
+      "en": "Dodge Icon"
+    },
+    "层数数字勾边粗细 — (计时版):": {
+      "zh_tw": "層數數字勾邊粗細 — (計時版):",
+      "en": "Stack outline width — (Timer):"
+    },
+    "层数数字X偏移 — (计时版):": {
+      "zh_tw": "層數數字X偏移 — (計時版):",
+      "en": "Stack number X offset — (Timer):"
+    },
+    "扫描周期 (ms):": {
+      "zh_tw": "掃描週期 (ms):",
+      "en": "Scan interval (ms):"
+    },
+    "翻滚UI不透明度:": {
+      "zh_tw": "翻滾UI不透明度:",
+      "en": "Dodge UI opacity:"
+    },
+    "闪光": {
+      "zh_tw": "閃光",
+      "en": "Flash"
+    },
+    "尖刺长度:": {
+      "zh_tw": "尖刺長度:",
+      "en": "Spike length:"
+    },
+    "衬色块宽微调:": {
+      "zh_tw": "襯色塊寬微調:",
+      "en": "BG Width Adjust:"
+    },
+    "依次按下要绑定的组合键（最多 3 个）\n支持 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向键 等\nCtrl 不再强制，仅作为默认选项": {
+      "zh_tw": "依序按下要綁定的組合鍵（最多 3 個）\n支援 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向鍵 等\nCtrl 不再強制，僅作為預設選項",
+      "en": "Press the key combo to bind (up to 3 keys)\nSupports Ctrl / Alt / Shift / Win + Letter / F1-F12 / Arrow keys etc.\nCtrl no longer required; it is only the default option"
+    },
+    "── 倒计时胶囊 ──": {
+      "zh_tw": "── 倒計時膠囊 ──",
+      "en": "── Timer Capsule ──"
+    },
+    "翻滚图标缩放:": {
+      "zh_tw": "翻滾圖標縮放:",
+      "en": "Dodge icon scale:"
+    },
+    "跳过此版本": {
+      "zh_tw": "跳過此版本",
+      "en": "Skip this version"
+    },
+    "不再提示此版本": {
+      "zh_tw": "不再提示此版本",
+      "en": "Don't remind me of this version"
+    },
+    "── 模块显示 ──": {
+      "zh_tw": "── 模組顯示 ──",
+      "en": "── Module Display ──"
+    },
+    "── 尖刺(含顶端圆点) ──": {
+      "zh_tw": "── 尖刺(含頂端圓點) ──",
+      "en": "── Spikes (incl. tip bead) ──"
+    },
+    "外描边粗细:": {
+      "zh_tw": "外描邊粗細:",
+      "en": "Outer outline width:"
+    },
+    "整体外描边:": {
+      "zh_tw": "整體外描邊:",
+      "en": "Outer outline:"
+    },
+    "层数数字色:": {
+      "zh_tw": "層數數字色:",
+      "en": "Stack number color:"
+    },
+    "启用就绪呼吸光": {
+      "zh_tw": "啟用就緒呼吸光",
+      "en": "Enable Ready Breathing Glow"
+    },
+    "── 全局快捷键 ──": {
+      "zh_tw": "── 全域快速鍵 ──",
+      "en": "── Global Hotkeys ──"
+    },
+    "按当前屏幕宽度自动放大": {
+      "zh_tw": "按當前螢幕寬度自動放大",
+      "en": "Auto scale by current screen width"
+    },
+    "能力名色:": {
+      "zh_tw": "能力名色:",
+      "en": "Ability Name Color:"
+    },
+    "尖刺色(满层):": {
+      "zh_tw": "尖刺色(滿層):",
+      "en": "Spike color (full stack):"
+    },
+    "外描边色:": {
+      "zh_tw": "外描邊色:",
+      "en": "Outline color:"
+    },
+    "顶端圆点距圆心:": {
+      "zh_tw": "頂端圓點距圓心:",
+      "en": "Bead distance from center:"
+    },
+    "无buff时隐藏尖刺圆模块（翻滚/技能UI不受影响）": {
+      "zh_tw": "無buff時隱藏尖刺圓模組（翻滾/技能UI不受影響）",
+      "en": "Hide spike module when no buff (dodge/skill UI unaffected)"
+    },
+    "Buff启用/禁用": {
+      "zh_tw": "Buff啟用/禁用",
+      "en": "Buff Enable/Disable"
+    },
+    "倒计时字体大小:": {
+      "zh_tw": "倒計時字體大小:",
+      "en": "Timer font size:"
+    },
+    "闪光颜色:": {
+      "zh_tw": "閃光顏色:",
+      "en": "Flash color:"
+    },
+    "同色系 / 相近": {
+      "zh_tw": "同色系／相近",
+      "en": "Similar hue / close"
+    },
+    "在标题栏显示角色名和buff状态文字": {
+      "zh_tw": "在標題列顯示角色名和buff狀態文字",
+      "en": "Show character name and buff status text in title bar"
+    },
+    "不显示": {
+      "zh_tw": "不顯示",
+      "en": "Hidden"
+    },
+    "锁定 / 解锁窗口：": {
+      "zh_tw": "鎖定 / 解鎖視窗：",
+      "en": "Lock / Unlock Window:"
+    },
+    "── 层数数字(有计时) ──": {
+      "zh_tw": "── 層數數字(有計時) ──",
+      "en": "── Stack Number (With Timer) ──"
+    },
+    "检查中…": {
+      "zh_tw": "檢查中…",
+      "en": "Checking…"
+    },
+    "标题栏不透明度:": {
+      "zh_tw": "標題列不透明度:",
+      "en": "Title bar opacity:"
+    },
+    "色环均匀 / 大反差": {
+      "zh_tw": "色環均勻／大反差",
+      "en": "Even hue ring / high contrast"
+    },
+    "翻滚图标不透明度:": {
+      "zh_tw": "翻滾圖標不透明度:",
+      "en": "Dodge icon opacity:"
+    },
+    "设置打开失败": {
+      "zh_tw": "設定開啟失敗",
+      "en": "Failed to open settings"
+    },
+    "外部差异化:": {
+      "zh_tw": "外部差異化:",
+      "en": "External diff:"
+    },
+    "── 在线更新 ──": {
+      "zh_tw": "── 線上更新 ──",
+      "en": "── Online Update ──"
+    },
+    "标题栏": {
+      "zh_tw": "標題列",
+      "en": "Title Bar"
+    },
+    "GBFR 指示器": {
+      "zh_tw": "GBFR 指示器",
+      "en": "GBFR Indicator"
+    },
+    "常规": {
+      "zh_tw": "常規",
+      "en": "General"
+    },
+    "更新检测版本地址：": {
+      "zh_tw": "更新偵測版本位址：",
+      "en": "Update version-check URL:"
+    },
+    "竖放": {
+      "zh_tw": "豎放",
+      "en": "Vertical"
+    },
+    "Buff名显示:": {
+      "zh_tw": "Buff名顯示:",
+      "en": "Buff name display:"
+    },
+    "── 扫描 / 内存 ──": {
+      "zh_tw": "── 掃描／記憶體 ──",
+      "en": "── Scan / Memory ──"
+    },
+    "能力名Y偏移:": {
+      "zh_tw": "能力名Y偏移:",
+      "en": "Ability Name Y Offset:"
+    },
+    "使用内置默认图标": {
+      "zh_tw": "使用內建預設圖標",
+      "en": "Use embedded default icon"
+    },
+    "背景色:": {
+      "zh_tw": "背景色:",
+      "en": "Background color:"
+    },
+    "层数数字勾边色 — (计时版):": {
+      "zh_tw": "層數數字勾邊色 — (計時版):",
+      "en": "Stack outline color — (Timer):"
+    },
+    "── 核心模块位置与缩放 ──": {
+      "zh_tw": "── 核心模組位置與縮放 ──",
+      "en": "── Core Position & Scale ──"
+    },
+    "圆环色(正常):": {
+      "zh_tw": "圓環色(正常):",
+      "en": "Circle color (normal):"
+    },
+    "等待按键…": {
+      "zh_tw": "等待按鍵…",
+      "en": "Waiting for key…"
+    },
+    "分割线不透明度:": {
+      "zh_tw": "分割線不透明度:",
+      "en": "Divider opacity:"
+    },
+    "能力冷却完成闪光": {
+      "zh_tw": "能力冷卻完成閃光",
+      "en": "Skill ready flash"
+    },
+    "分割线:": {
+      "zh_tw": "分割線:",
+      "en": "Divider:"
+    },
+    "检查更新后自动填入，或手动填写 exe 下载直链": {
+      "zh_tw": "檢查更新後自動填入，或手動填寫 exe 下載直鏈",
+      "en": "Auto-filled after update check, or enter exe direct link manually"
+    },
+    "── 计时文字 ──": {
+      "zh_tw": "── 計時文字 ──",
+      "en": "── Timer Text ──"
+    },
+    "层数数字Y偏移 — (计时版):": {
+      "zh_tw": "層數數字Y偏移 — (計時版):",
+      "en": "Stack number Y offset — (Timer):"
+    },
+    "Buff名色:": {
+      "zh_tw": "Buff名色:",
+      "en": "Buff name color:"
+    },
+    "已是最新版本": {
+      "zh_tw": "已是最新版本",
+      "en": "Already up to date"
+    },
+    "取消": {
+      "zh_tw": "取消",
+      "en": "Cancel"
+    },
+    "多buff差异化": {
+      "zh_tw": "多buff差異化",
+      "en": "Multi-buff"
+    },
+    "在画布上显示Buff名称": {
+      "zh_tw": "在畫布上顯示Buff名稱",
+      "en": "Show buff name on canvas"
+    },
+    "能力名X偏移:": {
+      "zh_tw": "能力名X偏移:",
+      "en": "Ability Name X Offset:"
+    },
+    "Overlay 设置": {
+      "zh_tw": "Overlay 設定",
+      "en": "Overlay Settings"
+    },
+    "── 翻滚模块位置与缩放 ──": {
+      "zh_tw": "── 翻滾模組位置與縮放 ──",
+      "en": "── Dodge Position & Scale ──"
+    },
+    "显示层数/翻滚分割线": {
+      "zh_tw": "顯示層數/翻滾分割線",
+      "en": "Show stack/roll divider"
+    },
+    "关于": {
+      "zh_tw": "關於",
+      "en": "About"
+    },
+    "显示": {
+      "zh_tw": "顯示",
+      "en": "Show"
+    },
+    "── 就绪呼吸光（冷却完毕提示）──": {
+      "zh_tw": "── 就緒呼吸光（冷卻完畢提示）──",
+      "en": "── Ready Breathing Glow (cooldown done) ──"
+    },
+    "── 能力模块位置与缩放 ──": {
+      "zh_tw": "── 能力模組位置與縮放 ──",
+      "en": "── Skill Position & Scale ──"
+    },
+    "尖刺圆隐藏:": {
+      "zh_tw": "尖刺圓隱藏:",
+      "en": "Spike hide:"
+    },
+    "── 翻滚图标 ──": {
+      "zh_tw": "── 翻滾圖標 ──",
+      "en": "── Dodge Icon ──"
+    },
+    "排序方向:": {
+      "zh_tw": "排序方向:",
+      "en": "Order direction:"
+    },
+    "恢复默认": {
+      "zh_tw": "恢復預設",
+      "en": "Reset"
+    },
+    "宽度拉伸:": {
+      "zh_tw": "寬度拉伸:",
+      "en": "Width stretch:"
+    },
+    "Buff名字体大小:": {
+      "zh_tw": "Buff名字體大小:",
+      "en": "Buff name font size:"
+    },
+    "内部差异化颜色（弧线/数字/计时文字）": {
+      "zh_tw": "內部差異化顏色（弧線/數字/計時文字）",
+      "en": "Internal color diff (arc/text/timer)"
+    },
+    "圆→翻滚UI间距:": {
+      "zh_tw": "圓→翻滾UI間距:",
+      "en": "Circle to dodge UI gap:"
+    },
+    "尖刺顶端圆点半径:": {
+      "zh_tw": "尖刺頂端圓點半徑:",
+      "en": "Spike tip bead radius:"
+    },
+    "翻滚图标闪光": {
+      "zh_tw": "翻滾圖標閃光",
+      "en": "Dodge icon flash"
+    },
+    "就绪呼吸光": {
+      "zh_tw": "就緒呼吸光",
+      "en": "Ready Breathing Glow"
+    },
+    "圆环": {
+      "zh_tw": "圓環",
+      "en": "Ring"
+    },
+    "翻滚模块": {
+      "zh_tw": "翻滾模組",
+      "en": "Dodge Module"
+    },
+    "不透明度": {
+      "zh_tw": "不透明度",
+      "en": "Opacity"
+    },
+    "快捷键": {
+      "zh_tw": "快速鍵",
+      "en": "Hotkeys"
+    },
+    "胶囊不透明度:": {
+      "zh_tw": "膠囊不透明度:",
+      "en": "Capsule opacity:"
+    },
+    "层数数字大小:": {
+      "zh_tw": "層數數字大小:",
+      "en": "Stack number size:"
+    },
+    "── 能力名称 ──": {
+      "zh_tw": "── 能力名稱 ──",
+      "en": "── Ability Name ──"
+    },
+    "更新地址：": {
+      "zh_tw": "更新地址：",
+      "en": "Update URL:"
+    },
+    "随游戏前后台:": {
+      "zh_tw": "隨遊戲前後台:",
+      "en": "Game focus:"
+    },
+    "内部差异化:": {
+      "zh_tw": "內部差異化:",
+      "en": "Internal diff:"
+    },
+    "边框粗细倍数:": {
+      "zh_tw": "邊框粗細倍數：",
+      "en": "Border thickness factor:"
+    },
+    "背景不透明度:": {
+      "zh_tw": "背景不透明度:",
+      "en": "Background opacity:"
+    },
+    "层数数字": {
+      "zh_tw": "層數數字",
+      "en": "Stack Number"
+    },
+    "技能CD不透明度:": {
+      "zh_tw": "技能CD不透明度:",
+      "en": "Skill CD opacity:"
+    },
+    "高度拉伸:": {
+      "zh_tw": "高度拉伸:",
+      "en": "Height stretch:"
+    },
+    "── 圆环 ──": {
+      "zh_tw": "── 圓環 ──",
+      "en": "── Ring ──"
+    },
+    "呼出/隐藏所有窗口：": {
+      "zh_tw": "呼出/隱藏所有視窗：",
+      "en": "Show/Hide All Windows:"
+    },
+    "背景": {
+      "zh_tw": "背景",
+      "en": "Background"
+    },
+    "全取消": {
+      "zh_tw": "全取消",
+      "en": "Uncheck All"
+    },
+    "方形大小:": {
+      "zh_tw": "方形大小:",
+      "en": "Square Size:"
+    },
+    "能力名称": {
+      "zh_tw": "能力名稱",
+      "en": "Ability Name"
+    },
+    "── 标题栏 ──": {
+      "zh_tw": "── 標題列 ──",
+      "en": "── Title Bar ──"
+    },
+    "多buff缩放:": {
+      "zh_tw": "多buff縮放:",
+      "en": "Multi-buff scale:"
+    },
+    "非战斗隐藏:": {
+      "zh_tw": "非戰鬥隱藏：",
+      "en": "Hide when not in combat:"
+    },
+    "层数数字X偏移:": {
+      "zh_tw": "層數數字X偏移:",
+      "en": "Stack number X offset:"
+    },
+    "ExStatus偏移:": {
+      "zh_tw": "ExStatus偏移:",
+      "en": "ExStatus offset:"
+    },
+    "检查失败：": {
+      "zh_tw": "檢查失敗：",
+      "en": "Check failed:"
+    },
+    "── 能力冷却 ──": {
+      "zh_tw": "── 能力冷卻 ──",
+      "en": "── Ability Cooldown ──"
+    },
+    "标题栏字体大小:": {
+      "zh_tw": "標題列字型大小：",
+      "en": "Title bar font size:"
+    },
+    "启动位置:": {
+      "zh_tw": "啟動位置:",
+      "en": "Start position:"
+    },
+    "放大比例%:": {
+      "zh_tw": "放大比例%:",
+      "en": "Scale Up %:"
+    },
+    "关于/更新": {
+      "zh_tw": "關於/更新",
+      "en": "About / Update"
+    },
+    "位置与缩放": {
+      "zh_tw": "位置與縮放",
+      "en": "Position & Scale"
+    },
+    "能力冷却": {
+      "zh_tw": "能力冷卻",
+      "en": "Ability Cooldown"
+    },
+    "尖刺腰位置:": {
+      "zh_tw": "尖刺腰位置:",
+      "en": "Spike waist position:"
+    },
+    "扇形": {
+      "zh_tw": "扇形",
+      "en": "Sector"
+    },
+    "前往下载": {
+      "zh_tw": "前往下載",
+      "en": "Go to Download"
+    },
+    "确定": {
+      "zh_tw": "確定",
+      "en": "OK"
+    },
+    "多buff布局": {
+      "zh_tw": "多buff佈局",
+      "en": "Multi-buff Layout"
+    },
+    "层数数字勾边色:": {
+      "zh_tw": "層數數字勾邊色:",
+      "en": "Stack outline color:"
+    },
+    "标题栏色:": {
+      "zh_tw": "標題列色:",
+      "en": "Title bar color:"
+    },
+    "发现新版本": {
+      "zh_tw": "發現新版本",
+      "en": "New version found"
+    },
+    "── 倒计时布局 ──": {
+      "zh_tw": "── 倒計時佈局 ──",
+      "en": "── Timer Layout ──"
+    },
+    "倒计时样式:": {
+      "zh_tw": "倒計時樣式:",
+      "en": "Timer style:"
+    },
+    "多buff偏移量:": {
+      "zh_tw": "多buff偏移量:",
+      "en": "Multi-buff offset:"
+    },
+    "翻滚朝向:": {
+      "zh_tw": "翻滾朝向:",
+      "en": "Dodge orientation:"
+    },
+    "── 透明度 ──": {
+      "zh_tw": "── 透明度 ──",
+      "en": "── Opacity ──"
+    },
+    "标题UI色:": {
+      "zh_tw": "標題UI色:",
+      "en": "Title UI color:"
+    },
+    "── 翻滚警告牌（第6/7次）──": {
+      "zh_tw": "── 翻滾警告牌（第6/7次）──",
+      "en": "── Roll Warning Sign (6th/7th) ──"
+    },
+    "Buff 启用/禁用:": {
+      "zh_tw": "Buff 啟用/禁用:",
+      "en": "Buff Enable/Disable:"
+    },
+    "尖刺闪光（核心检测模块）": {
+      "zh_tw": "尖刺閃光（核心檢測模組）",
+      "en": "Spike flash (core)"
+    },
+    "扇形颜色:": {
+      "zh_tw": "扇形顏色:",
+      "en": "Sector Color:"
+    },
+    "── 模块位置 ──": {
+      "zh_tw": "── 模組位置 ──",
+      "en": "── Module Position ──"
+    },
+    "全选": {
+      "zh_tw": "全選",
+      "en": "Select All"
+    },
+    "完成色:": {
+      "zh_tw": "完成色:",
+      "en": "Ready Color:"
+    },
+    "设置按键…": {
+      "zh_tw": "設定按鍵…",
+      "en": "Set Key…"
+    },
+    "位置与隐藏": {
+      "zh_tw": "位置與隱藏",
+      "en": "Position & Hide"
+    },
+    "游戏在前台时显示，切到后台时自动最小化": {
+      "zh_tw": "遊戲在前台時顯示，切到後台時自動最小化",
+      "en": "Show when game is focused; minimize when game is in background"
+    },
+    "倒计时圆心Y偏移:": {
+      "zh_tw": "倒計時圓心Y偏移:",
+      "en": "Timer center Y offset:"
+    },
+    "标题栏状态文字:": {
+      "zh_tw": "標題列狀態文字:",
+      "en": "Title bar status text:"
+    },
+    "状态行缩进:": {
+      "zh_tw": "狀態行縮進:",
+      "en": "Status line indent:"
+    },
+    "图标行缩进:": {
+      "zh_tw": "圖標行縮進:",
+      "en": "Icon row indent:"
+    },
+    "── 常规 ──": {
+      "zh_tw": "── 常規 ──",
+      "en": "── General ──"
+    },
+    "── 颜色与不透明度 ──": {
+      "zh_tw": "── 顏色與不透明度 ──",
+      "en": "── Colors & Opacity ──"
+    },
+    "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": {
+      "zh_tw": "左欄=顯示，右欄=隱藏；拖到另一側切換（不可跨角色）",
+      "en": "Left=shown, right=hidden; drag to the other side to switch (not cross-character)"
+    },
+    "拖动排序；勾选专精：全选=常显 / 全不选=常关": {
+      "zh_tw": "拖動排序；勾選專精：全選=常顯 / 全不選=常關",
+      "en": "Drag to reorder; tick mastery: all=always show / none=always hide"
+    },
+    "呼吸频率:": {
+      "zh_tw": "呼吸頻率：",
+      "en": "Breathing rate:"
+    },
+    "层数数字勾边粗细:": {
+      "zh_tw": "層數數字勾邊粗細:",
+      "en": "Stack outline width:"
+    },
+    "尖刺UI不透明度:": {
+      "zh_tw": "尖刺UI不透明度:",
+      "en": "Spike UI opacity:"
+    },
+    "跳过 v": {
+      "zh_tw": "跳過 v",
+      "en": "Skip v"
+    },
+    "倒计时X偏移:": {
+      "zh_tw": "倒數X偏移:",
+      "en": "Timer X Offset:"
+    },
+    "尖刺色(正常):": {
+      "zh_tw": "尖刺色(正常):",
+      "en": "Spike color (normal):"
+    },
+    "未设置": {
+      "zh_tw": "未設定",
+      "en": "Not set"
+    },
+    "未配置更新地址": {
+      "zh_tw": "未配置更新地址",
+      "en": "Update URL not configured"
+    },
+    "边框不透明度:": {
+      "zh_tw": "邊框不透明度:",
+      "en": "Border opacity:"
+    },
+    "Buff名位置:": {
+      "zh_tw": "Buff名位置:",
+      "en": "Buff name position:"
+    },
+    "全局": {
+      "zh_tw": "全域",
+      "en": "Global"
+    },
+    "── 背景 ──": {
+      "zh_tw": "── 背景 ──",
+      "en": "── Background ──"
+    },
+    "层数数字大小 — (计时版):": {
+      "zh_tw": "層數數字大小 — (計時版):",
+      "en": "Stack number size — (Timer):"
+    },
+    "── 闪光 ──": {
+      "zh_tw": "── 閃光 ──",
+      "en": "── Flash ──"
+    },
+    "── 倒计时弧线 ──": {
+      "zh_tw": "── 倒計時弧線 ──",
+      "en": "── Timer Arc ──"
+    },
+    "设置窗口构造异常：\n%s": {
+      "zh_tw": "設定視窗建構異常：\n%s",
+      "en": "Settings window build error:\n%s"
+    },
+    "隐藏时透明度:": {
+      "zh_tw": "隱藏時透明度:",
+      "en": "Hidden opacity:"
+    },
+    "胶囊宽度微调(Δ):": {
+      "zh_tw": "膠囊寬度微調(Δ):",
+      "en": "Capsule width Δ:"
+    },
+    "── 外描边 ──": {
+      "zh_tw": "── 外描邊 ──",
+      "en": "── Outline ──"
+    },
+    "正在准备…": {
+      "zh_tw": "正在準備…",
+      "en": "Preparing…"
+    },
+    "圆半径:": {
+      "zh_tw": "圓半徑:",
+      "en": "Circle radius:"
+    },
+    "扇形不透明度:": {
+      "zh_tw": "扇形不透明度:",
+      "en": "Sector opacity:"
+    },
+    "── 内存 ──": {
+      "zh_tw": "── 記憶體 ──",
+      "en": "── Memory ──"
+    },
+    "Buff名字": {
+      "zh_tw": "Buff名字",
+      "en": "Buff Name"
+    },
+    "倒计时弧颜色:": {
+      "zh_tw": "倒計時弧顏色:",
+      "en": "Timer arc color:"
+    },
+    "── 冷却完成动画 ──": {
+      "zh_tw": "── 冷卻完成動畫 ──",
+      "en": "── Cooldown Complete Animation ──"
+    },
+    "── 单层buff倒计时胶囊 ──": {
+      "zh_tw": "── 單層buff倒數膠囊 ──",
+      "en": "── Single-layer Buff Timer Capsule ──"
+    },
+    "多buff夹角:": {
+      "zh_tw": "多buff夾角:",
+      "en": "Multi-buff angle:"
+    },
+    "翻滚图标绝对路径:": {
+      "zh_tw": "翻滾圖標絕對路徑:",
+      "en": "Dodge icon path:"
+    },
+    "翻滚图标闪光：勾边发光": {
+      "zh_tw": "翻滾圖標閃光：勾邊發光",
+      "en": "Dodge icon flash: edge glow"
+    },
+    "层数数字Y偏移:": {
+      "zh_tw": "層數數字Y偏移:",
+      "en": "Stack number Y offset:"
+    },
+    "模块缩放:": {
+      "zh_tw": "模組縮放:",
+      "en": "Module scale:"
+    },
+    "柔和程度:": {
+      "zh_tw": "柔和程度：",
+      "en": "Softness:"
+    },
+    "越上越靠左": {
+      "zh_tw": "越上越靠左",
+      "en": "Top → Left"
+    },
+    "倒计时": {
+      "zh_tw": "倒計時",
+      "en": "Timer"
+    },
+    "检查更新": {
+      "zh_tw": "檢查更新",
+      "en": "Check for Updates"
+    },
+    "── 闪光应用模块 ──": {
+      "zh_tw": "── 閃光應用模組 ──",
+      "en": "── Flash Apply To ──"
+    },
+    "随分辨率放大:": {
+      "zh_tw": "隨解析度放大:",
+      "en": "Resolution scale:"
+    },
+    "隐藏区": {
+      "zh_tw": "隱藏區",
+      "en": "Hidden zone"
+    },
+    "倒计时弧线内缩:": {
+      "zh_tw": "倒計時弧線內縮:",
+      "en": "Timer arc inset:"
+    },
+    "（单层buff）": {
+      "zh_tw": "（單層buff）",
+      "en": "(single-layer buff)"
+    },
+    "全勾选": {
+      "zh_tw": "全勾選",
+      "en": "Check All"
+    },
+    "聚散距离:": {
+      "zh_tw": "聚散距離:",
+      "en": "Spread Distance:"
+    },
+    "倒计时Y偏移:": {
+      "zh_tw": "倒數Y偏移:",
+      "en": "Timer Y Offset:"
+    },
+    "显示能力名称": {
+      "zh_tw": "顯示能力名稱",
+      "en": "Show Ability Name"
+    },
+    "模块位置:": {
+      "zh_tw": "模組位置：",
+      "en": "Module position:"
+    },
+    "捕获快捷键": {
+      "zh_tw": "擷取快捷鍵",
+      "en": "Capture Hotkey"
+    },
+    "全不选": {
+      "zh_tw": "全不選",
+      "en": "Deselect All"
+    },
+    "更新下载地址：": {
+      "zh_tw": "更新下載位址：",
+      "en": "Update download URL:"
+    },
+    "GitHub 镜像地址：": {
+      "zh_tw": "GitHub 鏡像位址：",
+      "en": "GitHub mirror URL:"
+    },
+    "已跳过 v": {
+      "zh_tw": "已跳過 v",
+      "en": "Skipped v"
+    },
+    "标题→圆间距:": {
+      "zh_tw": "標題→圓間距:",
+      "en": "Title to circle gap:"
+    },
+    "尖刺宽度:": {
+      "zh_tw": "尖刺寬度:",
+      "en": "Spike width:"
+    },
+    "核心模块": {
+      "zh_tw": "核心模組",
+      "en": "Core"
+    },
+    "横放": {
+      "zh_tw": "橫放",
+      "en": "Horizontal"
+    },
+    "隐藏": {
+      "zh_tw": "隱藏",
+      "en": "Hide"
+    },
+    "语言 / Language:": {
+      "zh_tw": "語言 / Language:",
+      "en": "Language:"
+    },
+    "浏览...": {
+      "zh_tw": "瀏覽...",
+      "en": "Browse..."
+    },
+    "外部差异化颜色（圆环/尖刺/外描边）": {
+      "zh_tw": "外部差異化顏色（圓環/尖刺/外描邊）",
+      "en": "External color diff (ring/spike/outline)"
+    },
+    "置顶": {
+      "zh_tw": "永遠置頂",
+      "en": "Always on Top"
+    },
+    "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": {
+      "zh_tw": "未進入戰鬥時隱藏整個UI（尖刺圓／翻滾／技能UI 全部）",
+      "en": "Hide entire UI when not in combat (spike/roll/skill UI all)"
+    },
+    "Buff名衬色块宽度微调:": {
+      "zh_tw": "Buff名襯色塊寬度微調:",
+      "en": "Buff name bg width adjust:"
+    },
+    "生效区（拖动排序）": {
+      "zh_tw": "生效區（拖動排序）",
+      "en": "Active zone (drag to reorder)"
+    },
+    "显示能力冷却": {
+      "zh_tw": "顯示能力冷卻",
+      "en": "Show Ability Cooldowns"
+    },
+    "更新日志：": {
+      "zh_tw": "更新日誌：",
+      "en": "Changelog:"
+    },
+    "整体等比缩放:": {
+      "zh_tw": "整體等比縮放:",
+      "en": "UI scale:"
+    },
+    "背景画布不透明度:": {
+      "zh_tw": "背景畫布不透明度:",
+      "en": "Background opacity:"
+    },
+    "── 扫描 / 缩放 / 内存 ──": {
+      "zh_tw": "── 掃描 / 縮放 / 記憶體 ──",
+      "en": "── Scan / Scale / Memory ──"
+    },
+    "倒计时字号:": {
+      "zh_tw": "倒數字號:",
+      "en": "Timer font size:"
+    },
+    "倒计时文字色:": {
+      "zh_tw": "倒計時文字色:",
+      "en": "Timer Text Color:"
+    },
+    "时间胶囊Y偏移:": {
+      "zh_tw": "時間膠囊Y偏移:",
+      "en": "Time capsule Y offset:"
+    },
+    "字号:": {
+      "zh_tw": "字號:",
+      "en": "Font Size:"
+    },
+    "核心检测模块（标题栏始终显示，仅内容隐藏）": {
+      "zh_tw": "核心偵測模組（標題列始終顯示，僅內容隱藏）",
+      "en": "Core detection module (title bar stays visible, only content hidden)"
+    },
+    "── 多buff差异化（按同时监测的buff个数 2/3/4/5；每组：缩放 / 圆心水平间距 / 圆心Delta_Y / 外部差异化颜色 / 内部差异化颜色） ──": {
+      "zh_tw": "── 多buff差異化（按同時監測的buff個數 2/3/4/5；每組：縮放／圓心水平間距／圓心Delta_Y／外部差異化顏色／內部差異化顏色） ──",
+      "en": "── Multi-buff differentiation (by simultaneous buff count 2/3/4/5; per group: scale / center X spacing / center Delta_Y / outer diff color / inner diff color) ──"
+    },
+    "默认图标:": {
+      "zh_tw": "預設圖標:",
+      "en": "Default icon:"
+    },
+    "尖刺与圆环": {
+      "zh_tw": "尖刺與圓環",
+      "en": "Spikes & Ring"
+    },
+    "── 角色 Buff 顺位与专精门控（每行三勾选框 = 觉醒/真谛/秘义 / 拖动排序 / 可折叠） ──": {
+      "zh_tw": "── 角色 Buff 順位與專精門控（每行三勾選框 = 覺醒/真諦/秘義 / 拖動排序 / 可折疊） ──",
+      "en": "── Character Buff Order & Mastery Gating (3 checkboxes = Awakening/Truth/Secret / drag to reorder / collapsible) ──"
+    },
+    "放大倍数:": {
+      "zh_tw": "放大倍數：",
+      "en": "Zoom factor:"
+    },
+    "圆环色(满层):": {
+      "zh_tw": "圓環色(滿層):",
+      "en": "Circle color (full stack):"
+    },
+    "当前版本：": {
+      "zh_tw": "目前版本：",
+      "en": "Current version:"
+    },
+    "── 布局间距 ──": {
+      "zh_tw": "── 佈局間距 ──",
+      "en": "── Layout Spacing ──"
+    },
+    "层数数字色 — (计时版):": {
+      "zh_tw": "層數數字色 — (計時版):",
+      "en": "Stack number color — (Timer):"
+    },
+    "时间胶囊宽度:": {
+      "zh_tw": "時間膠囊寬度:",
+      "en": "Timer capsule width:"
+    },
+    "启用整体外描边": {
+      "zh_tw": "啟用整體外描邊",
+      "en": "Enable outer outline"
+    },
+    "能力模块": {
+      "zh_tw": "能力模組",
+      "en": "Skill Module"
+    },
+    "确定要{}所有角色的专精勾选框吗？\n（仅影响当前设置，可手动撤销）": {
+      "zh_tw": "確定要{}所有角色的專精勾選框嗎？\n（僅影響目前設定，可手動撤銷）",
+      "en": "Are you sure you want to {} all characters' mastery checkboxes?\n(This only affects the current setting and can be manually undone.)"
+    },
+    "打开设置：": {
+      "zh_tw": "開啟設定：",
+      "en": "Open Settings:"
+    },
+    "确认操作": {
+      "zh_tw": "確認操作",
+      "en": "Confirm Action"
+    },
+    "能力冷却模块": {
+      "zh_tw": "能力冷卻模組",
+      "en": "Ability cooldown module"
+    },
+    "圆角半径:": {
+      "zh_tw": "圓角半徑：",
+      "en": "Corner radius:"
+    },
+    "{} 个 buff 同屏": {
+      "zh_tw": "{} 個 buff 同屏",
+      "en": "{} buffs on screen"
+    },
+    "缩放{}": {
+      "zh_tw": "縮放{}",
+      "en": "Scale {}"
+    },
+    "缩放{}:": {
+      "zh_tw": "縮放{}:",
+      "en": "Scale {}:"
+    },
+    "圆心水平间距{}": {
+      "zh_tw": "圓心水平間距{}",
+      "en": "Center X spacing {}"
+    },
+    "圆心水平间距{}:": {
+      "zh_tw": "圓心水平間距{}:",
+      "en": "Center X spacing {}:"
+    },
+    "圆心Delta_Y{}": {
+      "zh_tw": "圓心Delta_Y{}",
+      "en": "Center Delta Y {}"
+    },
+    "圆心Delta_Y{}:": {
+      "zh_tw": "圓心Delta_Y{}:",
+      "en": "Center Delta Y {}:"
+    },
+    "外部差异化颜色{}": {
+      "zh_tw": "外部差異化顏色{}",
+      "en": "Outer diff color {}"
+    },
+    "外部差异化颜色{}:": {
+      "zh_tw": "外部差異化顏色{}:",
+      "en": "Outer diff color {}:"
+    },
+    "内部差异化颜色{}": {
+      "zh_tw": "內部差異化顏色{}",
+      "en": "Inner diff color {}"
+    },
+    "内部差异化颜色{}:": {
+      "zh_tw": "內部差異化顏色{}:",
+      "en": "Inner diff color {}:"
+    },
+    "颜色分布模式{}": {
+      "zh_tw": "顏色分布模式{}",
+      "en": "Color mode {}"
+    },
+    "颜色分布模式{}:": {
+      "zh_tw": "顏色分布模式{}:",
+      "en": "Color mode {}:"
+    },
+    "同色系间距{}": {
+      "zh_tw": "同色系間距{}",
+      "en": "Hue span {}"
+    },
+    "同色系间距{}:": {
+      "zh_tw": "同色系間距{}:",
+      "en": "Hue span {}:"
+    },
+    "警告牌相对尺寸:": {
+      "zh_tw": "警告牌相對尺寸:",
+      "en": "Warning sign relative size:"
+    },
+    "红边宽度占比:": {
+      "zh_tw": "紅邊寬度占比:",
+      "en": "Red edge width ratio:"
+    },
+    "觉醒": {
+      "zh_tw": "覺醒",
+      "en": "Insight"
+    },
+    "真谛": {
+      "zh_tw": "真諦",
+      "en": "Essence"
+    },
+    "秘义": {
+      "zh_tw": "秘義",
+      "en": "Crux"
+    },
+    "隐藏尖刺与装饰小球（仅保留圆环+倒计时+文字）": {
+      "zh_tw": "隱藏尖刺與裝飾小球（僅保留圓環+倒計時+文字）",
+      "en": "Hide spikes & beads (keep ring + timer + text only)"
+    },
+    "去下载": {
+      "zh_tw": "去下載",
+      "en": "Download"
+    },
+    "稍后": {
+      "zh_tw": "稍後",
+      "en": "Later"
+    },
+    "是否前往下载？更新日志可在 设置 → 关于 查看。": {
+      "zh_tw": "是否前往下載？更新日誌可在 設定 → 關於 查看。",
+      "en": "Go to download now? Changelog is available in Settings → About."
+    },
+    "正在下载新版本…": {
+      "zh_tw": "正在下載新版本…",
+      "en": "Downloading new version…"
+    },
+    "下载失败：": {
+      "zh_tw": "下載失敗：",
+      "en": "Download failed:"
+    },
+    "下载完成": {
+      "zh_tw": "下載完成",
+      "en": "Download complete"
+    },
+    "下载完成，正在启动新版本并退出当前程序。": {
+      "zh_tw": "下載完成，正在啟動新版本並退出當前程式。",
+      "en": "Download complete. Launching the new version and exiting the current one."
+    },
+    "启动新版本失败，请手动运行：": {
+      "zh_tw": "啟動新版本失敗，請手動執行：",
+      "en": "Failed to launch the new version. Please run it manually: "
+    },
+    "检查更新中…": {
+      "zh_tw": "檢查更新中…",
+      "en": "Checking for updates…"
+    },
+    "已是最新": {
+      "zh_tw": "已是最新",
+      "en": "Up to date"
+    },
+    "检查失败": {
+      "zh_tw": "檢查失敗",
+      "en": "Update check failed"
+    },
+    "全局热键不能两两相同：\n\n「{a}」与「{b}」都设置为\n{c}\n\n请修改后再确定。": {
+      "zh_tw": "全域快速鍵不能兩兩相同：\n\n「{a}」與「{b}」都設定為\n{c}\n\n請修改後再確定。",
+      "en": "Global hotkeys cannot be duplicated:\n\nBoth {a} and {b} are set to\n{c}\n\nPlease change one before confirming."
+    },
+    "不微调": {
+      "zh_tw": "不微調",
+      "en": "No fine-tune"
+    },
+    "全部勾选": {
+      "zh_tw": "全部勾選",
+      "en": "Select all"
+    },
+    "全部取消": {
+      "zh_tw": "全部取消",
+      "en": "Clear all"
+    },
+    "按下组合键…": {
+      "zh_tw": "按下組合鍵…",
+      "en": "Press a key combination…"
+    },
+    "https://ghfast.top/ （留空=仅用内置备用镜像）": {
+      "zh_tw": "https://ghfast.top/ （留空=僅用內建備用鏡像）",
+      "en": "https://ghfast.top/ (leave empty = built-in backup mirror only)"
+    },
+    "检测/下载地址走 GitHub Release CDN；国内不挂梯时若直连超时，会自动依次回退：用户镜像（下方填写）→ 内置备用镜像（ghfast.top / gh.ddlc.top / cors.isteed.cc），任一成功即停。留空镜像地址 = 仅用内置备用，不配置也行。": {
+      "zh_tw": "檢測/下載地址走 GitHub Release CDN；國內不掛梯時若直連逾時，會自動依序回退：使用者鏡像（下方填寫）→ 內建備用鏡像（ghfast.top / gh.ddlc.top / cors.isteed.cc），任一成功即停。留空鏡像地址 = 僅用內建備用，不配置也行。",
+      "en": "Detect/download URLs use GitHub Release CDN; without a VPN in China, if the direct connection times out it auto-falls back in order: user mirror (fill below) -> built-in backup mirrors (ghfast.top / gh.ddlc.top / cors.isteed.cc), stopping at the first success. Leaving the mirror blank = built-in backup only, no config needed."
+    },
+    "能力扇形色:": {
+      "en": "Skill sector color:",
+      "zh_tw": "能力扇形色:"
+    },
+    "能力倒计时色:": {
+      "en": "Skill CD timer color:",
+      "zh_tw": "能力倒計時色:"
+    },
+    "呼出/隐藏所有窗口": {
+      "en": "Show/Hide all windows",
+      "zh_tw": "呼出/隱藏所有視窗"
+    },
+    "锁定 / 解锁窗口": {
+      "en": "Lock / Unlock windows",
+      "zh_tw": "鎖定 / 解鎖視窗"
+    },
+    "打开设置": {
+      "en": "Open settings",
+      "zh_tw": "開啟設定"
+    },
+    "红边色:": {
+      "en": "Red border color:",
+      "zh_tw": "紅邊色:"
+    },
+    "黄色面:": {
+      "en": "Yellow face:",
+      "zh_tw": "黃色面:"
+    },
+    "胶囊背景色:": {
+      "en": "Capsule bg color:",
+      "zh_tw": "膠囊背景色:"
+    },
+    "胶囊边框色:": {
+      "en": "Capsule border color:",
+      "zh_tw": "膠囊邊框色:"
+    },
+    "呼吸光颜色:": {
+      "en": "Glow color:",
+      "zh_tw": "呼吸光顏色:"
+    },
+    "选择翻滚图标": {
+      "en": "Select dodge icon",
+      "zh_tw": "選擇翻滾圖標"
+    },
+    "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)": {
+      "en": "Image files (*.png *.jpg *.jpeg *.bmp *.gif)",
+      "zh_tw": "圖片檔案 (*.png *.jpg *.jpeg *.bmp *.gif)"
+    },
+    "选择颜色": {
+      "en": "Select color",
+      "zh_tw": "選擇顏色"
+    },
+    "确定要把所有设置恢复为默认吗？此操作会清空当前所有自定义配置（含已禁用的 Buff）。": {
+      "en": "Restore all settings to defaults? This clears all custom config (incl. disabled Buffs).",
+      "zh_tw": "確定要把所有設定恢復為預設嗎？此操作會清空目前所有自訂配置（含已停用的 Buff）。"
+    },
+    "正在加载设置…": {
+      "en": "Loading settings…",
+      "zh_tw": "正在載入設定…"
+    },
+    "已加载角色数据库": {
+      "en": "Character DB loaded",
+      "zh_tw": "已載入角色資料庫"
+    },
+    "正在计算界面布局…": {
+      "en": "Computing layout…",
+      "zh_tw": "正在計算介面佈局…"
+    },
+    "正在加载图标资源…": {
+      "en": "Loading icons…",
+      "zh_tw": "正在載入圖示資源…"
+    },
+    "已创建悬浮窗口": {
+      "en": "Overlay windows created",
+      "zh_tw": "已建立懸浮視窗"
+    },
+    "已初始化系统托盘": {
+      "en": "System tray initialized",
+      "zh_tw": "已初始化系統托盤"
+    },
+    "正在显示悬浮窗口…": {
+      "en": "Showing overlay…",
+      "zh_tw": "正在顯示懸浮視窗…"
+    },
+    "启动完成": {
+      "en": "Startup complete",
+      "zh_tw": "啟動完成"
+    },
+    "重置所有窗口": {
+      "en": "Reset all windows",
+      "zh_tw": "重置所有視窗"
+    },
+    "确定要把三个模块的窗口位置与缩放恢复为默认并居中吗？此操作会覆盖当前布局。": {
+      "en": "Reset all 3 module windows to default & center? Overwrites current layout.",
+      "zh_tw": "確定要把三個模組的視窗位置與縮放恢復為預設並置中嗎？此操作會覆蓋目前佈局。"
+    },
+    "能力冷却已隐藏": {
+      "en": "Skill CD hidden",
+      "zh_tw": "能力冷卻已隱藏"
+    },
+    "初始化中...": {
+      "en": "Initializing...",
+      "zh_tw": "初始化中..."
+    },
+    "未检测到技能": {
+      "en": "No skill detected",
+      "zh_tw": "未偵測到技能"
+    },
+    "未检测到角色": {
+      "en": "No character detected",
+      "zh_tw": "未偵測到角色"
+    },
+    "未检测到游戏": {
+      "en": "No game detected",
+      "zh_tw": "未偵測到遊戲"
+    },
+    "检测正常": {
+      "en": "Detection OK",
+      "zh_tw": "偵測正常"
+    },
+    "设置...": {
+      "en": "Settings...",
+      "zh_tw": "設定..."
+    },
+    "解锁": {
+      "en": "Unlock",
+      "zh_tw": "解鎖"
+    },
+    "锁定": {
+      "en": "Lock",
+      "zh_tw": "鎖定"
+    },
+    "显示所有窗口": {
+      "en": "Show all windows",
+      "zh_tw": "顯示所有視窗"
+    },
+    "退出": {
+      "en": "Exit",
+      "zh_tw": "退出"
+    },
+    "缩放2:": {
+      "en": "Scale 2:",
+      "zh_tw": "縮放2:"
+    },
+    "圆心水平间距2:": {
+      "en": "Circle horiz spacing 2:",
+      "zh_tw": "圓心水平間距2:"
+    },
+    "圆心Delta_Y2:": {
+      "en": "Circle ΔY 2:",
+      "zh_tw": "圓心ΔY 2:"
+    },
+    "外部差异化颜色2:": {
+      "en": "External diff color 2:",
+      "zh_tw": "外部差異化顏色2:"
+    },
+    "内部差异化颜色2:": {
+      "en": "Internal diff color 2:",
+      "zh_tw": "內部差異化顏色2:"
+    },
+    "缩放3:": {
+      "en": "Scale 3:",
+      "zh_tw": "縮放3:"
+    },
+    "圆心水平间距3:": {
+      "en": "Circle horiz spacing 3:",
+      "zh_tw": "圓心水平間距3:"
+    },
+    "圆心Delta_Y3:": {
+      "en": "Circle ΔY 3:",
+      "zh_tw": "圓心ΔY 3:"
+    },
+    "外部差异化颜色3:": {
+      "en": "External diff color 3:",
+      "zh_tw": "外部差異化顏色3:"
+    },
+    "内部差异化颜色3:": {
+      "en": "Internal diff color 3:",
+      "zh_tw": "內部差異化顏色3:"
+    },
+    "缩放4:": {
+      "en": "Scale 4:",
+      "zh_tw": "縮放4:"
+    },
+    "圆心水平间距4:": {
+      "en": "Circle horiz spacing 4:",
+      "zh_tw": "圓心水平間距4:"
+    },
+    "圆心Delta_Y4:": {
+      "en": "Circle ΔY 4:",
+      "zh_tw": "圓心ΔY 4:"
+    },
+    "外部差异化颜色4:": {
+      "en": "External diff color 4:",
+      "zh_tw": "外部差異化顏色4:"
+    },
+    "内部差异化颜色4:": {
+      "en": "Internal diff color 4:",
+      "zh_tw": "內部差異化顏色4:"
+    },
+    "缩放5:": {
+      "en": "Scale 5:",
+      "zh_tw": "縮放5:"
+    },
+    "圆心水平间距5:": {
+      "en": "Circle horiz spacing 5:",
+      "zh_tw": "圓心水平間距5:"
+    },
+    "圆心Delta_Y5:": {
+      "en": "Circle ΔY 5:",
+      "zh_tw": "圓心ΔY 5:"
+    },
+    "外部差异化颜色5:": {
+      "en": "External diff color 5:",
+      "zh_tw": "外部差異化顏色5:"
+    },
+    "内部差异化颜色5:": {
+      "en": "Internal diff color 5:",
+      "zh_tw": "內部差異化顏色5:"
+    },
+    "全显示": {
+      "en": "Show all",
+      "zh_tw": "全顯示"
+    },
+    "全不显示": {
+      "en": "Hide all",
+      "zh_tw": "全不顯示"
+    },
+    "内存探针：": {
+      "en": "Memory probe:",
+      "zh_tw": "記憶體探針："
+    },
+    "导出角色内存(找偏移用)": {
+      "en": "Dump char memory (offset hunting)",
+      "zh_tw": "匯出角色記憶體(找偏移用)"
+    },
+    "── 角色 Buff 顺位（左栏显示·右栏隐藏 / 拖动切换 / 右键置顶 / 可折叠） ──": {
+      "en": "── Character Buff order (left=shown · right=hidden / drag to swap / right-click pin / collapsible) ──",
+      "zh_tw": "── 角色 Buff 順位（左欄顯示·右欄隱藏 / 拖動切換 / 右鍵置頂 / 可折疊） ──"
+    },
+    "隐藏与位置": {
+      "zh_tw": "隱藏與位置",
+      "en": "Hide & Position"
+    },
+    "2 个 buff 同屏": {
+      "zh_tw": "2 個 buff 同屏",
+      "en": "2 buffs on screen"
+    },
+    "3 个 buff 同屏": {
+      "zh_tw": "3 個 buff 同屏",
+      "en": "3 buffs on screen"
+    },
+    "4 个 buff 同屏": {
+      "zh_tw": "4 個 buff 同屏",
+      "en": "4 buffs on screen"
+    },
+    "5 个 buff 同屏": {
+      "zh_tw": "5 個 buff 同屏",
+      "en": "5 buffs on screen"
+    },
+    "把当前角色 actor 内存按 u32 导出到桌面 actor_dump.txt，用于定位 class/异能 等裸值偏移": {
+      "zh_tw": "把當前角色 actor 記憶體按 u32 匯出到桌面 actor_dump.txt，用於定位 class/異能 等裸值偏移",
+      "en": "Dump current character actor memory as u32 to desktop actor_dump.txt, for locating class/grace raw offsets"
+    },
+    "GBFR 指示器 启动中…": {
+      "zh_tw": "GBFR 指示器 啟動中…",
+      "en": "GBFR Indicator starting…"
+    },
+    "✅ 启动完成，正在进入…": {
+      "zh_tw": "✅ 啟動完成，正在進入…",
+      "en": "✅ Startup complete, entering…"
+    },
+    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": {
+      "en": "Version check URL (above) uses the GitHub Release CDN (releases/latest/download/version.json), not raw, so it is fast in mainland China and less likely to be blocked. The exe download URL is read from the download_url field of that version.json and auto-filled below — no extra configuration needed.",
+      "zh_tw": "檢測版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，國內快速且不易被牆；exe 下載地址從該 version.json 的 download_url 欄位讀取並自動填入下方，無需另外配置。"
+    },
+    "HTTP/2 + 切块": {
+      "zh_tw": "HTTP/2 + 區塊",
+      "en": "HTTP/2 + chunks"
+    },
+    "HTTP/1 + 切块": {
+      "zh_tw": "HTTP/1 + 區塊",
+      "en": "HTTP/1 + chunks"
+    },
+    "HTTP/1 + 单连接": {
+      "zh_tw": "HTTP/1 + 單一連線",
+      "en": "HTTP/1 + single connection"
+    },
+    "多次尝试均失败，请检查网络后重试": {
+      "zh_tw": "多次嘗試均失敗，請檢查網路後重試",
+      "en": "All attempts failed, check your network and retry"
+    },
+    "下载重试": {
+      "zh_tw": "下載重試",
+      "en": "Download retry"
+    },
+    "下载失败": {
+      "zh_tw": "下載失敗",
+      "en": "Download failed"
+    },
+    "下载中": {
+      "zh_tw": "下載中",
+      "en": "Downloading"
+    },
+    "下载已取消": {
+      "zh_tw": "下載已取消",
+      "en": "Download cancelled"
+    },
+    "启动新版本失败": {
+      "zh_tw": "啟動新版本失敗",
+      "en": "Failed to launch new version"
+    },
+    "EXE 同步列表 (分号/换行分隔):": {
+      "en": "EXE Sync List (semicolon / newline separated):",
+      "zh_tw": "EXE 同步清單 (分號 / 換行分隔):"
+    },
+    "多个 exe 绝对路径，可用分号或换行分隔；可附加 ||工作目录": {
+      "en": "Multiple exe absolute paths, separated by semicolon or newline; optionally append ||working dir",
+      "zh_tw": "多個 exe 絕對路徑，可用分號或換行分隔；可附加 ||工作目錄"
+    },
+    "多个 exe 的绝对路径，用分号或换行分隔。每条可附加「||工作目录」指定起始位置（等同 .lnk 的起始位置，可省略）。程序启动时检测：未运行则共同启动（以指定工作目录为起始位置），已运行则跳过（不监视、不杀进程）。": {
+      "en": "Absolute paths of multiple exes, separated by semicolon or newline. Each entry may append \"||working dir\" to set its start location (same as a .lnk's Start-in; optional). At launch the app checks: those not running are started together (in the given working dir); those already running are skipped (not monitored, not killed).",
+      "zh_tw": "多個 exe 的絕對路徑，用分號或換行分隔。每條可附加「||工作目錄」指定起始位置（等同 .lnk 的起始位置，可省略）。程式啟動時檢測：未執行則共同啟動（以指定工作目錄為起始位置），已執行則跳過（不監視、不殺程序）。"
+    },
+    "标题栏底色行与圆环画布之间的垂直间距（像素）。\n": {
+      "en": "Vertical spacing (px) between the title-bar color row and the ring canvas.\n",
+      "zh_tw": "標題欄底色行與圓環畫布之間的垂直間距（像素）。\n"
+    },
+    "显示启动画面": {
+      "en": "Show startup splash screen",
+      "zh_tw": "顯示啟動畫面"
+    }
+  }
+}
