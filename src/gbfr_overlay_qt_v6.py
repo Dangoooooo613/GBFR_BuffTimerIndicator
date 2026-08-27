@@ -19,23 +19,20 @@ import struct
 import sys
 import threading
 import time
-import re
 from ctypes import wintypes
 
 import mastery_reader
 import buff_data_generated
 
 from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QPoint, QPointF, QProcess, QRect, QRectF, QSize, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QAction, QBitmap, QBrush, QColor, QCursor, QDesktopServices, QFont, QFontMetrics, QLinearGradient, QPolygonF, QRadialGradient, QIcon, QImage, QPainter, QPen, QPainterPath, QPixmap, QRegion
+from PySide6.QtGui import QBrush, QColor, QCursor, QDesktopServices, QFont, QFontMetrics, QLinearGradient, QRadialGradient, QIcon, QImage, QPainter, QPen, QPainterPath, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QAbstractSpinBox,
     QApplication,
     QCheckBox,
     QColorDialog,
     QComboBox,
     QDialog,
-    QDialogButtonBox,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -49,7 +46,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QProgressBar,
     QSizePolicy,
     QSlider,
     QScrollArea,
@@ -62,7 +58,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 
 # ============================ Paths ============================
 if getattr(sys, "frozen", False):
@@ -80,30 +75,153 @@ else:
 DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
-# ============================ Version ============================
-def _detect_build_no():
-    """从运行中的 exe 文件名提取构建号：GBFR_CooldownIndicator_V700.exe → 700。
-    解析失败（如从源码 .py 直接运行、或 exe 被改名）时回退到 None。"""
-    try:
-        if getattr(sys, "frozen", False):
-            path = sys.argv[0]          # onefile 下 sys.executable 指向临时解压目录，用 argv[0] 才是用户真实的 exe
-        else:
-            path = sys.argv[0]
-        name = os.path.basename(os.path.abspath(path))
-        # 锚定 .exe 后缀，避免源码模式（gbfr_overlay_qt_v6.py 里的 v6）或改名时误匹配
-        m = re.search(r"V(\d+)\.exe$", name, re.IGNORECASE)
-        if m:
-            return int(m.group(1))
-    except Exception:
-        pass
-    return None
-
-# 版本号单一来源：由 exe 文件名（V700 → 7.00）推导，标题栏与自动更新共用同一基线，
-# 重建换名即自动更新，无需手动改常量。解析失败时回退到下方兜底值。
-_BUILD_NO = 2012  # 标题栏自报 20.12 / V2012；+1 递增（V2011->V2012）
+# 版本号：标题栏与自动更新共用同一基线，与 release_notes / version.json 同步。
+_BUILD_NO = 2040  # 标题栏自报 20.40 / V2040；
+# V2040：死代码清理（P0+P1）。删除未使用的函数/常量/属性/局部/导入，以及 DEFAULT_SETTINGS 中
+#       从未被读取的死键（bg_color/bg_color_opacity/arc_color_opacity/icon_color_opacity/
+#       classmech_window_x|y|scale_percent/ex_status_offset/show_skill_cd/skill_cd_*_opacity/
+#       supersample/update_mirror_url/flash_dodge_outline 共 15 个）。不含任何功能改动，行为不变。
+#       保留项：overlay 实例引用（保对象生命周期）、_draw_title_bar 内的 th（绘制中使用）、
+#       _btn_*_rect_win 命中矩形（活代码）。
+# V2039：颜色选择对话框的 16 格「自定义颜色」持久化。
+#       之前 QColorDialog.setCustomColor() 在进程退出后丢失，用户辛辛苦苦调好的色下次打开
+#       全部归零。改法：pick_color() 入口前从 settings['custom_palette'] 把 16 个 hex
+#       还原到 QColorDialog 全局 setCustomColor(i, ...)，关闭后立即用 customCount + customColor(i)
+#       循环读 16 格回写到 settings 并 save_settings；reset_defaults 同步清空。
+#       注意：PySide6 没有 customColors() 这种列表版 getter，只有 customCount + customColor(i) 单格读。
+#       「Add to Custom Colors 总覆盖第一个」「点格子立刻被覆盖」仍是 Windows 系统 ColorDialog
+#       内置行为无法定制，要彻底改需要重写一个内部 ColorPicker 对话框，按本版范围暂不做。
+# V2038：真正修伊德龙人化形态下能力模块（skill_cd 菱形）的能力名显示错误。
+#       根因（经 GBFR Logs 的 lang/zh-CN/abilities.json 核实）：伊德龙人化是独立的 PL2000，
+#             其能力与 PL1900 人形态【不是同一套】——PL2000 有专属 AB_PL2000_01~05（圣迹再临/
+#             天谴/永无止境/乐园之噬/神愿之力），而人形态是 AB_PL1900_01~08（含无缚之斩/赎罪/末日形态）。
+#             龙人化 actor 的 +ABILITY_HASH_OFFSET 存的是 PL2000 的 hash，但项目数据库
+#             GBFR_Character_Skills_Buffs.json 原先没收录 PL2000 → _ab_hash_map 命中不到 → 显示空。
+#             V2036/V2037 误把龙人化技能「复用」成 PL1900 人形态的技能名，是错误做法。
+#       改法：把 PL2000 的真实技能（hash→三语名）正式收录进项目的 GBFR_Character_Skills_Buffs.json，
+#             让 _ab_hash_map 按 hash 直接命中龙人化的真实技能名；并移除 V2037 误加的
+#             PL1900→PL1900 / PL2000→PL1900 技能借用（避免显示错误技能名）。核心 Buff 区
+#             PL2000 仍与 PL1900 共用，那是 BUFF_PROFILES 的逻辑，不受影响。
+# 改动：
+#  ① 完全去掉「显示启动画面」（启动条）开关——不再以 splash 形式启动：
+#     删 class StartupSplash（约 80 行），同步删除设置面板「核心检测模块」内
+#     「显示启动画面」复选框以及 DEFAULT_SETTINGS["show_startup_splash"] / load_settings 迁移
+#     / show_startup_splash_chk 三处触点；main() 直接 `GBFROverlayQt(progress_cb=None)`
+#     启动，无需任何 qlineargradient 启动卡片。
+#  ② 「EXE 同步列表」整行新增「启用 EXE 同步列表」勾选框（默认开启）：
+#     设置 → 全局 → EXE 同步 卡片顶部；玩家可一键禁用全部 EXE 同步。
+#     保存到 settings["enable_sync_exe_list"]；_sync_exe_list_at_startup 读取：
+#     关掉时直接 return，不起后台线程，不再扫描与 start 各 EXE。
+#  ③ 角色 Buff 顺位与专精门控三列（觉醒 / 真谛 / 秘义）列宽从 86~100
+#     放大 1.5 倍 → 129~150；同时影响列标题（line 1805）和每行 checkbox（line 1931）。
+#  ④ i18n.json：删除「显示启动画面」key（zh/zh_tw/en 三语），新增「启用 EXE 同步列表」三语。
+#  ⑤ schema 94 不变；仅补丁性改动（功能清理 + 加一个开关 + 列宽调整）。
+                       # V2034 改动：把「尖刺」与「装饰小球」的显示/隐藏彻底拆成两个互不耦合的独立开关——
+                       #             原 V2033 的「隐藏尖刺与装饰小球」(hide_spikes_and_beads) +
+                       #             「仅隐藏上面的尖刺」(hide_spikes_only) 两个 hide 选项，组合语义绕且互相耦合，
+                       #             用户反馈「不如直接给两个独立开关」。本版改为：
+                       #             ① DEFAULT_SETTINGS 删 "hide_spikes_and_beads"/"hide_spikes_only"，
+                       #                加 "show_spikes": True / "show_bead": True（默认都显示）。
+                       #             ② 设置面板「尖刺与圆环」卡片下两个复选框：
+                       #                「显示尖刺（三角本体）」(show_spikes_chk) / 「显示装饰小球（尖刺顶端圆点）」(show_bead_chk)。
+                       #             ③ 渲染层彻底解耦：
+                       #                - 删 _hide_spikes()，改 _spike_drawn()（返回 show_spikes）/ _bead_drawn()（返回 show_bead）；
+                       #                - _effective_opacity 对 spike_color_normal/lv7 在 show_spikes=False 时强制透明度 0
+                       #                  （尖刺三角本体+外勾边+闪光整体消失）；装饰小球单独走 _bead_drawn() 判定，
+                       #                  不依赖 _spike_drawn()。
+                       #                - _draw_spikes 不再早 return：show_spikes=False 时仍可能要画装饰小球，循环内
+                       #                  按 per-spike：不画三角则仅当 show_bead 画小球；正常分支也按 show_bead 决定画不画小球。
+                       #                - _draw_indicator_outer_outline 外勾边：尖刺三角勾边受 _spike_drawn() 控制、
+                       #                  装饰小球勾边受 _bead_drawn() 控制，两者独立。
+                       #             ④ 组合效果（4 种）：都勾（默认，全显示）/ 只勾装饰（仅小球）/ 只勾尖刺（仅三角）/
+                       #                都不勾（光秃秃圆环+倒计时+文字）——用户完全自由组合，不再受 hide 组合语义束缚。
+                       #             ⑤ 画布下沿仅在 show_spikes 时额外预留 spike_len（dragon_bottom_y），不压缩圆环空间。
+                       #             ⑥ load_settings 迁移：旧 hide_spikes_and_beads=True → 两者都 False；
+                       #                hide_spikes_only=True → show_spikes=False / show_bead=True；都没勾 → 都 True。
+                       #             schema 94 不变。
+                       # V2032 改动：撤销 V2031 / V2027 / V2026 三次引入的 _any_active_buff_stacks() 错用——
+                       #             ① spike_hidden 判定（行 4226）：not self._any_active_buff_stacks() → not self.active_buffs
+                       #             ② render_core 外层分支（行 4255）：if self.active_buffs and self._any_active_buff_stacks():
+                       #                → if self.active_buffs:
+                       #             ③ _build_titlebar_status_text 标题栏 buff 名段（行 5028）：if not self._any_active_buff_stacks()
+                       #                → if not self.active_buffs:
+                       #             三处统一恢复『仅看 active_buffs 列表本身、忽略 stacks 数值』的 V2025 原始语义——
+                       #             玩家原意：active_buffs 真为空（没有任何 buff）才考虑整圈隐；『已配满 buff 但游戏
+                       #             实际 stacks=0（buff 还没激活 / 计数）』应仍正常显示圆环 + spike + 倒计时 + buff 名。
+                       #             V2026 把 _any_active_buff_stacks() 错用到 spike 隐藏判定，导致『配置满 buff 但
+                       #             stacks=0』时整圈按 SPIKE_HIDDEN_KEYS（circle/arc/text/timer 全在内）退到 0%
+                       #             不可见、只剩 _draw_buff_name 的 buff 名标签飘着；V2027 想把它和标题栏 buff 名段
+                       #             对齐、结果用户报怨『buff 名段消失了』；V2031 想把外层分支也加 _any 判定、结果
+                       #             用户报怨『游戏画面里什么都没了』——三次错改一脉相承，全部撤回。本版后：
+                       #             『隐藏尖刺与装饰小球』选项只控制 spike+bead 绘制路径（_draw_spikes 早 return），
+                       #             不影响圆环 + 倒计时 + 文字；『无 buff 时隐藏尖刺圆模块』选项仅在 active_buffs
+                       #             为空时让整圈按 SPIKE_HIDDEN_KEYS 退 0% 隐形，正符合选项设计意图。
+                       #             circle_pad_title QSpinBox 允许负值的 V2031 改动保留。
+                       #             schema 94 不变。
+                       # V2031 改动（被 V2032 部分撤销）：circle_pad_title QSpinBox setRange(0, 999) → setRange(-999, 999)
+                       #             允许负值——其余改动见 V2032。
+                       # V2030 改动：清理 3 处 UI 残留（按用户截图反馈）：
+                       #             ① 删除设置面板「更新检测版本地址」输入框下方那段长说明文字
+                       #                （V303 起的 url_hint QLabel）——输入框 placeholder 已足够提示，
+                       #                玩家不需要在这里再读一遍"为什么走 release CDN"。
+                       #             ② 删除死函数 _open_config_dir（"打开配置 & 日志目录"）——
+                       #                源码中除自身外零引用，托盘菜单从未 addAction 注册，
+                       #                玩家根本不知道这个入口在哪，索性彻底删干净。
+                       #             ③ 顺手清掉 i18n.json 里只被 _open_config_dir 引用的孤儿键「打开失败」
+                       #                （「设置打开失败」键 5878 行仍被设置对话框使用，保留）。
+                       #             「标题→圆间距」（circle_pad_title）控件保留——
+                       #             它是活跃渲染参数，参与 base_cy = TITLE_BAR_H + circle_pad_title + circle_r + spike_top_pad
+                       #             的圆环画布 Y 位置计算，并非无用功能。
+                       #             schema 94 不变。
+                       # V2029 改动：清理审计报告列出的垃圾——删 _detect_build_no 死函数（line 84-99）+
+                       #               删 6 个未引用函数/类（find_pid / resolve_player_ptr / read_raw_buffs /
+                       #               get_topmost_real_window_pid / enum_game_window_state / BuffOrderGroup）+
+                       #               删 4 个无用 import（QAction/QPolygonF/QAbstractSpinBox/QDialogButtonBox）+
+                       #               修 2 处 _tr() i18n 键缺失（2859 行 tooltip 整串、6528 行 "打开失败"）。
+                       #               schema 94 不变。
+                       # V2028 改动：第 6/7 次翻滚的警告牌（warning_mode）原本只有放大脉冲、无亮度闪烁；
+                       #               现在在红边黄底三角之上叠加一层 flash_color 的「警告牌形状（圆角三角）」
+                       #               透明度脉冲闪烁（flash_progress 越大越亮、随时间消退），外形始终是警告牌、
+                       #               绝不用白色方块遮挡。复用 flash_apply_dodge / flash_color / flash_scale /
+                       #               flash_duration_ms，不新增设置。schema 94 不变。
+                       # V2026 改动：「无buff时隐藏尖刺圆模块」选项在「已配置显示但实际层数为0」时也生效。
+                       #               之前判 `len(active_buffs) == 0`，但当用户把某个 buff 的三阶专精全勾后，
+                       #               该 buff 即使实际 stacks=0 也会出现在 active_buffs 里 → 判定永远 False →
+                       #               `_render_buff_ui` 仍按常规被调用 → 尖刺本体不画但圆环 `circle_color_normal` 满不透明度被
+                       #               `_draw_circle` 画出来 → 用户看到「圆圈仍在那」的现象。
+                       #               修复：判定改为 `not _any_active_buff_stacks()`（配置 OR 实际层数任一为正即保留），
+                       #               与玩家对「无 buff」的直觉（无任何 buff 实际激活）一致。
+                       #               schema 94 不变。
+                       # V2025 改动（核心 bug 修复）
+                       # V2025 改动（核心 bug 修复）：「随游戏前后台自动显隐」会把
+                       #               点击 / 拖拽 / 缩放 overlay 自身模块误判成「游戏到后台」→ 整窗隐藏，
+                       #               导致用户根本没法调模块（一点模块就消失）。
+                       #               根因：_game_is_foreground 只认游戏 PID（self.pid 存的是游戏 PID），
+                       #               工具自身进程 (os.getpid()) 不在集合里 → 前台变工具自身时被算成后台。
+                       #               修法：① 把工具自身进程也并入「前台」集合（点/拖模块时保持可见）；
+                       #                     ② 拖拽/缩放进行中置 _interacting 锁，焦点同步直接跳过、绝不隐藏。
+                       #               schema 94 不变。
+                       # V2024 改动：① 修复 Windows 区域设为「香港（繁体）」时
+                       #               设置对话框 + 全部 overlay 窗口中文渲染成 □ 方框——
+                       #               Qt 在 Windows 上不读系统亚洲字符回退表，
+                       #               21 处 QFont("Segoe UI", ...) 都没有 CJK fallback；
+                       #               启动时按优先级扫 QFontDatabase.families()，
+                       #               对 Segoe UI 调用 QFont.insertSubstitution() 注册 CJK 替代，
+                       #               所有 QFont 调用无需改动。
+                       #             ② schema 94 不变；与隐显/焦点逻辑无关。
+                       # V2023 改动：① 去掉 V2022 的 600ms 防抖，恢复 V2021 的「边沿触发立即动作」节奏；
+                       #             ② 非战斗状态（_ooc_content_hidden=True）下也让前后台隐显生效
+                       #               （V2022 之前一律 early return 等于关了，非战斗时 alt-tab 完全没反应）。
+                       # schema 94 不变（同焦点/隐显模块）。
+#   ① V2017 起的 _update_tray_menu 菜单 4 项 bug：show_all_action.connect(self._show_all)
+#      但 def 只有 _show_all_windows——connect 时 AttributeError 中断整个函数，
+#      后 5-9 项菜单（重置所有窗口 / 检查更新 / 打开配置 / 关于 / 退出）从未被 addAction。
+#      现在补一个 def _show_all(self): self._show_all_windows() 当作 wrapping 彻底修复。
+#   ② 同时把 _game_is_foreground 的判定收紧：仅用 GetForegroundWindow.PID == game_pids 主信号，
+#      移除 IsIconic 交叉验证（V2020 那套在桌面切换时偶发判定不出=永不 hide）。
 APP_VERSION = ("%d.%02d" % (_BUILD_NO // 100, _BUILD_NO % 100)) if _BUILD_NO is not None else "7.00"
 APP_TITLE = ("GBFR_CooldownIndicator_V%d" % _BUILD_NO) if _BUILD_NO is not None else "GBFR_CooldownIndicator_V700"
-SETTINGS_SCHEMA_VERSION = 93
+SETTINGS_SCHEMA_VERSION = 94
 
 # ============================ 三语翻译表（提前定义，供 UI 组件全局使用）===========================
 from i18n_loader import UI_TRANS
@@ -126,7 +244,6 @@ AUTHOR_TAG = "@Bilibili/Dangoooooo"
 class _UpdateCancelled(Exception):
     """用户在下载进度框点了「取消」。"""
     pass
-
 
 def _qt_sync_get(url, timeout_ms=15000, on_chunk=None, on_total=None, abort_check=None):
     """同步 HTTP GET，基于 Qt QNetworkAccessManager。
@@ -212,7 +329,6 @@ def _qt_sync_get(url, timeout_ms=15000, on_chunk=None, on_total=None, abort_chec
     except Exception as e:  # 含 QtNetwork 导入失败等
         return None, 0, str(e)
 
-
 def pick_lang_text(value, lang="zh"):
     """按语言选取多语言文本：value 为 dict 时依次取 lang → zh → 第一个非空值；为 str 时原样返回。"""
     if isinstance(value, dict):
@@ -227,7 +343,6 @@ def pick_lang_text(value, lang="zh"):
     if isinstance(value, str):
         return value
     return ""
-
 
 # ============================ EXE 同步（全局设置：启动时按路径共同启动，不监视、不杀进程）============================
 def _is_exe_running(exe_path):
@@ -263,7 +378,6 @@ def _is_exe_running(exe_path):
     except Exception:
         return False
 
-
 def _launch_exe(path, cwd=None):
     """以完全独立方式启动 exe（效果等同双击 .lnk）。
     用 os.startfile（底层 ShellExecute）以指定「起始位置（工作目录）」启动：
@@ -280,7 +394,6 @@ def _launch_exe(path, cwd=None):
         return True
     except Exception:
         return False
-
 
 def _run_sync_exe_list(raw_list):
     """启动时共同启动：列表中的 exe 若未运行则启动；已运行则跳过（绝不杀进程、不监视）。
@@ -352,7 +465,6 @@ INSTR_END = 0x07
 DISP_OFF = 0x03
 
 CHAR_PTR_OFF = 0x00
-FIELD_DRAGON_HEART = 0x1CAA8
 FIELD_DODGE = 0x5788
 FIELD_CHAR_TYPE = 0x1FD
 
@@ -380,7 +492,6 @@ QUEST_TRAINING_TIMER_OFFSETS = (0xB20, 0xB28)
 # 二者同属 game.exe 同一模块，相减即与 ASLR 无关的相对距离。
 QM_DELTA = 0xc1dfd0
 
-
 # 角色类型字节值 → 名称 (zh / en)
 # 来源: CE实测 [玩家]+0x1FD 字节值；这里按十六进制记录
 # (简中, 繁中, English) — 来源: GBFR 官方数据
@@ -398,7 +509,6 @@ CHAR_TYPE_NAMES = {
     0x20: ("伊德(龙人化)", "伊度(龍人化)", "Id (Dragon)"),
     0x22: ("希耶提", "席耶提", "Seofon"),
 }
-SIEGFRIED_CHAR_TYPE = 0x11
 
 # 0x1FD 角色类型字节 → 官方 PL ID（来源：GBFR_Character_Skills_Buffs.json 的 角色ID 字段）
 # 用于把 charid 识别与旧 0x1FD 体系桥接，使 BUFF_PROFILES 也能按 pl_id 索引。
@@ -418,9 +528,12 @@ CHAR_TYPE_TO_PL = {
 }
 
 # 共享技能组的「主控人物 → 规范角色」回退映射：
-# 姬塔(PL0100) 与 古兰(PL0000) 共用一套技能；龙人化(PL2000) 与 伊德(PL1900) 共用一套。
-# 主控人物若经查表取不到技能名，按槽位借用规范角色的技能名，避免能力名空着。
-PL_SKILL_FALLBACK = {"PL0100": "PL0000", "PL2000": "PL1900"}
+# 姬塔(PL0100) 与 古兰(PL0000) 共用一套技能（PL0100 借用 PL0000）。
+# 注意：伊德龙人化(PL2000) 的能力模块与人形态(PL1900) 是【两套不同】技能——
+#       PL2000 的技能已在 GBFR_Character_Skills_Buffs.json 单独收录(AB_PL2000_01~05 及 _CG)，
+#       按 ability_hash 直接命中，故此处不再把 PL2000 回退到 PL1900（否则会显示错误技能名）。
+#       （核心 Buff 区 PL2000 仍与 PL1900 共用，那是 BUFF_PROFILES 的逻辑，与此处无关。）
+PL_SKILL_FALLBACK = {"PL0100": "PL0000"}
 
 # 语言 → CHAR_TYPE_NAMES 元组索引
 LANG_NAME_IDX = {"zh": 0, "zh_tw": 1, "en": 2}
@@ -446,20 +559,6 @@ def _resolve_char(charid_hash, char_type=0, lang="zh"):
         return info.get("name_zh", pl), pl
     # 回退：0x1FD 字节
     return _char_name(char_type, lang), CHAR_TYPE_TO_PL.get(char_type)
-
-def _pl_display_name(pl_id, lang="zh"):
-    """角色名展示（含 PL 编号）：如 'PL1700 巴萨拉卡' / 'PL1700 Vaseraga'。"""
-    info = _char_db.get(pl_id)
-    if info:
-        if lang == "en":
-            nm = info.get("name_en", pl_id)
-        elif lang == "zh_tw":
-            nm = info.get("name_tw", info.get("name_zh", pl_id))
-        else:
-            nm = info.get("name_zh", pl_id)
-    else:
-        nm = pl_id
-    return f"{pl_id} {nm}"
 
 def _buff_name(buff, lang="zh"):
     """按语言获取 buff 名称。"""
@@ -570,7 +669,6 @@ def _lookup_ability(ab_hash_val, pl_id=None, slot=None):
                     "zh_tw": a.get("zh_tw", ""), "en": a.get("en", "")}
     return None
 
-
 def _skill_name(ab_hash_val, lang="zh", pl_id=None, slot=None):
     g = _lookup_ability(ab_hash_val, pl_id, slot)
     if not g:
@@ -599,16 +697,12 @@ CLASS_DURATION_DIRECT_OFF = 0xCAAC # f32，备用回退路径（直读 actor；�
 
 # 伊德（Id）形态识别
 ID_FORM_OFF = 0x1FD
-ID_FORM_NORMAL = 0x19              # 普通/神威一体态
 ID_FORM_DRAGON = 0x20              # 龙人态
 # 龙人态官方父子指针（来自 gbfr-logs/GBFR-ACT 公开 RE）：真身 actor = read_u64(actor+0xd488)+0x70
 ID_DRAGON_PARENT_OFF = 0xD488
 ID_DRAGON_PARENT_EXTRA = 0x70
 
 # 伊德资源槽偏移（actor 直接偏移 / 二级指针链的子偏移）
-ID_POWER_SUB = -0x3C22B10          # f32 0~1，异能槽
-ID_CELLS_SUB = -0x3C22B18          # u32 0~4，龙人格子
-ID_OVERDRIVE_SUB = -0x198D9D8      # f32 0~1，神威槽
 ID_OVERDRIVE_STATUS_ID = 30        # 神威一体 status id（ExStatus 槽位内 sid），用于 has_overdrive 判定；V350 起的模块级常量，重构时随 buff_data_generated 简化丢失，V370 补回
 ID_HIDDEN_OFF = 0x1CB34            # f32 0~4，隐藏槽（actor 直接偏移）
 
@@ -619,7 +713,6 @@ VASERAGA_FREEZE_OFF = 0x1CAF0     # f32，古洛诺斯槽保持剩余秒数（�
 BUFF_PROFILES = buff_data_generated.BUFF_PROFILES
 MASTERY_BRANCHES = buff_data_generated.MASTERY_BRANCHES   # 每角色三系专精列名（三语）
 CHAR_NAMES_TRI = buff_data_generated.CHAR_NAMES           # 每角色三语名
-
 
 # ============================ Buff 顺位拖拽排序组件 ============================
 class BuffListWidget(QListWidget):
@@ -707,250 +800,6 @@ class BuffListWidget(QListWidget):
             return
         self.parent_group._on_context_menu(self, pos)
 
-
-class BuffOrderGroup(QWidget):
-    """每个角色一个分组，左栏=生效区（可拖拽排序），右栏=隐藏区。
-
-    关键点（V246 重写，V247 增加折叠）：
-    - 所有拖拽都只在本分组（同一角色）内发生；跨角色拖拽在 dropEvent / dragEnter
-      处直接拒绝，绝不让一个角色的 buff 跑到另一个角色去；
-    - 不物理移动 QListWidgetItem 对象，而是维护 _shown_idx / _hidden_idx 两份
-      数据，任何改动后整体重建列表。这样不可能产生克隆条目，也不会让其它 buff 消失；
-    - 支持 pl_ids 为多个（如团长：古兰 PL0000 + 姬塔 PL0100 合并一组，共享顺位）；
-    - 分组带折叠按钮，默认折叠，便于在众多角色中快速定位。
-    """
-
-    orderChanged = Signal()
-
-    def __init__(self, pl_ids, profile, buff_order, lang="zh", title=None):
-        self.pl_ids = list(pl_ids)
-        self.profile = profile
-        self._title_override = title
-        self._meta = {
-            i: (bc.get("zh", ""), bool(bc.get("single_layer")))
-            for i, bc in enumerate(profile.get("buffs", []))
-        }
-        # 同一分组内拖拽时记录的被拖 idx（UserRole 直接存 idx）
-        self._drag_key = None
-        self._drag_source = None
-        self._collapsed = True
-        super().__init__()
-
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(4, 4, 4, 4)
-        outer.setSpacing(2)
-
-        # 标题行：折叠按钮 + 标题
-        hdr = QHBoxLayout(); hdr.setContentsMargins(0, 0, 0, 0); hdr.setSpacing(4)
-        self._collapse_btn = QToolButton(); self._collapse_btn.setFixedSize(18, 18)
-        self._collapse_btn.setStyleSheet("QToolButton{border:none;color:#cfe0ff;font-weight:bold;font-size:12px;}")
-        self._title_lbl = QLabel(title or _pl_display_name(self.pl_ids[0], lang))
-        self._title_lbl.setStyleSheet("color:#cfe0ff;font-weight:bold;font-size:11px;")
-        hdr.addWidget(self._collapse_btn); hdr.addWidget(self._title_lbl); hdr.addStretch()
-        outer.addLayout(hdr)
-
-        # 主体（可折叠）
-        self._body = QWidget()
-        b_layout = QVBoxLayout(self._body)
-        b_layout.setContentsMargins(2, 2, 2, 2)
-        b_layout.setSpacing(3)
-
-        # 左右栏标题：等宽两栏，「生效区」左对齐于左栏左边界、「隐藏区」左对齐于右栏左边界（=中线）
-        colhdr = QHBoxLayout(); colhdr.setContentsMargins(0, 0, 0, 0); colhdr.setSpacing(6)
-        lbl_shown = QLabel(_tr("生效区（拖动排序）")); lbl_shown.setStyleSheet("color:#b0c4e0;font-size:10px;")
-        lbl_hidden = QLabel(_tr("隐藏区")); lbl_hidden.setStyleSheet("color:#b0c4e0;font-size:10px;")
-        sw = QWidget(); _sl = QHBoxLayout(); _sl.setContentsMargins(0, 0, 0, 0); _sl.setSpacing(0); _sl.addWidget(lbl_shown); sw.setLayout(_sl)
-        hw = QWidget(); _hl = QHBoxLayout(); _hl.setContentsMargins(0, 0, 0, 0); _hl.setSpacing(0); _hl.addWidget(lbl_hidden); hw.setLayout(_hl)
-        colhdr.addWidget(sw); colhdr.addWidget(hw)
-        b_layout.addLayout(colhdr)
-
-        # 左右列表
-        lists_layout = QHBoxLayout()
-        lists_layout.setSpacing(6)
-
-        self.shown_list = BuffListWidget(self, is_hidden_side=False)
-        self.hidden_list = BuffListWidget(self, is_hidden_side=True)
-        # 高度再次放大为当前的 1.2 倍（125 → 150）
-        self.shown_list.setMaximumHeight(150)
-        self.hidden_list.setMaximumHeight(150)
-        self.shown_list.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.hidden_list.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-
-        lists_layout.addWidget(self.shown_list)
-        lists_layout.addWidget(self.hidden_list)
-        b_layout.addLayout(lists_layout)
-
-        hint = QLabel(_tr("左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）"))
-        hint.setWordWrap(True)
-        hint.setStyleSheet("color:#8aa0c0;font-size:10px;")
-        b_layout.addWidget(hint)
-
-        outer.addWidget(self._body)
-        self._collapse_btn.clicked.connect(self._toggle_collapse)
-        self._apply_collapse()
-        self._build_from_buff_order(buff_order)
-
-    # ---------- 折叠 ----------
-    def _toggle_collapse(self):
-        self._collapsed = not self._collapsed
-        self._apply_collapse()
-
-    def _apply_collapse(self):
-        self._body.setVisible(not self._collapsed)
-        self._collapse_btn.setText("▾" if not self._collapsed else "▸")
-
-    # ---------- 数据 ----------
-    def _rank_of(self, i, buff_order):
-        for pid in self.pl_ids:
-            v = buff_order.get(f"{pid}_{i}")
-            if v is not None:
-                return int(v or 0)
-        return i + 1
-
-    def _build_from_buff_order(self, buff_order):
-        buffs = self.profile.get("buffs", [])
-        self._shown_idx = []
-        self._hidden_idx = []
-        for i in range(len(buffs)):
-            rank = self._rank_of(i, buff_order)
-            if rank > 0:
-                self._shown_idx.append(i)
-            else:
-                self._hidden_idx.append(i)
-        # 显示区按 rank 升序排好
-        self._shown_idx.sort(key=lambda i: self._rank_of(i, buff_order))
-        self._rebuild()
-
-    def _rebuild(self):
-        self.shown_list.clear()
-        self.hidden_list.clear()
-        for i in self._shown_idx:
-            self.shown_list.addItem(self._make_item(i, False))
-        for i in self._hidden_idx:
-            self.hidden_list.addItem(self._make_item(i, True))
-
-    def _make_item(self, idx, hidden):
-        label, sl = self._meta.get(idx, ("", False))
-        disp = ("✕ " if hidden else "") + label + (_tr("（单层buff）") if sl else "")
-        it = QListWidgetItem(disp)
-        it.setData(Qt.UserRole, idx)
-        if hidden:
-            it.setForeground(QColor(255, 95, 95, 204))  # 红色 + 80% 不透明度
-        else:
-            it.setForeground(QColor(223, 231, 245, 255))
-        it.setFlags(it.flags() | Qt.ItemIsDragEnabled)
-        return it
-
-    def _refresh_appearances(self):
-        """刷新隐藏区外观：加红色✕ + 80%不透明度。"""
-        for i in range(self.hidden_list.count()):
-            item = self.hidden_list.item(i)
-            idx = item.data(Qt.UserRole)
-            label, sl = self._meta.get(idx, ("", False))
-            item.setText("✕ " + label + (_tr("（单层buff）") if sl else ""))
-            item.setForeground(QColor(255, 95, 95, 204))
-        for i in range(self.shown_list.count()):
-            item = self.shown_list.item(i)
-            idx = item.data(Qt.UserRole)
-            label, sl = self._meta.get(idx, ("", False))
-            item.setText(label + (_tr("（单层buff）") if sl else ""))
-            item.setForeground(QColor(223, 231, 245, 255))
-
-    def _sync_from_lists(self):
-        """从当前两个列表的视觉顺序读回数据（用于同列内部重排）。"""
-        self._shown_idx = []
-        self._hidden_idx = []
-        for i in range(self.shown_list.count()):
-            d = self.shown_list.item(i).data(Qt.UserRole)
-            if d is not None:
-                self._shown_idx.append(d)
-        for i in range(self.hidden_list.count()):
-            d = self.hidden_list.item(i).data(Qt.UserRole)
-            if d is not None:
-                self._hidden_idx.append(d)
-
-    def _move_idx(self, idx, to_hidden, at_row):
-        """把 idx 移动到目标侧（to_hidden 决定），插入位置 at_row（None=追加）。"""
-        if idx in self._shown_idx:
-            self._shown_idx.remove(idx)
-        if idx in self._hidden_idx:
-            self._hidden_idx.remove(idx)
-        if to_hidden:
-            lst = self._hidden_idx
-        else:
-            lst = self._shown_idx
-        if at_row is None or at_row < 0 or at_row > len(lst):
-            lst.append(idx)
-        else:
-            lst.insert(at_row, idx)
-        self._rebuild()
-        self.orderChanged.emit()
-
-    # ---------- 右键菜单 ----------
-    def _on_context_menu(self, source_list, pos):
-        item = source_list.itemAt(pos)
-        if item is None:
-            return
-        idx = item.data(Qt.UserRole)
-        if idx is None:
-            return
-        menu = QMenu(self)
-        if source_list is self.shown_list:
-            act_top = menu.addAction(_tr("置顶"))
-            act_toggle = menu.addAction(_tr("隐藏"))
-            choiced = menu.exec_(source_list.mapToGlobal(pos))
-            if choiced == act_top:
-                self._move_top(idx)
-            elif choiced == act_toggle:
-                self._move_idx(idx, to_hidden=True, at_row=None)
-        else:
-            act_toggle = menu.addAction(_tr("显示"))
-            choiced = menu.exec_(source_list.mapToGlobal(pos))
-            if choiced == act_toggle:
-                self._move_idx(idx, to_hidden=False, at_row=None)
-
-    def _move_top(self, idx):
-        if idx in self._shown_idx:
-            self._shown_idx.remove(idx)
-            self._shown_idx.insert(0, idx)
-            self._rebuild()
-            self.orderChanged.emit()
-
-    # ---------- 输出 / 批量 ----------
-    def get_order(self):
-        """返回 {key: rank}：rank>=1 为显示（顺序即从左到右），0 为隐藏。
-        多 pl_id（如团长）会为每个 pl_id 各写一份相同顺位。"""
-        result = {}
-        for pl_id in self.pl_ids:
-            shown = 0
-            for idx in self._shown_idx:
-                shown += 1
-                result[f"{pl_id}_{idx}"] = shown
-            for idx in self._hidden_idx:
-                result[f"{pl_id}_{idx}"] = 0
-        return result
-
-    def refresh_title(self, lang):
-        if self._title_override:
-            self._title_lbl.setText(self._title_override)
-        else:
-            self._title_lbl.setText(_pl_display_name(self.pl_ids[0], lang))
-
-    def show_all(self):
-        buffs = self.profile.get("buffs", [])
-        self._shown_idx = list(range(len(buffs)))
-        self._hidden_idx = []
-        self._rebuild()
-        self.orderChanged.emit()
-
-    def hide_all(self):
-        buffs = self.profile.get("buffs", [])
-        self._shown_idx = []
-        self._hidden_idx = list(range(len(buffs)))
-        self._rebuild()
-        self.orderChanged.emit()
-
-
 # ExStatus 结构体偏移（来自 GBFR_BuffMonitor 项目验证）
 ACTOR_EX_STATUS = 0xAF8       # Actor → ExStatus 指针
 STATUS_ID_OFFSET = 0x50      # StatusBase → StatusId (u32)
@@ -968,9 +817,7 @@ ABILITY_HASH_OFFSET = 0x1AB24
 CHARID_HASH_OFFSET = 0x1AB40
 SKILL_READY_THRESHOLD = 0.05
 
-# 角色能力数据库路径
-CHAR_DB_PATH = os.path.join(_BUNDLE_DIR, "GBFR_Character_Skills_Buffs.json")
-CHAR_DB_FALLBACK = os.path.join(EXE_DIR, "GBFR_Character_Skills_Buffs.json")
+# 角色能力数据库路径（实际由 load_char_db() 自行构造候选路径，下面的常量未使用，已删除）
 
 # ------------------------- Windows API -------------------------
 kernel32 = ctypes.windll.kernel32
@@ -984,7 +831,30 @@ TH32CS_SNAPMODULE32 = 0x00000010
 user32.GetForegroundWindow.restype = wintypes.HWND
 user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
 user32.GetWindowThreadProcessId.restype = wintypes.DWORD
-
+# V2019：Z-order 最顶层真实窗口判定（解决全屏独占游戏下 GetForegroundWindow 不更新导致的前后台识别失效）
+user32.GetTopWindow.restype = wintypes.HWND
+user32.GetTopWindow.argtypes = [wintypes.HWND]
+user32.GetWindow.restype = wintypes.HWND
+user32.GetWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+user32.IsWindowVisible.restype = ctypes.c_int
+user32.IsWindowVisible.argtypes = [wintypes.HWND]
+user32.GetClassNameA.restype = ctypes.c_int
+user32.GetClassNameA.argtypes = [wintypes.HWND, ctypes.POINTER(ctypes.c_char), ctypes.c_int]
+# V2020：枚举游戏全部顶层窗口，用 IsIconic 判断「是否被切到后台/最小化」，
+# 作为 GetForegroundWindow 的交叉验证（全屏独占下 GetForegroundWindow 仍准，但 EnumWindows 能兜底 alt-tab）。
+user32.EnumWindows.restype = ctypes.c_int
+user32.EnumWindows.argtypes = [ctypes.WINFUNCTYPE(ctypes.c_int, wintypes.HWND, wintypes.LPARAM), wintypes.LPARAM]
+user32.IsIconic.restype = ctypes.c_int
+user32.IsIconic.argtypes = [wintypes.HWND]
+# 需要跳过的 Windows 壳层窗口类名（桌面 / 工作区 / 任务栏等），它们永远在 Z-order 里但不代表「用户正在看的程序」
+_SHELL_CLASS_NAMES = {
+    "Progman",        # 桌面图标容器
+    "WorkerW",        # 桌面壁纸 worker
+    "Shell_TrayWnd",  # 任务栏
+    "Shell_SecondaryTrayWnd",
+    "DV2ControlHost", # 任务栏缩略图等
+    "Windows.UI.Core.CoreWindow",  # 某些 UWP 壳
+}
 
 class PROCESSENTRY32(ctypes.Structure):
     _fields_ = [
@@ -995,7 +865,6 @@ class PROCESSENTRY32(ctypes.Structure):
         ("dwFlags", wintypes.DWORD), ("szExeFile", wintypes.CHAR * 260),
     ]
 
-
 class MODULEENTRY32(ctypes.Structure):
     _fields_ = [
         ("dwSize", wintypes.DWORD), ("th32ModuleID", wintypes.DWORD),
@@ -1005,25 +874,29 @@ class MODULEENTRY32(ctypes.Structure):
         ("szModule", wintypes.CHAR * 256), ("szExePath", wintypes.CHAR * 260),
     ]
 
+def find_game_pids():
+    """枚举当前所有 granblue_fantasy_relink.exe 进程的 PID 集合（用于「游戏在前台」判断）。
 
-def find_pid():
+    V2018 背景：游戏的真实顶层窗口可能不是主进程 create 的（Steam overlay、DirectX 子窗口、
+    launcher 包裹等），GetForegroundWindow 拿到的窗口 PID 不一定等于 self.pid。若仅匹配
+    self.pid，则「游戏是否在前台」的判断会永远失败，前后台切换的边沿触发整条失效。
+    改为收集所有同名游戏进程 PID，foreground_pid ∈ self._game_pids 即视为游戏在前台。
+    """
     snap = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
     if snap == wintypes.HANDLE(-1).value:
-        return None
+        return []
     pe = PROCESSENTRY32()
     pe.dwSize = ctypes.sizeof(pe)
-    pid = None
+    pids = []
     if kernel32.Process32First(snap, ctypes.byref(pe)):
         while True:
             name = pe.szExeFile.decode("ascii", "ignore")
             if name.lower() == PROCESS_NAME.lower():
-                pid = pe.th32ProcessID
-                break
+                pids.append(pe.th32ProcessID)
             if not kernel32.Process32Next(snap, ctypes.byref(pe)):
                 break
     kernel32.CloseHandle(snap)
-    return pid
-
+    return pids
 
 def get_module_info(pid):
     snap = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid)
@@ -1044,10 +917,8 @@ def get_module_info(pid):
     kernel32.CloseHandle(snap)
     return (base, size) if base is not None else None
 
-
 def open_proc(pid):
     return kernel32.OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, False, pid)
-
 
 def get_foreground_pid():
     hwnd = user32.GetForegroundWindow()
@@ -1057,7 +928,6 @@ def get_foreground_pid():
     user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
     return pid.value or None
 
-
 def rpm(handle, addr, size):
     buf = ctypes.create_string_buffer(size)
     nread = ctypes.c_size_t(0)
@@ -1066,26 +936,21 @@ def rpm(handle, addr, size):
         return None
     return buf.raw
 
-
 def read_u32(handle, addr):
     b = rpm(handle, addr, 4)
     return struct.unpack("<I", b)[0] if b else None
-
 
 def read_u64(handle, addr):
     b = rpm(handle, addr, 8)
     return struct.unpack("<Q", b)[0] if b else None
 
-
 def read_f32(handle, addr):
     b = rpm(handle, addr, 4)
     return struct.unpack("<f", b)[0] if b else None
 
-
 def read_u8(handle, addr):
     b = rpm(handle, addr, 1)
     return struct.unpack("<B", b)[0] if b else None
-
 
 def parse_aob(hexstr):
     # 允许 AOB 字符串中包含空格或换行，先统一剔除再解析
@@ -1101,7 +966,6 @@ def parse_aob(hexstr):
             out.append(int(pair, 16))
             mask.append(True)
     return bytes(out), mask
-
 
 def aob_scan(handle, base, size, pattern, mask):
     plen = len(pattern)
@@ -1120,7 +984,6 @@ def aob_scan(handle, base, size, pattern, mask):
                 return base + offset + i
         offset += chunk
     return None
-
 
 def aob_scan_multi(handle, base, size, specs):
     """单次全模块扫描，同时匹配多个特征码（锚点加速）。
@@ -1173,16 +1036,6 @@ def aob_scan_multi(handle, base, size, specs):
         offset += chunk
     return results
 
-
-def resolve_player_ptr(handle, base, size):
-    """兼容旧调用：单独扫描并解析玩家指针。"""
-    pattern, mask = parse_aob(AOB_HEX)
-    hit = aob_scan(handle, base, size, pattern, mask)
-    if hit is None:
-        return None
-    return resolve_player_from_hit(handle, hit)
-
-
 def resolve_player_from_hit(handle, hit):
     disp_b = rpm(handle, hit + DISP_OFF, 4)
     if disp_b is None:
@@ -1190,14 +1043,12 @@ def resolve_player_from_hit(handle, hit):
     disp = struct.unpack("<i", disp_b)[0]
     return (hit + INSTR_END) + disp
 
-
 def save_ptr_cache(pid, base, size, pptr):
     try:
         with open(PTR_CACHE_FILE, "w", encoding="utf-8") as f:
             f.write(f"{pid}\n{base:#x}\n{size:#x}\n{pptr:#x}\n")
     except Exception:
         pass
-
 
 def load_ptr_cache():
     try:
@@ -1208,7 +1059,6 @@ def load_ptr_cache():
         return (int(lines[0]), int(lines[1], 16), int(lines[2], 16), int(lines[3], 16))
     except Exception:
         return None
-
 
 def resolve_with_cache(handle, pid, extra_specs=None):
     """定位玩家指针（带文件缓存）。
@@ -1251,7 +1101,6 @@ def resolve_with_cache(handle, pid, extra_specs=None):
             extra_hits["_quest_mgr_global"] = gaddr
     return pptr, base, size, extra_hits
 
-
 def resolve_quest_mgr_from_hit(handle, hit):
     """从 AOB 命中地址解出任务管理器实例指针及其全局变量地址。
     返回 (mgr_instance, global_ptr_addr)。global_ptr_addr 是模块内「指向 mgr 的全局指针」
@@ -1270,7 +1119,6 @@ def resolve_quest_mgr_from_hit(handle, hit):
         return None, global_ptr_addr
     return struct.unpack("<Q", b)[0], global_ptr_addr
 
-
 def resolve_quest_mgr_via_player(handle, pptr):
     """用 player 全局指针变量地址(pptr) + 写死偏移 QM_DELTA 直接取 quest_mgr。
 
@@ -1286,13 +1134,11 @@ def resolve_quest_mgr_via_player(handle, pptr):
         return None, qm_global_addr
     return struct.unpack("<Q", b)[0], qm_global_addr
 
-
 def resolve_quest_mgr_with_addr(handle, base, size):
     """兼容调用：返回 (mgr_instance, global_ptr_addr)。"""
     pat, mask = parse_aob(QUEST_MGR_AOB)
     hit = aob_scan(handle, base, size, pat, mask)
     return resolve_quest_mgr_from_hit(handle, hit)
-
 
 def read_exstatus_buffs(handle, char_base, ex_status_offset=ACTOR_EX_STATUS):
     """从 Actor 的 ExStatus 指针数组读取全部活跃 buff。
@@ -1341,7 +1187,6 @@ def read_exstatus_buffs(handle, char_base, ex_status_offset=ACTOR_EX_STATUS):
             "infinite": infinite,
         }
     return result
-
 
 def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
     """读取角色层数、翻滚次数和全部角色专属 buff（V302 专精门控版）。
@@ -1518,7 +1363,6 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
             "raw_locked": new_locked,
             "duration_max": duration_max}
 
-
 def _resolve_id_actor(handle, actor):
     """伊德龙人态 actor 切换时，尝试用官方父子指针回到真身 actor。
     返回 (resolved_actor, is_dragon_form)。"""
@@ -1532,126 +1376,6 @@ def _resolve_id_actor(handle, actor):
             if real and real >= 0x10000:
                 return real, True
     return actor, form == ID_FORM_DRAGON
-
-
-def _resolve_gauge_addr(handle, actor, src, locked):
-    """解析单个 raw_source 目标地址；返回 (addr, new_locked, ok)。"""
-    kind = src.get("kind")
-    if kind == "class_state":
-        P = read_u64(handle, actor + src.get("ptr_off", CLASS_STATE_PTR_OFF))
-        if not P:
-            return 0, locked, False
-        # 倒计时(剩余秒) 经实机验证为直接相对 actor 的 f32 @0xCAAC（非 P+dur_off）
-        return actor + CLASS_DURATION_DIRECT_OFF, locked, True  # 返回 duration 地址；调用处同时读 rank
-    if kind == "id_direct":
-        addr = actor + src.get("off", 0)
-        return addr, addr,  True
-    return 0, locked, False
-
-
-def read_raw_buffs(handle, actor, profile, locked_addrs=None, prev_actor=0, all_buffs=None):
-    """读取非 ExStatus 的裸值 buff/资源槽。
-
-    locked_addrs: {buff_index: addr}，用于伊德形态切换后保持地址锁定。
-    all_buffs: ExStatus 读取结果，用于判断伊德神威一体等生效条件。
-    返回 (buffs_out, new_locked_addrs)。
-    """
-    if not profile:
-        return {}, {}
-    if locked_addrs is None:
-        locked_addrs = {}
-    new_locked = dict(locked_addrs)
-    out = {}
-
-    # 伊德：龙人态时切到真身 actor 再读
-    resolved_actor, is_dragon_form = _resolve_id_actor(handle, actor)
-    # 神威一体 buff 是否存在（伊德 status id 0x1E）
-    has_overdrive = bool(all_buffs and ID_OVERDRIVE_STATUS_ID in all_buffs)
-
-    for idx, buff_cfg in enumerate(profile.get("buffs", [])):
-        src = buff_cfg.get("raw_source")
-        if not src:
-            continue
-
-        # 条件生效判断
-        require = buff_cfg.get("require")
-        if require == "dragon_form" and not is_dragon_form:
-            continue
-        if require == "overdrive" and not has_overdrive:
-            continue
-
-        key = idx
-        locked = new_locked.get(key, 0)
-        addr, locked_new, ok = _resolve_gauge_addr(handle, resolved_actor, src, locked)
-        if not ok:
-            continue
-        new_locked[key] = locked_new
-        fmt = src.get("fmt", "f32")
-        try:
-            if fmt == "u32":
-                v = read_u32(handle, addr)
-            else:
-                v = read_f32(handle, addr)
-        except Exception:
-            v = None
-        if v is None:
-            continue
-        if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-            v = 0.0
-
-        kind = src.get("kind")
-        max_stacks = buff_cfg.get("max_stacks")
-        if max_stacks is None:
-            max_stacks = 4 if fmt == "f32" else 7
-
-        # 值域校验：明显越界说明链/偏移不对，放弃本次读取
-        if kind != "class_state":
-            if fmt == "f32":
-                if v < -0.01 or v > max(max_stacks * 1.5, 1.0) + 0.1:
-                    continue
-            elif fmt == "u32":
-                if v > max(max_stacks, 4) + 2:
-                    continue
-
-        stacks = 0
-        timer = None
-        timer_max = None
-        gauge_value = None
-
-        if kind == "class_state":
-            P = read_u64(handle, resolved_actor + src.get("ptr_off", CLASS_STATE_PTR_OFF))
-            if P:
-                rank = read_u32(handle, P + src.get("rank_off", CLASS_RANK_OFF))
-                # 团长 class 层数游戏内为 1~4，但内存值为 0~3，需要 +1
-                stacks = (rank or 0) + 1
-                # 倒计时(剩余秒) 经实机验证为直接相对 actor 的 f32 @0xCAAC
-                dur = read_f32(handle, resolved_actor + CLASS_DURATION_DIRECT_OFF)
-                if dur is not None and not math.isnan(dur) and not math.isinf(dur) and dur > 0:
-                    timer = dur
-                    timer_max = dur  # 首次读到即作为最大值参考
-        elif fmt == "u32":
-            stacks = int(v)
-        elif fmt == "f32":
-            gauge_value = v
-            # 浮点槽：stacks 取整部分用于尖刺数量；满层阈值用 0.99
-            stacks = int(v)
-
-        out[idx] = {
-            "index": idx,
-            "zh": buff_cfg.get("zh", ""),
-            "zh_tw": buff_cfg.get("zh_tw", buff_cfg.get("zh", "")),
-            "en": buff_cfg.get("en", ""),
-            "stacks": stacks,
-            "max_stacks": max_stacks,
-            "timer": timer,
-            "timer_max": timer_max,
-            "timer_display": buff_cfg.get("timer_display", "any_stack"),
-            "single_layer": bool(buff_cfg.get("single_layer", False)),
-            "gauge_mode": buff_cfg.get("gauge_mode"),
-            "gauge_value": gauge_value,
-        }
-    return out, new_locked
-
 
 def read_skill_cooldowns(handle, char_base):
     if not char_base:
@@ -1678,29 +1402,6 @@ def read_skill_cooldowns(handle, char_base):
             "ready": cd_val <= SKILL_READY_THRESHOLD,
         })
     return skills
-
-
-# ============================ Color fields (ordered for settings dialog) ============================
-COLOR_FIELDS = [
-    ("title_bar_color", "标题栏色:"),
-    ("circle_color_normal", "圆环色(正常):"),
-    ("circle_color_lv7", "圆环色(满层):"),
-    ("spike_color_normal", "尖刺色(正常):"),
-    ("spike_color_lv7", "尖刺色(满层):"),
-    ("arc_color", "倒计时弧颜色:"),
-    ("text_color", "层数数字色:"),
-    ("dh_text_outline_color", "层数数字勾边色:"),
-    ("text_color_timer", "层数数字色 — (计时版):"),
-    ("dh_text_outline_color_timer", "层数数字勾边色 — (计时版):"),
-    ("timer_text_color", "倒计时文字色:"),
-    ("indicator_outline_color", "外描边色:"),
-    ("icon_color", "标题UI色:"),
-    ("buff_name_color", "Buff名色:"),
-    ("skill_cd_color", "能力扇形色:"),
-    ("flash_color", "闪光颜色:"),
-    ("skill_cd_text_color", "能力倒计时色:"),
-    ("skill_cd_name_color", "能力名色:"),
-]
 
 # 锁定时需要减半不透明度的颜色键（仅标题栏、背景；图标/锁头保持原色原不透明度以便解锁）
 LOCK_HALVED_KEYS = {"title_bar_color"}
@@ -1731,8 +1432,6 @@ DEFAULT_SETTINGS = {
     "indicator_outline_width": 1,
     "title_bar_color": "#000000",
     "title_bar_color_opacity": 50,
-    "bg_color": "#000000",
-    "bg_color_opacity": 34,
     "titlebar_font_size": 10,
     "title_align": "left",
     "titlebar_status_indent": 16,
@@ -1745,7 +1444,6 @@ DEFAULT_SETTINGS = {
     "spike_color_lv7": "#ff4a4a",
     "spike_color_lv7_opacity": 100,
     "arc_color": "#55ff00",
-    "arc_color_opacity": 100,
     "text_color": "#ffffff",
     "text_color_opacity": 100,
     "dh_text_outline_color": "#7d2a00",
@@ -1783,10 +1481,6 @@ DEFAULT_SETTINGS = {
     "roll_window_y": 971,
     "skill_window_x": 1178,
     "skill_window_y": 930,
-    "classmech_window_x": 300,
-    "classmech_window_y": 860,
-    "classmech_scale_percent": 100,
-    "ex_status_offset": 2808,
     "center_text_offset_x": 2,
     "center_text_offset_y": 2,
     "dh_text_outline_width": 4,
@@ -1799,7 +1493,6 @@ DEFAULT_SETTINGS = {
     "dh_text_outline_color_timer": "#7d2a00",
     "dh_text_outline_color_timer_opacity": 50,
     "icon_color": "#ffff00",
-    "icon_color_opacity": 100,
     "roll_icon_opacity": 100,
     "timer_center_offset_y": 0,
     "auto_focus_minimize": False,
@@ -1814,7 +1507,8 @@ DEFAULT_SETTINGS = {
     "single_timer_text_color_opacity": 100,
     "spike_hide_when_no_buff": True,
     "spike_hidden_opacity": 0,
-    "hide_spikes_and_beads": False,
+    "show_spikes": True,
+    "show_bead": True,
     "out_of_combat_hide": True,
     "out_of_combat_opacity": 0,
     "show_titlebar_status": True,
@@ -1860,15 +1554,12 @@ DEFAULT_SETTINGS = {
     "show_core_module": True,
     "show_roll_module": True,
     "show_skill_cd_module": True,
-    "show_skill_cd": True,
     "skill_cd_size": 30,
     "skill_cd_spread": 41,
     "skill_cd_color": "#ffe608",
-    "skill_cd_color_opacity": 100,
     "skill_cd_capsule_bg": "#0a0e1a",
     "skill_cd_capsule_border": "#55aaff",
     "skill_cd_text_color": "#ffffff",
-    "skill_cd_text_color_opacity": 100,
     "skill_cd_show_name": True,
     "skill_cd_name_font_size": 9,
     "skill_cd_name_offset_x": 0,
@@ -1879,7 +1570,6 @@ DEFAULT_SETTINGS = {
     "skill_cd_timer_offset_x": 0,
     "skill_cd_timer_offset_y": 0,
     "skill_cd_name_color": "#ffffff",
-    "skill_cd_name_color_opacity": 80,
     "skill_cd_bg_opacity": 10,
     "skill_cd_sector_opacity": 100,
     "skill_cd_border_opacity": 100,
@@ -1895,10 +1585,13 @@ DEFAULT_SETTINGS = {
     "class_duration_max": 7.1750030517578125,
     "kronos_freeze_max": 10.0,
     "auto_check_update": True,
-    "show_startup_splash": False,
+    "enable_sync_exe_list": True,
     "skip_version": "6.80",
     "update_check_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/version.json",
     "update_download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/GBFR_CooldownIndicator_V2001.exe",
+    # V2039：颜色选择对话框的 16 格「自定义颜色」持久化（之前关闭软件即丢失）。
+    # 每次 pick_color 入口前从 settings 还原、关闭后回写 save_settings。
+    "custom_palette": [],
     "global_hotkey_show_enabled": True,
     "global_hotkey_show": "17,219",
     "global_hotkey_lock_enabled": True,
@@ -1907,14 +1600,10 @@ DEFAULT_SETTINGS = {
     "global_hotkey_settings": "17,186",
     "global_hotkey_key": "79",
     "titlebar_icon_indent": 16,
-    "supersample": 1.0,
-    "update_mirror_url": "https://ghproxy.net/",
-    "flash_dodge_outline": True,
     "global_hotkey_enabled": True,
     "grace_max": 20.0,
     "pos_res_normalized": True,
 }
-
 
 def load_settings():
     try:
@@ -1985,6 +1674,18 @@ def load_settings():
                     data[_new_k] = data[_old_k]
                 except Exception:
                     pass
+        # V2034：旧的「隐藏尖刺与装饰小球」/「仅隐藏上面的尖刺」两个 hide 选项
+        # → 新的「显示尖刺」/「显示装饰小球」两个独立 show 开关（互为相反语义）：
+        #   hide_spikes_and_beads=True → 两者都藏 → show_spikes=False, show_bead=False
+        #   hide_spikes_only=True      → 仅藏尖刺  → show_spikes=False, show_bead=True
+        #   两者都未勾                 → 都显示    → show_spikes=True,  show_bead=True
+        _old_hide_all = data.pop("hide_spikes_and_beads", None)
+        _old_hide_only = data.pop("hide_spikes_only", None)
+        if _old_hide_all is not None or _old_hide_only is not None:
+            _both = bool(_old_hide_all)
+            _only = bool(_old_hide_only)
+            data["show_spikes"] = not (_both or _only)
+            data["show_bead"] = not _both
         # ─────────────────────────── 向后兼容合并 ───────────────────────────
         # 设计原则：发版一般只改 UI/逻辑，配置格式几乎不变；因此「schema 版本不同」不再清空
         # 任何用户配置。始终以 DEFAULT_SETTINGS 为基底，用磁盘上的用户数据覆盖（保留全部同名
@@ -2003,7 +1704,6 @@ def load_settings():
     except Exception:
         return dict(DEFAULT_SETTINGS)
 
-
 def save_settings(settings):
     try:
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
@@ -2011,11 +1711,9 @@ def save_settings(settings):
     except Exception:
         pass
 
-
 def qcolor(hex_value, fallback="#ffffff"):
     color = QColor(hex_value or fallback)
     return color if color.isValid() else QColor(fallback)
-
 
 def rotate_hue(hex_value, deg):
     """将颜色按色相旋转 deg 度（保持饱和度/明度），用于多buff差异化着色。"""
@@ -2028,7 +1726,6 @@ def rotate_hue(hex_value, deg):
     h = (int(h) + int(deg)) % 360
     c.setHsv(h, s, v, a)
     return c.name()
-
 
 # ============================ Settings Dialog ============================
 class MasteryBuffGroup(QWidget):
@@ -2073,7 +1770,8 @@ class MasteryBuffGroup(QWidget):
             lbl = QLabel(self._branch_name(br, lang))
             lbl.setStyleSheet("color:#9fb6d8;font-size:10px;")
             lbl.setAlignment(Qt.AlignCenter)
-            lbl.setMinimumWidth(86); lbl.setMaximumWidth(100)
+            # V2035：列宽放大 1.5 倍（86~100 → 129~150），让「真谛：回复类能力强化」等长专精名能完整显示
+            lbl.setMinimumWidth(129); lbl.setMaximumWidth(150)
             self._col_lbls_layout.addWidget(lbl, alignment=Qt.AlignVCenter)
         bl.addLayout(self._col_lbls_layout)
         # 列表
@@ -2199,7 +1897,8 @@ class MasteryBuffGroup(QWidget):
         for br in ("awakening", "truth", "secret"):
             cb = QCheckBox()
             cb.setChecked(bool(chk.get(br, False)))
-            cb.setMinimumWidth(86); cb.setMaximumWidth(100)
+            # V2035：列宽放大 1.5 倍（86~100 → 129~150），与列标题宽度对齐
+            cb.setMinimumWidth(129); cb.setMaximumWidth(150)
             cb.setStyleSheet(
                 "QCheckBox{color:#cfe0ff;font-size:11px;}"
                 "QCheckBox::indicator{width:14px;height:14px;border-radius:4px;border:2px solid #60708c;background:#1a2030;subcontrol-position:center center;}"
@@ -2264,7 +1963,6 @@ class MasteryBuffGroup(QWidget):
                     cb.setChecked(on)
         self._loading = False
         self.orderChanged.emit()
-
 
 class HotkeyCaptureDialog(QDialog):
     """弹窗捕获全局快捷键组合（最多 3 个键：可选修饰键 Ctrl/Alt/Shift/Win + 1 个主键）。
@@ -2369,7 +2067,6 @@ class HotkeyCaptureDialog(QDialog):
         if vk in vk_punct:
             return vk_punct[vk]
         return "VK%d" % int(vk)
-
 
 class SettingsDialog(QDialog):
     settings_changed = Signal(dict)
@@ -2523,7 +2220,6 @@ class SettingsDialog(QDialog):
             setattr(self, f"{key}_scale_spin", sp)
             return sl, sp
 
-
         layout.addWidget(self.settings_tabs)
 
         # ============ 顶级标签: 全局 ============
@@ -2557,9 +2253,6 @@ class SettingsDialog(QDialog):
         self.ooc_op_spn.setSuffix("%")
         self.ooc_op_spn.setValue(int(self.settings.get("out_of_combat_opacity", DEFAULT_SETTINGS["out_of_combat_opacity"])))
         cf.addRow("隐藏时透明度:", self.ooc_op_spn)
-        self.show_startup_splash_chk = QCheckBox(_tr("显示启动画面"))
-        self.show_startup_splash_chk.setChecked(bool(self.settings.get("show_startup_splash", DEFAULT_SETTINGS["show_startup_splash"])))
-        cf.addRow(self.show_startup_splash_chk)
         f.addRow(card)
         # 扫描 / 内存
         card, cf = make_card(f, "── 扫描 / 内存 ──")
@@ -2590,6 +2283,10 @@ class SettingsDialog(QDialog):
         f.addRow(card)
         # EXE 同步（全局：启动时才生效，按绝对路径检测/启停）
         card, cf = make_card(f, "── EXE 同步 ──")
+        # V2035 新增：整行启用勾选框，玩家可一键关掉 EXE 同步（不勾 = 永不启动列表中的任何 EXE）
+        self.enable_sync_exe_chk = QCheckBox(_tr("启用 EXE 同步列表"))
+        self.enable_sync_exe_chk.setChecked(bool(self.settings.get("enable_sync_exe_list", DEFAULT_SETTINGS["enable_sync_exe_list"])))
+        cf.addRow(self.enable_sync_exe_chk)
         self.sync_exe_le = QPlainTextEdit()
         self.sync_exe_le.setPlainText(self.settings.get("sync_exe_list", DEFAULT_SETTINGS["sync_exe_list"]))
         self.sync_exe_le.setPlaceholderText(_tr("多个 exe 绝对路径，可用分号或换行分隔；可附加 ||工作目录"))
@@ -2702,7 +2399,8 @@ class SettingsDialog(QDialog):
         cf.addRow(_tr("图标行缩进:"), self.icon_indent_spn)
         self._add_color_row(cf, "title_bar_color", "标题栏色:")
         self._add_color_row(cf, "icon_color", "标题UI色:")
-        self.circle_pad_title = QSpinBox(); self.circle_pad_title.setRange(0, 999); self.circle_pad_title.setValue(int(self.settings.get("circle_pad_title", DEFAULT_SETTINGS["circle_pad_title"])))
+        # V2031：允许负值——标题栏可以叠在圆环画布之上时使用
+        self.circle_pad_title = QSpinBox(); self.circle_pad_title.setRange(-999, 999); self.circle_pad_title.setValue(int(self.settings.get("circle_pad_title", DEFAULT_SETTINGS["circle_pad_title"])))
         self.circle_pad_title.setMinimumWidth(110)
         self.circle_pad_title.setToolTip(_tr("标题栏底色行与圆环画布之间的垂直间距（像素）。\n"
                                             "默认 0 表示两者直接贴在一起；想让标题栏和圆之间留出呼吸空间可加大。"))
@@ -2725,9 +2423,12 @@ class SettingsDialog(QDialog):
         cf.addRow("顶端圆点距圆心:", self.spike_bead_pos)
         self._add_color_row(cf, "spike_color_normal", "尖刺色(正常):")
         self._add_color_row(cf, "spike_color_lv7", "尖刺色(满层):")
-        self.hide_spikes_beads_chk = QCheckBox(_tr("隐藏尖刺与装饰小球（仅保留圆环+倒计时+文字）"))
-        self.hide_spikes_beads_chk.setChecked(bool(self.settings.get("hide_spikes_and_beads", DEFAULT_SETTINGS["hide_spikes_and_beads"])))
-        cf.addRow(self.hide_spikes_beads_chk)
+        self.show_spikes_chk = QCheckBox(_tr("显示尖刺（三角本体）"))
+        self.show_spikes_chk.setChecked(bool(self.settings.get("show_spikes", DEFAULT_SETTINGS["show_spikes"])))
+        cf.addRow(self.show_spikes_chk)
+        self.show_bead_chk = QCheckBox(_tr("显示装饰小球（尖刺顶端圆点）"))
+        self.show_bead_chk.setChecked(bool(self.settings.get("show_bead", DEFAULT_SETTINGS["show_bead"])))
+        cf.addRow(self.show_bead_chk)
         f.addRow(card)
         card, cf = make_card(f, "── 圆环 ──")
         self.circle_radius = QSpinBox(); self.circle_radius.setRange(30, 120); self.circle_radius.setValue(int(self.settings.get("circle_radius", DEFAULT_SETTINGS["circle_radius"])))
@@ -3042,11 +2743,7 @@ class SettingsDialog(QDialog):
         self.download_url_le = QLineEdit(self.settings.get("update_download_url", "") or "")
         self.download_url_le.setPlaceholderText("检查更新后自动填入，或手动填写 exe 下载直链")
         cf.addRow("更新下载地址：", self.download_url_le)
-        # V303：明示两个 URL 的区别（检测地址走 release CDN，非 raw，国内快速且不易被墙）
-        url_hint = QLabel(_tr("检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。"))
-        url_hint.setWordWrap(True)
-        url_hint.setStyleSheet("color:#8aa0c0;font-size:10px;")
-        cf.addRow(url_hint)
+        # V303：原"检测地址走 release CDN"长说明已被用户删除（V2030）——版本号输入框的 placeholder 已经足够提示。
         self.changelog_edit = QPlainTextEdit()
         self.changelog_edit.setReadOnly(True)
         self.changelog_edit.setMaximumHeight(120)
@@ -3276,7 +2973,7 @@ class SettingsDialog(QDialog):
 
     def _connect_live_signals(self):
         widgets = [
-            self.lang, self.auto_focus_minimize, self.resolution_auto_scale, self.spike_hide_chk, self.spike_hidden_op_spn, self.hide_spikes_beads_chk, self.show_titlebar_status, self.titlebar_font_size_spn, self.status_indent_spn, self.icon_indent_spn, self.icon_use_default,
+            self.lang, self.auto_focus_minimize, self.resolution_auto_scale, self.spike_hide_chk, self.spike_hidden_op_spn, self.show_spikes_chk, self.show_bead_chk, self.show_titlebar_status, self.titlebar_font_size_spn, self.status_indent_spn, self.icon_indent_spn, self.icon_use_default,
             self.core_scale_slider, self.core_scale_spin, self.roll_scale_slider, self.roll_scale_spin, self.skill_scale_slider, self.skill_scale_spin,
             self.scan, self.circle_radius, self.spike_length, self.spike_axis_pos,
             self.spike_width, self.spike_waist_pos, self.spike_bead_radius, self.spike_bead_pos,
@@ -3363,8 +3060,40 @@ class SettingsDialog(QDialog):
     def pick_color(self, key, button):
         lang = self.settings.get("language", "zh")
         color_titles = {"zh": "选择颜色", "zh_tw": "選擇顏色", "en": "Select Color"}
+        # V2039：颜色对话框持久化调色板。
+        # 入口前：从 settings['custom_palette'] 还原到 QColorDialog 全局 16 格，
+        # 这样关闭软件再打开，用户辛辛苦苦调好的色不会丢。
+        saved_palette = list(self.settings.get("custom_palette") or [])
+        for i in range(16):
+            try:
+                hex_str = saved_palette[i] if i < len(saved_palette) else ""
+                QColorDialog.setCustomColor(i, QColor(hex_str) if hex_str else QColor("#ffffff"))
+            except Exception:
+                pass
         color = QColorDialog.getColor(qcolor(self.settings.get(key)), self,
                                       color_titles.get(lang, color_titles["zh"]))
+        # V2039：不论用户按 OK 还是 Cancel，都把当前 16 格里有效的颜色回写到 settings
+        # 并立即 save_settings。PySide6 没有 customColors() 列表版 getter，
+        # 用 customCount + customColor(i) 循环 16 格读出。
+        try:
+            cnt = int(QColorDialog.customCount())
+            new_palette = []
+            for i in range(cnt):
+                try:
+                    c = QColorDialog.customColor(i)
+                except Exception:
+                    c = None
+                if c is not None and c.isValid():
+                    new_palette.append(c.name())
+                else:
+                    new_palette.append("#ffffff")
+            # 长度对齐 16
+            while len(new_palette) < 16:
+                new_palette.append("#ffffff")
+            self.settings["custom_palette"] = new_palette[:16]
+            save_settings(self.settings)
+        except Exception:
+            pass
         if color.isValid():
             self.settings[key] = color.name()
             button.setText(color.name())
@@ -3383,12 +3112,20 @@ class SettingsDialog(QDialog):
             return
         self._suppress_emit = True
         self.settings = dict(DEFAULT_SETTINGS)
+        # V2039：重置默认时，同时清空「颜色对话框自定义色」持久化 + 同步 Qt 全局
+        try:
+            self.settings["custom_palette"] = []
+            for i in range(16):
+                QColorDialog.setCustomColor(i, QColor("#ffffff"))
+        except Exception:
+            pass
         self.lang.setCurrentIndex(max(0, self.lang.findData(DEFAULT_SETTINGS["language"])))
         self.auto_focus_minimize.setChecked(DEFAULT_SETTINGS["auto_focus_minimize"])
         self.resolution_auto_scale.setChecked(DEFAULT_SETTINGS["resolution_auto_scale"])
         self.spike_hide_chk.setChecked(DEFAULT_SETTINGS["spike_hide_when_no_buff"])
         self.spike_hidden_op_spn.setValue(DEFAULT_SETTINGS["spike_hidden_opacity"])
-        self.hide_spikes_beads_chk.setChecked(DEFAULT_SETTINGS["hide_spikes_and_beads"])
+        self.show_spikes_chk.setChecked(DEFAULT_SETTINGS["show_spikes"])
+        self.show_bead_chk.setChecked(DEFAULT_SETTINGS["show_bead"])
         self.ooc_hide_chk.setChecked(DEFAULT_SETTINGS["out_of_combat_hide"])
         self.ooc_op_spn.setValue(DEFAULT_SETTINGS["out_of_combat_opacity"])
         self.show_titlebar_status.setChecked(DEFAULT_SETTINGS["show_titlebar_status"])
@@ -3400,7 +3137,6 @@ class SettingsDialog(QDialog):
         for group in getattr(self, "buff_order_groups", {}).values():
             group.set_all(True)
         self.auto_check_cb.setChecked(DEFAULT_SETTINGS["auto_check_update"])
-        self.show_startup_splash_chk.setChecked(DEFAULT_SETTINGS["show_startup_splash"])
         self.update_url_le.setText(DEFAULT_SETTINGS["update_check_url"])
         self.download_url_le.setText(DEFAULT_SETTINGS["update_download_url"])
         for _p, _d, _e in (("hk_show", "17,75", True), ("hk_lock", "", False), ("hk_settings", "", False)):
@@ -3520,7 +3256,8 @@ class SettingsDialog(QDialog):
         self.settings["resolution_auto_scale"] = self.resolution_auto_scale.isChecked()
         self.settings["spike_hide_when_no_buff"] = self.spike_hide_chk.isChecked()
         self.settings["spike_hidden_opacity"] = self.spike_hidden_op_spn.value()
-        self.settings["hide_spikes_and_beads"] = self.hide_spikes_beads_chk.isChecked()
+        self.settings["show_spikes"] = self.show_spikes_chk.isChecked()
+        self.settings["show_bead"] = self.show_bead_chk.isChecked()
         self.settings["out_of_combat_hide"] = self.ooc_hide_chk.isChecked()
         self.settings["out_of_combat_opacity"] = self.ooc_op_spn.value()
         self.settings["show_titlebar_status"] = self.show_titlebar_status.isChecked()
@@ -3641,7 +3378,6 @@ class SettingsDialog(QDialog):
         for key, spin in self.opacity_spins.items():
             self.settings[f"{key}_opacity"] = spin.value()
         self.settings["auto_check_update"] = self.auto_check_cb.isChecked()
-        self.settings["show_startup_splash"] = self.show_startup_splash_chk.isChecked()
         self.settings["skip_version"] = self.skip_version or ""
         self.settings["update_check_url"] = self.update_url_le.text().strip()
         self.settings["update_download_url"] = self.download_url_le.text().strip()
@@ -3653,7 +3389,9 @@ class SettingsDialog(QDialog):
             self.settings[_e] = getattr(self, f"{_p}_enabled").isChecked()
         # 旧版总开关废弃：保存时写入 True，避免旧版读取时误判为禁用
         self.settings["global_hotkey_enabled"] = True
-        # EXE 同步列表（仅保存；实际共同启动发生在程序启动时，仅一次）
+        # EXE 同步列表（仅保存；实际共同启动发生在程序启动时，仅一次）。
+        # V2035：新增「启用 EXE 同步列表」整行开关，关掉时连列表本身都跳过、绝不启动任何 EXE。
+        self.settings["enable_sync_exe_list"] = self.enable_sync_exe_chk.isChecked()
         self.settings["sync_exe_list"] = (self.sync_exe_le.toPlainText() or "").strip()
         return self.settings
 
@@ -3825,8 +3563,6 @@ class SettingsDialog(QDialog):
             self.skip_btn.setEnabled(False)
             self.download_btn.setEnabled(False)
 
-
-
 # ============================ 全局快捷键（最多 3 键组合；呼出/隐藏 / 锁定 / 设置）============================
 IS_WINDOWS = (sys.platform == "win32")
 # 三个热键用途的注册 id（RegisterHotKey 的 id 参数，用于区分回调）
@@ -3847,7 +3583,6 @@ _VK_MOD_FLAGS = {
 }
 _WM_HOTKEY = 0x0312
 
-
 class _HotkeyFilter(QAbstractNativeEventFilter):
     """拦截 Win32 WM_HOTKEY 消息，按 id 触发对应回调。"""
 
@@ -3865,7 +3600,6 @@ class _HotkeyFilter(QAbstractNativeEventFilter):
             pass
         return False
 
-
 # ============================ Overlay Widget ============================
 class GBFROverlayQt(QObject):
     update_checked = Signal(object)
@@ -3879,11 +3613,7 @@ class GBFROverlayQt(QObject):
     TITLE_BAR_H = 44
     CANVAS_W = 648  # 核心检测模块画布宽度基准（原 480 × 1.35，放大监测区尺寸）
     CORE_AREA_MULT = 1.35  # 核心监测区整体（长/宽）放大倍数（用户要求 ×1.35）
-    DEFAULT_NUM_SPIKES = 7
-    SPIKE_W = 16
     SHRIMP_BASE_SIZE = 36
-    SHRIMP_LEFT_PAD = 10
-    SHRIMP_RIGHT_PAD = 10
     ARC_WIDTH = 7
     CIRCLE_WIDTH = 3
     BACKDROP_RADIUS = 10
@@ -3919,6 +3649,7 @@ class GBFROverlayQt(QObject):
 
         self.handle = None
         self.pid = None
+        self._interacting = False   # V2025：拖拽 / 缩放模块进行中锁（焦点同步跳过隐藏）
         self.pptr = None
         self.module_base = None
         self.module_size = 0
@@ -3931,7 +3662,16 @@ class GBFROverlayQt(QObject):
         self.char_type = 0
         self.charid_hash = 0
         self.pl_id = None
-        self._auto_minimized_by_game_focus = False
+        # 前后台边沿检测：上一拍游戏是否在前台（None=未初始化）
+        self._prev_is_game_foreground = None
+        # 当前所有同名游戏进程 PID 集合（V2018 引入）：用于「游戏是否在前台」判断
+        # 见 find_game_pids() 与 _sync_visibility_with_game_focus() 注释。
+        self._game_pids = set()
+        # V2018 焦点诊断：让用户能直观看到当前 GetForegroundWindow 的 PID vs game_pids。
+        # 写入 overlay_focus_log.txt（最近 200 行环形），便于确认前后台识别是否生效。
+        self._focus_log_ring = []   # [(ms, prev, fg, game_pids, is_game_fg, action), ...]
+        self._focus_log_path = None  # 由 __init__ 阶段后初始化为 dist 目录或 exe 同目录
+
         self._ooc_content_mult = 1.0
         self._ooc_content_hidden = False
         # 技能冷却状态
@@ -4005,9 +3745,22 @@ class GBFROverlayQt(QObject):
         self._update_periodic_timer.timeout.connect(lambda: self.check_update())
         self._update_periodic_timer.start()
 
+        # V2018：焦点诊断 log 写到 exe 同目录（onefile 下用 sys.argv[0] 取得真实 exe 路径）。
+        try:
+            exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        except Exception:
+            exe_dir = os.getcwd()
+        self._focus_log_path = os.path.join(exe_dir, "overlay_focus_log.txt")
+
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.timer.start(500)
+        # 焦点同步独立低频定时器（默认 250ms）：与 50ms 游戏数据扫描解耦，
+        # 避免每帧都调用 GetForegroundWindow（修复 ④ 不必要的轮询开销）。
+        self.focus_timer = QTimer(self)
+        self.focus_timer.setInterval(250)
+        self.focus_timer.timeout.connect(self._sync_visibility_with_game_focus)
+        self.focus_timer.start()
         # 首次扫描延后到事件循环启动后执行，避免阻塞构造。
         QTimer.singleShot(0, self.tick)
 
@@ -4043,7 +3796,11 @@ class GBFROverlayQt(QObject):
     def _sync_exe_list_at_startup(self):
         """启动时共同启动 EXE 列表中的程序（未运行则启动，已运行则跳过；不监视、不杀进程）。
         整段逻辑放进后台 daemon 线程执行，彻底避免任何启动/进程枚举可能造成的 Qt 主线程阻塞
-        （上一版用 QProcess.startDetached 在主线程同步启动，会导致『打开瞬间读到状态后卡死』）。"""
+        （上一版用 QProcess.startDetached 在主线程同步启动，会导致『打开瞬间读到状态后卡死』）。
+        V2035：先看「启用 EXE 同步列表」整行开关，关掉就直接 return，连列表都跳过；
+        这样既不遍历列表、不枚举进程、不启动任何 EXE，CPU=0 真正零开销。"""
+        if not bool(self.settings.get("enable_sync_exe_list", True)):
+            return
         raw = self.settings.get("sync_exe_list", "") or ""
         if not raw.strip():
             return
@@ -4148,19 +3905,29 @@ class GBFROverlayQt(QObject):
         wins = self._all_windows()
         if not wins:
             return
-        any_visible = any(w.isVisible() and not w.isMinimized() for w in wins)
+        any_visible = any(w.isVisible() for w in wins)
         if any_visible:
-            for w in wins:
-                w.hide()
+            self._hide_all_windows()
         else:
-            self._show_all()
+            self._show_all_windows()
+
+    def _hide_all_windows(self):
+        """整窗隐藏（不进任务栏），与标题栏最小化图标完全同一动作；供 手动隐藏 / 自动下降沿 共用。"""
+        for w in self._all_windows():
+            w.hide()
+
+    def _show_all_windows(self):
+        """整窗显示并置顶，与手动呼出完全同一动作；供 手动呼出 / 自动上升沿 共用。"""
+        for w in self._all_windows():
+            if not w.isVisible():
+                w.show()
+            w.raise_()
 
     def _show_all(self):
-        for w in self._all_windows():
-            if w.isMinimized():
-                w.showNormal()
-            w.show()
-            w.raise_()
+        """V2020a 补回别名：托盘「显示所有窗口」/_reset_all_windows 都连到 _show_all，
+        但 def 实际只有 _show_all_windows——以前 connect 时 AttributeError 中断整个
+        _update_tray_menu、导致第 5-9 项菜单不显示。现在补回来当作 wrapping。"""
+        self._show_all_windows()
 
     def _reset_all_windows(self):
         """托盘「重置所有窗口」：把三个模块的屏幕位置与缩放恢复为默认值并居中显示。"""
@@ -4246,6 +4013,11 @@ class GBFROverlayQt(QObject):
             opacity = math.ceil(opacity / 2)
         if self.spike_hidden and color_key in SPIKE_HIDDEN_KEYS:
             opacity = int(self.settings.get("spike_hidden_opacity", 0))
+        # V2034：尖刺与装饰小球各自独立开关——关闭时该层不透明度强制为 0
+        # （尖刺三角本体与装饰小球都用 spike_color_normal/lv7 着色，前者受 show_spikes 控制、
+        #  后者受 show_bead 控制；绘制层 _draw_spikes 内对「仅画小球」也单独判定 show_bead）。
+        if color_key in ("spike_color_normal", "spike_color_lv7") and not self._spike_drawn():
+            opacity = 0
         base = max(0, min(100, opacity)) / 100.0
         if color_key in TITLE_OOC_EXEMPT:
             return base
@@ -4319,11 +4091,10 @@ class GBFROverlayQt(QObject):
         self.dodge_icon_size = max(4, int(self.SHRIMP_BASE_SIZE * scale / 100))
 
         # ── 核心检测模块画布（标题栏 + 尖刺圆 + buff），不含翻滚/技能 ──
-        # 「隐藏尖刺与装饰小球」只控制绘制（不画尖刺本体/外勾边），绝不压缩画布空间：
-        # 若把 spike_*_pad 在 hide_spikes 时缩小，整个 core_canvas_h / circle_cy 会跟着
-        # 收缩，导致圆环、buff 名位置在勾选瞬间整体跳动。这里始终按有尖刺时计算，
-        # 圆环、倒计时、文字与勾选前完全一致；切回去时尖刺/小球立即重新显示。
-        hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
+        # 「显示尖刺」/「显示装饰小球」只控制绘制（不画尖刺本体/外勾边），绝不压缩画布空间：
+        # 若把 spike_*_pad 在 show_spikes=False 时缩小，整个 core_canvas_h / circle_cy 会跟着
+        # 收缩，导致圆环、buff 名位置在勾选瞬间整体跳动。这里始终按有尖刺时计算、
+        # 下沿只在 show_spikes 时额外预留 spike_len 给龙形/外描边，圆环、倒计时、文字与勾选前完全一致。
         outline_pad = max(0, self.indicator_outline_width + 2)
         spike_outer_extent = max(0, int((1.0 + self.spike_axis_pos) * self.spike_len))
         bead_outer_extent = self.spike_bead_radius + max(0, int(abs(self.spike_bead_pos) * self.spike_len))
@@ -4347,7 +4118,6 @@ class GBFROverlayQt(QObject):
         base_h = self.core_canvas_h
         self.core_canvas_h = int(base_h * mult)
         self.circle_cy = int(base_cy + (self.core_canvas_h - base_h) / 2.0)
-        self.dragon_bottom_y = self.circle_cy + self.circle_r + (0 if hide_spikes else self.spike_len)
 
         # ── 翻滚模块画布（独立窗口，横/竖可选）──
         roll_pad = 6
@@ -4423,7 +4193,6 @@ class GBFROverlayQt(QObject):
         - 靠左(left)：按 [锁定、关闭、设置、最小化、版本信息] 顺序从左往右排成一行，整体贴左；
         - 靠右(right)：同样顺序但整体贴右（锁定在最右，版本信息在最左）。
         """
-        th = self.TITLE_BAR_H
         s = self.ICON_BTN_SIZE
         gap = self.ICON_BTN_GAP
         icon_row_h = self.ICON_BTN_SIZE + 10
@@ -4482,7 +4251,6 @@ class GBFROverlayQt(QObject):
             ver_x,
         )
 
-
     # ================================================================
     #  绘制：主事件
     # ================================================================
@@ -4491,9 +4259,12 @@ class GBFROverlayQt(QObject):
     # ================================================================
     def render_core(self, painter):
         cx, cy, r = self.circle_cx, self.circle_cy, self.circle_r
-        # 仅尖刺圆模块可能隐藏：当「无buff隐藏」选项开启且主控角色没有任何可显示buff时。
+        # 仅尖刺圆模块可能隐藏：当「无buff隐藏」选项开启且主控角色当前没有任何 buff 实际激活（层数=0）时。
+        # 注意：判定是「实际层数为 0」，而不是「active_buffs 列表为空」——
+        # 一个 buff 即使被三阶专精全勾进 active_buffs，只要游戏里它的 stacks=0，
+        # 仍然算"没有 buff"——这是狼奶奶反馈的 V2025 之前 bug。
         # 翻滚UI 与 冷却技能UI 永远显示，不受此影响。
-        self.spike_hidden = bool(self.settings.get("spike_hide_when_no_buff", True)) and (len(self.active_buffs) == 0)
+        self.spike_hidden = bool(self.settings.get("spike_hide_when_no_buff", True)) and not self.active_buffs
 
         # 全局非战斗隐藏：仅作用于「内容区」（buff/技能/翻滚），标题栏（背景+图标+状态文字）始终保留。
         # 内容区乘数 = _ooc_content_mult（由 tick 中的 _sync_out_of_combat_visibility 计算）：
@@ -4515,6 +4286,13 @@ class GBFROverlayQt(QObject):
         if self._out_of_combat_mult <= 0.0:
             return
 
+        # V2032：撤销 V2031 的『列表非空但全 stacks=0 也归并进空 buff』语义——
+        # 那是 V2026 _any_active_buff_stacks() 错用于 spike 隐藏判定的连锁假修复：
+        # 用户原意是『active_buffs 真为空（没有任何 buff）』才考虑整圈隐，『已配满 buff
+        # 但游戏里 stacks=0（buff 还没激活计数）』应仍正常显示圆环 + spike + 内部信息。
+        # 此处恢复 `if self.active_buffs:`，spike_hidden 判定也恢复 `not self.active_buffs`（4226 行），
+        # 标题栏 buff 名段恢复 `if not self.active_buffs:`（_build_titlebar_status_text 5028 行）——
+        # 三处统一回到『仅看 active_buffs 列表本身，不看 stacks』的 V2025 语义。
         if self.active_buffs:
             n = len(self.active_buffs)
             if n == 1:
@@ -4551,15 +4329,13 @@ class GBFROverlayQt(QObject):
                     self._draw_buff_name(painter, buff, ix, iy, r, scale, color_override=override)
         else:
             # 无任何可显示buff：绘制空的尖刺圆模块（受 spike_hidden 控制，可隐藏/变暗）
-            hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
-            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=not hide_spikes)
+            self._draw_indicator_outer_outline(painter, cx, cy, r, False, include_spikes=self._spike_drawn())
             self._draw_circle(painter, cx, cy, r, False)
 
     def _render_buff_ui(self, painter, buff, cx, cy, r, is_lv7, scale=1.0,
                          color_override=None, color_index=0):
         """渲染一个完整的 buff UI 元素（圆环+尖刺+倒计时+中心文字）。"""
         is_single_layer = self._is_buff_single_layer(buff)
-        hide_spikes = bool(self.settings.get("hide_spikes_and_beads", False))
         painter.save()
         if scale != 1.0:
             painter.translate(cx, cy)
@@ -4567,11 +4343,11 @@ class GBFROverlayQt(QObject):
             painter.translate(-cx, -cy)
 
         self._draw_glow(painter, cx, cy, r, is_lv7, color_override=color_override)
-        include_spikes = not is_single_layer and not hide_spikes
+        include_spikes = not is_single_layer and self._spike_drawn()
         self._draw_indicator_outer_outline(painter, cx, cy, r, is_lv7,
                                            include_spikes=include_spikes,
                                            buff=buff, color_override=color_override)
-        if not is_single_layer and not hide_spikes:
+        if not is_single_layer:
             self._draw_spikes(painter, cx, cy, r, is_lv7, buff=buff, color_override=color_override)
         self._draw_circle(painter, cx, cy, r, is_lv7, color_override=color_override)
         self._draw_timer_progress(painter, cx, cy, r, is_lv7, buff=buff,
@@ -5131,11 +4907,7 @@ class GBFROverlayQt(QObject):
 
         # 图标按钮区域（最小化、设置、锁定、退出，从左到右）
         minimize_rect, settings_rect, lock_rect, exit_rect, ver_x = self._calc_icon_btn_rects()
-        self._btn_lock_rect = lock_rect
         hidden_rect = QRect(-9999, -9999, 0, 0)
-        self._btn_minimize_rect = hidden_rect if self.locked else minimize_rect
-        self._btn_settings_rect = hidden_rect if self.locked else settings_rect
-        self._btn_exit_rect = hidden_rect if self.locked else exit_rect
         # 窗口局部像素版命中矩形（与 paintEvent 的 painter.scale(disp_w) 对应：画布坐标×disp = 窗口像素）
         # 用窗口局部像素直接命中，避免 event.position() 先除 disp_w 再比画布矩形的换算误差（释放不触发）
         disp = getattr(getattr(self, "core_win", None), "disp_w", 1.0) or 1.0
@@ -5207,7 +4979,6 @@ class GBFROverlayQt(QObject):
                 painter.setPen(QColor(self.settings.get("icon_color", "#7f8fa6")))
                 painter.drawText(QRect(int(ver_x), ver_y, ver_w, ver_h), Qt.AlignLeft | Qt.AlignVCenter, ver_text)
 
-
             # 按下态凹陷背景（在画图标前先铺底）
             for name, rect in (("minimize", minimize_rect), ("settings", settings_rect), ("exit", exit_rect)):
                 if pressed == name:
@@ -5256,6 +5027,9 @@ class GBFROverlayQt(QObject):
     def _build_titlebar_status_text(self, lang="zh"):
         """构建标题栏状态文字：角色名 + 最高阶专精 + 启用的buff名称和层数。
         格式：菲莉-真谛: 孤高幽灵-(应出现的buff)
+        V2027: 判定从 `not self.active_buffs` 改为 `not self._any_active_buff_stacks()`，
+        与 render_core 中 spike 隐藏判定保持一致——勾选「无 buff 隐藏尖刺」时，
+        标题栏 buff 名段也同步隐藏（之前只藏圆环，buff 名段残留 → 狼奶奶/希耶提反馈「只剩 buff 名」）。
         """
         if self.status == "no_game":
             return ""  # 不显示「等待游戏...」，避免能力/标题栏出现该占位文字
@@ -5286,7 +5060,7 @@ class GBFROverlayQt(QObject):
                     break
             if cat_label and branch_name:
                 mastery_seg = f"-{cat_label}: {branch_name} "
-        if not self.active_buffs:
+        if not self.active_buffs:  # V2032: 撤销 V2027 的 _any_active_buff_stacks() 误用，恢复 V2025 语义
             return f"{char_name}{mastery_seg}"
         buff_parts = []
         for buff in self.active_buffs:
@@ -5398,46 +5172,57 @@ class GBFROverlayQt(QObject):
         # 圆环外勾边：原圆环会覆盖中间，只留下外侧白边。
         painter.drawEllipse(QPoint(cx, cy), r, r)
 
-        # 尖刺外勾边。
+        # 尖刺外勾边 + 装饰小球勾边：分别受 show_spikes / show_bead 独立开关控制（V2034）。
         for i in range(visible_spikes):
             angle = -90 + i * (360.0 / max_stacks)
             points = self._calc_spike_points(cx, cy, r, angle)
-            path = QPainterPath()
-            path.moveTo(points["tip"][0], points["tip"][1])
-            path.lineTo(points["left"][0], points["left"][1])
-            path.lineTo(points["root"][0], points["root"][1])
-            path.lineTo(points["right"][0], points["right"][1])
-            path.closeSubpath()
-            painter.drawPath(path)
-
+            if self._spike_drawn():
+                path = QPainterPath()
+                path.moveTo(points["tip"][0], points["tip"][1])
+                path.lineTo(points["left"][0], points["left"][1])
+                path.lineTo(points["root"][0], points["root"][1])
+                path.lineTo(points["right"][0], points["right"][1])
+                path.closeSubpath()
+                painter.drawPath(path)
             bead_r = max(0, int(self.spike_bead_radius))
-            if bead_r > 0:
+            if bead_r > 0 and self._bead_drawn():
                 bead_x, bead_y = points["bead"]
                 painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
 
         painter.restore()
 
+    def _spike_drawn(self):
+        """尖刺三角本体是否绘制（含其外勾边 / 闪光），由「显示尖刺」独立开关控制。"""
+        return bool(self.settings.get("show_spikes", True))
+
+    def _bead_drawn(self):
+        """尖刺顶端装饰小球是否绘制，由「显示装饰小球」独立开关控制；与尖刺三角互不耦合。"""
+        return bool(self.settings.get("show_bead", True))
+
     def _draw_spikes(self, painter, cx, cy, r, is_lv7, buff=None, color_override=None):
-        # 保底：即使调用方漏检，这里也拦截「隐藏尖刺」设置
-        if bool(self.settings.get("hide_spikes_and_beads", False)):
-            return
+        """绘制尖刺三角本体 + 装饰小球。两层独立控制，互不耦合：
+        - show_spikes：尖刺三角本体（含其闪光）
+        - show_bead  ：尖刺顶端的装饰小球
+
+        单一清晰流程：
+          ① 没 buff / 没层数（draw_count<=0）→ 直接 return，**两层都不画**——
+             装饰小球依附于尖刺，没有尖刺就没有小球。
+          ② 1 ≤ layers ≤ max：
+              - show_spikes=True → 画三角本体（带或无闪光）；show_bead=True 同时画小球
+              - show_spikes=False → 不画三角；show_bead=True 时**仅画装饰小球**，
+                该分支必须 painter.setOpacity(1.0)，绕开 spike_color_* 在 show_spikes=False
+                时返回的 0-opacity（否则小球会被全局 0 透明度污染，画不出来）。
+        """
         if not buff:
             return
+
+        # 1) 计算可见层数与发光起点（与 max_stacks 截断）
         max_stacks = self._buff_max_stacks(buff)
         visible_spikes = min(max(int(buff.get("stacks", 0)), 0), max_stacks)
         key = "spike_color_lv7" if is_lv7 else "spike_color_normal"
         spike_color = qcolor(self._get_color(key, color_override))
-        painter.save()
-        painter.setOpacity(self._effective_opacity(key))
 
-        light_c = QColor(spike_color).lighter(140)
-        dark_c = QColor(spike_color).darker(135)
-        outline_c = QColor(spike_color).darker(180)
-        outline_c.setAlpha(150)
-
-        # 尖刺闪光：层数增加时新出现尖刺(index>=from)闪光；层数回退时消失的尖刺(index>=from, from=回退后层数)
-        # 也会以闪光呈现后消失。flash 记录含 from(闪烁起点索引) 与 to(动画期间需要绘制到的最高尖刺索引)。
-        # 键必须与 tick 存储侧 _bkey(idx, group) 一致（pl_id 优先，回退 char_type），否则存读不匹配→不闪。
+        # 2) 闪光状态（仅控制尖刺三角的外扩动画；不影响小球绘制）
         _pl = self.pl_id
         if not _pl and self.char_type in CHAR_TYPE_TO_PL:
             _pl = CHAR_TYPE_TO_PL[self.char_type]
@@ -5470,66 +5255,110 @@ class GBFROverlayQt(QObject):
             else:
                 self._spike_flash.pop(bkey, None)
 
-        # 即使当前层数归零，只要存在回退闪光(from<to)，也要把消失的尖刺画出来并闪光
+        # 3) 实际需要遍历的层数（含闪光回退期间需要画出的"已消失"层）
         draw_count = max(visible_spikes, flash_to)
+
+        # 没层数 → 两层都不画（包括装饰小球；凭空虚画一整圈小球属 V2034 残留 bug，已修复）
         if draw_count <= 0:
-            painter.restore()
             return
 
+        # 用户两开关
+        draw_spike = self._spike_drawn()
+        draw_bead = self._bead_drawn()
+
+        # 两开关都关 → 啥都不画
+        if not draw_spike and not draw_bead:
+            return
+
+        # 全局 painter 状态保留到循环结束；不在循环外 setOpacity，让每个分支自己设
+        painter.save()
+
+        bead_r = max(0, int(self.spike_bead_radius))
+        spike_opacity = self._effective_opacity(key)  # 三角本体不透明度（show_spikes=False 时会被 _effective_opacity 强制为 0）
+        # 当仅画小球时，bead 不透明度不应受 spike_color_* 0-opacity 影响——固定用 1.0，
+        # 这样「勾掉尖刺只勾装饰小球」分支小球能清晰可见。
+        only_bead_opacity = 1.0
+
+        light_c = QColor(spike_color).lighter(140)
+        dark_c = QColor(spike_color).darker(135)
+        outline_c = QColor(spike_color).darker(180)
+        outline_c.setAlpha(150)
+
+        # 4) 逐层绘制：每个层一次只走一个分支（A 三角+球 / B 仅球 / C 啥都不画）
         for i in range(draw_count):
             angle = -90 + i * (360.0 / max_stacks)
             points = self._calc_spike_points(cx, cy, r, angle)
-            path = QPainterPath()
-            path.moveTo(points["tip"][0], points["tip"][1])
-            path.lineTo(points["left"][0], points["left"][1])
-            path.lineTo(points["root"][0], points["root"][1])
-            path.lineTo(points["right"][0], points["right"][1])
-            path.closeSubpath()
-
-            bead_r = max(0, int(self.spike_bead_radius))
+            tip_x, tip_y = points["tip"]
+            root_x, root_y = points["root"]
+            lx, ly = points["left"]
+            rx, ry = points["right"]
             bead_x, bead_y = points["bead"]
 
-            if flash_color is not None and i >= flash_from:
-                # 新出现尖刺：以根部(root)为锚点向外放大，保证底部不动、只向尖端外扩
-                root_x, root_y = points["root"]
-                painter.save()
-                painter.setOpacity(1.0)
-                if anim_scale != 1.0:
-                    painter.translate(root_x, root_y)
-                    painter.scale(anim_scale, anim_scale)
-                    painter.translate(-root_x, -root_y)
-                f_outline = QColor(flash_color).darker(180)
-                f_outline.setAlpha(240)
-                # 同步外勾边：与 indicator_outline_width 一致，保证尖刺本体和勾边一起外扩
-                outline_w = max(0, int(self.settings.get("indicator_outline_width", DEFAULT_SETTINGS["indicator_outline_width"])))
-                f_outline_width = max(2.0, outline_w * 2 + 1)
-                painter.setBrush(QBrush(flash_color))
-                painter.setPen(QPen(f_outline, f_outline_width, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-                painter.drawPath(path)
-                if bead_r > 0:
-                    painter.setBrush(flash_color)
-                    painter.setPen(QPen(f_outline, max(1.2, f_outline_width * 0.6)))
-                    painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
-                painter.restore()
-            else:
-                # 正常绘制：根部略深、尖端略亮
-                grad = QLinearGradient(points["root"][0], points["root"][1], points["tip"][0], points["tip"][1])
-                grad.setColorAt(0.0, dark_c)
-                grad.setColorAt(0.42, spike_color)
-                grad.setColorAt(1.0, light_c)
-                painter.setBrush(QBrush(grad))
-                painter.setPen(QPen(outline_c, 1.0))
-                painter.drawPath(path)
+            # === A) 三角本体（含闪光） ===
+            if draw_spike:
+                path = QPainterPath()
+                path.moveTo(tip_x, tip_y)
+                path.lineTo(lx, ly)
+                path.lineTo(root_x, root_y)
+                path.lineTo(rx, ry)
+                path.closeSubpath()
 
-                # 根部小圆点：对应PPT里底部的小圆
-                if bead_r > 0:
-                    bead_c = QColor(spike_color).darker(110)
-                    bead_outline = QColor(spike_color).darker(180)
-                    painter.setBrush(bead_c)
-                    painter.setPen(QPen(bead_outline, 1.2))
-                    painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
+                if flash_color is not None and i >= flash_from:
+                    # 闪光：以 root 为锚点外扩；闪光期间小球用 flash_color
+                    painter.save()
+                    painter.setOpacity(1.0)
+                    if anim_scale != 1.0:
+                        painter.translate(root_x, root_y)
+                        painter.scale(anim_scale, anim_scale)
+                        painter.translate(-root_x, -root_y)
+                    f_outline = QColor(flash_color).darker(180)
+                    f_outline.setAlpha(240)
+                    outline_w = max(0, int(self.settings.get("indicator_outline_width", DEFAULT_SETTINGS["indicator_outline_width"])))
+                    f_outline_width = max(2.0, outline_w * 2 + 1)
+                    painter.setBrush(QBrush(flash_color))
+                    painter.setPen(QPen(f_outline, f_outline_width, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                    painter.drawPath(path)
+                    if bead_r > 0 and draw_bead:
+                        painter.setBrush(flash_color)
+                        painter.setPen(QPen(f_outline, max(1.2, f_outline_width * 0.6)))
+                        painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
+                    painter.restore()
+                else:
+                    # 正常三角：根部略深、尖端略亮；小球与三角同色系，**继承 spike_opacity**
+                    painter.setOpacity(spike_opacity)
+                    grad = QLinearGradient(root_x, root_y, tip_x, tip_y)
+                    grad.setColorAt(0.0, dark_c)
+                    grad.setColorAt(0.42, spike_color)
+                    grad.setColorAt(1.0, light_c)
+                    painter.setBrush(QBrush(grad))
+                    painter.setPen(QPen(outline_c, 1.0))
+                    painter.drawPath(path)
+                    if bead_r > 0 and draw_bead:
+                        bead_c = QColor(spike_color).darker(110)
+                        bead_outline = QColor(spike_color).darker(180)
+                        painter.setBrush(bead_c)
+                        painter.setPen(QPen(bead_outline, 1.2))
+                        painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
+                # A 分支结束（本层的小球处理已在 flash/normal 内联完成）
+
+            # === B) 不画三角，仅画装饰小球 ===
+            # show_spikes=False 但 show_bead=True 时走这里；显式 setOpacity(1.0) 是关键，
+            # 否则 painter 全局仍残留 spike_opacity=0 导致小球画不出。
+            elif bead_r > 0 and draw_bead:
+                painter.setOpacity(only_bead_opacity)
+                self._draw_spike_bead(painter, spike_color, bead_x, bead_y, bead_r)
+
+            # === C) show_spikes=False 且 show_bead=False：本层啥都不画（continue 隐含） ===
 
         painter.restore()
+
+    def _draw_spike_bead(self, painter, spike_color, bead_x, bead_y, bead_r):
+        """绘制尖刺根部装饰小球（从 _draw_spikes 抽出，供『仅隐藏尖刺』模式单独画）。"""
+        bead_c = QColor(spike_color).darker(110)
+        bead_outline = QColor(spike_color).darker(180)
+        painter.setBrush(bead_c)
+        painter.setPen(QPen(bead_outline, 1.2))
+        painter.drawEllipse(QPoint(int(bead_x), int(bead_y)), bead_r, bead_r)
 
     def _calc_spike_points(self, cx, cy, r, angle_deg):
         rad = math.radians(angle_deg)
@@ -5834,9 +5663,10 @@ class GBFROverlayQt(QObject):
     def _draw_dodge_icon_at(self, painter, x, y, icon, flash_progress, icon_index=None, force_warning=False):
         """在 (x,y) 绘制单个翻滚图标（警告牌 / png / 兜底方块）。
 
-        闪光逻辑（V274 同款）：
+        闪光逻辑（V274 同款 + V2028 警告牌亮度闪烁）：
           - 普通翻滚图标：闪光时画单层放大实心白色图标，完全替代原图标。
-          - 警告牌（第 6/7 次）：闪光时只让警告牌整体放大脉冲，绝不用白色遮挡。
+          - 警告牌（第 6/7 次）：闪光时=整体放大脉冲(复用 flash_scale) + 在警告牌形状之上叠加
+            flash_color 的透明度脉冲闪烁（V2028 新增），外形始终是警告牌、绝不用白色方块遮挡。
         icon_index：该图标在序列中的序号（0 起）。
         force_warning：第 6/7 次翻滚时为 True——序列内所有图标都变警告牌。
         """
@@ -5852,7 +5682,7 @@ class GBFROverlayQt(QObject):
                 return ready_scale - (ready_scale - 1.0) * ((flash_progress - 0.3) / 0.7)
 
         if warning_mode:
-            # 警告牌模式：从不画白色遮挡；闪光时仅让警告牌整体放大脉冲（复用闪光的放大比例）
+            # 警告牌模式：从不画白色方块遮挡；闪光时=放大脉冲(复用 flash_scale) + 警告牌形状亮度闪烁(V2028)。
             if flash_active:
                 scale = _flash_scale()
                 cx, cy = x + icon / 2.0, y + icon / 2.0
@@ -5860,10 +5690,10 @@ class GBFROverlayQt(QObject):
                 painter.translate(cx, cy)
                 painter.scale(scale, scale)
                 painter.translate(-cx, -cy)
-                self._draw_warning_roll_icon(painter, x, y, icon)
+                self._draw_warning_roll_icon(painter, x, y, icon, flash_progress=flash_progress)
                 painter.restore()
             else:
-                self._draw_warning_roll_icon(painter, x, y, icon)
+                self._draw_warning_roll_icon(painter, x, y, icon, flash_progress=0.0)
             return
 
         if flash_active:
@@ -5951,13 +5781,15 @@ class GBFROverlayQt(QObject):
                 self._draw_dodge_icon_at(painter, int(base_x), y, icon, flash_progress, icon_index=i, force_warning=warning_all)
         painter.restore()
 
-    def _draw_warning_roll_icon(self, painter, x, y, icon):
+    def _draw_warning_roll_icon(self, painter, x, y, icon, flash_progress=0.0):
         """绘制警告牌：红边 + 黄底圆角三角，无感叹号。
         形状：圆角三角形（三个角全圆角）；三角形重心始终与 (cx,cy) 重合。
         实现：先画红色外三角，再在其内部以重心为中心画黄色内三角。
         红边宽度由 warning_outline_width 控制：值越大，黄色内三角越小、红色占比越多，
         但外三角大小/重心完全不变，因此拉大红边占比时图标不会上/下/左/右漂移。
         可调项：warning_size_scale、warning_outline_width、warning_corner_radius、warning_outline_color、warning_fill_color。
+        flash_progress：0~1 的闪光进度；>0 时在警告牌之上叠加一层 flash_color 的
+                        「警告牌形状（圆角三角）」透明度脉冲闪烁（V2028 新增），外形始终是警告牌。
         """
         sz = int(icon * float(self.settings.get("warning_size_scale", 0.68)))
         if sz < 8:
@@ -6010,6 +5842,19 @@ class GBFROverlayQt(QObject):
         )
         painter.setBrush(QColor(yellow_hex))
         painter.drawPath(inner_path)
+
+        # ── V2028 警告牌闪光层 ──
+        # 在红边黄底三角之上叠加一层 flash_color 的「警告牌形状（圆角三角）」透明度脉冲闪烁。
+        # 外形始终是警告牌（圆角三角），绝不用白色方块遮挡原形状；
+        # 复用 flash_apply_dodge（开关）/ flash_color（颜色）/ flash_scale（放大脉冲由调用方处理）。
+        if flash_progress > 0 and bool(self.settings.get("flash_apply_dodge", False)):
+            fc = QColor(self.settings.get("flash_color", "#ffffff"))
+            alpha = int((1.0 - flash_progress) * 150)  # 峰值约 150，随时间消退→0
+            if alpha > 0:
+                fc.setAlpha(alpha)
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(fc)
+                painter.drawPath(outer_path)  # 用外三角路径，确保闪光外形=警告牌
         painter.restore()
 
     def _rounded_triangle_path(self, apex_x, apex_y, left_x, left_y, right_x, right_y, r):
@@ -6084,59 +5929,6 @@ class GBFROverlayQt(QObject):
                     out.setPixelColor(x, y, QColor(r, g, b, 255))
         pm = QPixmap.fromImage(out)
         self._dodge_solid_cache[norm] = pm
-        return pm
-
-    def _get_dodge_alpha_path(self):
-        """从 self.shrimp 的 alpha 通道提取轮廓 QPainterPath（一次性缓存）。
-
-        用 createAlphaMask -> QBitmap -> QRegion -> QPainterPath.addRegion，
-        得到与 PNG 透明/不透明边界完全一致的矢量路径，用于外侧描边光晕。
-        只会在 shrimp 加载后生成一次。
-        """
-        if getattr(self, "_dodge_alpha_path", None) is not None:
-            return self._dodge_alpha_path
-        if self.shrimp.isNull():
-            return None
-        src = self.shrimp.toImage().convertToFormat(QImage.Format_ARGB32)
-        mask = src.createAlphaMask()
-        bmp = QBitmap.fromImage(mask)
-        region = QRegion(bmp)
-        path = QPainterPath()
-        path.addRegion(region)
-        self._dodge_alpha_path = path
-        return path
-
-    def _get_dodge_outline_img(self, color_hex="#ffffff"):
-        """缓存翻滚图标的外侧实心光晕 QPixmap（颜色可调）。
-
-        基于 _get_dodge_solid_img 生成的实心图标，把它放大后画到更大的画布上，
-        得到“形状和原图标一致、但比原图标大一圈的实心光晕”。颜色变更时按 hex 重新生成。
-        返回的 pixmap 比原图标四周各大一个 pad，绘制时需要在原图标坐标基础上左/上偏移 pad。
-        """
-        norm = (color_hex or "#ffffff").lower()
-        if norm in self._dodge_outline_cache:
-            return self._dodge_outline_cache[norm]
-        if self.shrimp.isNull():
-            return None
-        solid = self._get_dodge_solid_img(color_hex)
-        if solid is None:
-            return None
-        w = self.shrimp.width()
-        h = self.shrimp.height()
-        # 光晕外扩尺寸：按图标短边约 18%~22%（可调整）
-        glow = max(4, int(min(w, h) * 0.20))
-        pad = glow + 2
-        cw, ch = w + pad * 2, h + pad * 2
-        img = QImage(cw, ch, QImage.Format_ARGB32)
-        img.fill(Qt.transparent)
-        p = QPainter(img)
-        p.setRenderHint(QPainter.SmoothPixmapTransform)
-        # 把实心图标放大 (w+2*glow, h+2*glow)，居中于画布
-        target = QRect(pad - glow, pad - glow, w + glow * 2, h + glow * 2)
-        p.drawPixmap(target, solid, solid.rect())
-        p.end()
-        pm = QPixmap.fromImage(img)
-        self._dodge_outline_cache[norm] = pm
         return pm
 
     # ================================================================
@@ -6287,20 +6079,21 @@ class GBFROverlayQt(QObject):
 
     def _on_tray_activated(self, reason):
         if reason == QSystemTrayIcon.DoubleClick:
-            any_hidden = all((not w.isVisible()) or w.isMinimized() for w in self._all_windows())
+            any_hidden = all(not w.isVisible() for w in self._all_windows())
             if any_hidden:
-                for w in self._all_windows():
-                    w.showNormal()
-                    w.raise_()
-                    w.activateWindow()
+                self._show_all_windows()
             else:
-                for w in self._all_windows():
-                    w.hide()
+                self._hide_all_windows()
 
     def _toggle_lock(self):
         self.locked = not self.locked
         for w in self._all_windows():
             w.update()
+
+    # ================================================================
+    #  V2030：移除历史残留的 _open_config_dir 死函数（源码中除自身外零引用，
+    #         托盘菜单从未 addAction 注册；i18n.json 的 "打开失败" 键一并清理）。
+    # ================================================================
 
     # ================================================================
     #  主循环
@@ -6309,7 +6102,6 @@ class GBFROverlayQt(QObject):
         try:
             self.scan()
             self._sync_out_of_combat_visibility()
-            self._sync_visibility_with_game_focus()
             self._sync_mouse_transparency()
             self._update_tray_tooltip()
             # 生存兜底：scan_ms 非整数绝不能让定时器停摆，否则会『读一次就卡死』
@@ -6365,49 +6157,177 @@ class GBFROverlayQt(QObject):
                 self.core_win.resize(self.core_win.window_w, full_h)
             self.core_win.update()
 
+    def _game_is_foreground(self):
+        """综合判定游戏是否处于『用户正在看的前台』状态。
+
+        返回 True（前台）/ False（后台）。
+
+        V2025 修复（关键）：把工具自身进程 (os.getpid()) 也并入「前台」集合。
+        根因：self.pid 存的是【游戏】PID（scan() 里 self.pid = game_pids[0]），
+        之前 _game_is_foreground 只认游戏 PID。于是用户点击 / 拖拽 / 缩放 overlay
+        自身的模块窗口时，前台窗口变成工具自己的进程（PID 不在游戏集合里），
+        被误判成「游戏到后台」→ 整窗隐藏 → 用户根本没法调模块（一点模块就消失）。
+        现在前台判定 = 游戏进程 或 工具自身进程 即视为前台（保持可见）；
+        真正的「后台」= 前台是两者之外的其它程序（桌面 / 浏览器 / 其它软件）→ 才隐藏。
+
+        V2021 收紧信号：仅用 GetForegroundWindow 的 PID ∈ 集合 这一个最稳信号判断。
+        三种模式 (窗口化 / 无边框 / 全屏独占) 下 GetForegroundWindow 都能稳定反映「用户
+        当前切到哪个程序」。
+        """
+        game_pids = self._game_pids or set()
+        # V2025：工具自身进程也算前台（点 / 拖 / 缩放模块时保持可见，不被误杀）
+        own_pid = os.getpid()
+        fg_allowed = game_pids | {own_pid}
+        if not fg_allowed:
+            self._last_fg = None
+            return False
+        fg = get_foreground_pid()
+        self._last_fg = fg
+        # 前台 = 前台窗口属于游戏进程 或 工具自身进程
+        return fg in fg_allowed
+
     def _sync_visibility_with_game_focus(self):
-        """游戏在前台时自动显示，切到后台时自动最小化（作用于全部三个窗口）。
-        若当前被「非战斗隐藏」强制缩为标题栏，则本逻辑不干预。"""
-        # 非战斗内容隐藏（窗口已缩为标题栏）时，焦点逻辑不干预
-        if getattr(self, "_ooc_content_hidden", False):
+        """随游戏前后台自动显隐（作用于全部三个窗口）。
+
+        行为规则（V2020 重写）：
+          - 功能关闭（auto_focus_minimize == False）：本函数不动作，显隐完全由用户手动控制
+            （标题栏最小化图标 / 快捷键 / 双击托盘 直接 hide，照旧）。
+          - 功能开启：按「游戏是否在前台」做状态同步，且无视当前状态：
+              · 前台 + 任一窗口被隐藏 → 强制 _show_all_windows() 弹出；
+              · 后台 + 任一窗口可见 → 强制 _hide_all_windows() 整窗消失
+                （与标题栏最小化图标完全一致，不再 showMinimized 进任务栏）；
+              · 无法判定（None）→ 保留现状，绝不 hide（杜绝 V2019『出不来』灾难）。
+            这同时满足两个诉求：切到后台立刻整窗消失；手动隐藏后游戏仍在前台会自动弹回。
+
+        判定见 _game_is_foreground()：GetForegroundWindow 主信号 + EnumWindows(IsIconic) 交叉验证。
+        诊断：每次 tick 把 fg / enum_state / decision / action 写入
+        overlay_focus_log.txt（最近 200 行环形），便于排查前后台识别是否生效。
+        """
+        # V2023 改动：去掉「非战斗内容隐藏时 early return」的旧 V2013 行为，
+        # 让非战斗状态也跟随前后台隐显（hide() 会让整窗含标题栏一起消失），
+        # 回前台时由 _show_all_windows() 一次性完整弹出，后续 tick 再按 _ooc_content_mult 恢复缩为标题栏的视觉效果。
+        enabled = bool(self.settings.get("auto_focus_minimize", DEFAULT_SETTINGS["auto_focus_minimize"]))
+        if not enabled:
             return
 
-        if not bool(self.settings.get("auto_focus_minimize", DEFAULT_SETTINGS["auto_focus_minimize"])):
-            if self._auto_minimized_by_game_focus:
-                self._auto_minimized_by_game_focus = False
-                for w in self._all_windows():
-                    if w.isMinimized() or not w.isVisible():
-                        w.showNormal()
+        # V2025：用户正在拖拽 / 缩放 overlay 模块时，绝对不触发隐藏（否则一点模块就消失）
+        if getattr(self, "_interacting", False):
             return
 
-        if QApplication.activeModalWidget() is not None:
+        # 游戏未运行：不动作，复位边沿状态（新进程接入时不误触发）
+        if self.pid is None:
+            self._prev_is_game_foreground = None
+            self._append_focus_log(action="pid_none")
             return
 
-        foreground_pid = get_foreground_pid()
-        if foreground_pid in (None, os.getpid()):
+        # V2021：单信号判定（GetForegroundWindow.PID ∈ game_pids）。三态→二态，
+        # 杜绝"V2020 偶发 None → 永不 hide"的情况。
+        decision = self._game_is_foreground()
+
+        any_visible = any(w.isVisible() for w in self._all_windows())
+        prev = self._prev_is_game_foreground
+        action = "none"
+
+        # V2023 改动：去掉 V2022 引入的 600ms 防抖（用户实测说"战斗中前后台确实可以"
+        # 但防抖让窗口出不来，节奏太慢反而变卡）。回到 V2021 的"边沿触发立即动作"节奏。
+        # 同时也不再 early-return _ooc_content_hidden（让非战斗状态也跟随前后台隐显）。
+        action = "none"
+
+        if prev is None:
+            # 首拍：仅记录 prev、不主动切换（让用户手动 ctrl+h 切或按当前状态自然显示）
+            self._prev_is_game_foreground = decision
+            self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
+                                   enum_state="n/a",
+                                   is_game_fg=decision, action="init_prev")
             return
 
-        game_is_foreground = self.pid is not None and foreground_pid == self.pid
-        if game_is_foreground:
-            if self._auto_minimized_by_game_focus or any(w.isMinimized() or not w.isVisible() for w in self._all_windows()):
-                for w in self._all_windows():
-                    w.showNormal()
-                    w.raise_()
-            self._auto_minimized_by_game_focus = False
+        if decision == prev:
+            # 无边沿（与上一拍一致），仅做诊断日志、不动作
+            self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
+                                   enum_state="n/a",
+                                   is_game_fg=decision, action="none")
+            return
+
+        # 边沿变化：立刻切换（V2023 移除 600ms 防抖）
+        if decision:
+            if not any_visible:
+                # 游戏在前台但窗口被隐藏 → 无视当前状态强制弹出
+                self._show_all_windows()
+                action = "fg_show"
         else:
-            if any(w.isVisible() and not w.isMinimized() for w in self._all_windows()):
-                self._auto_minimized_by_game_focus = True
-                for w in self._all_windows():
-                    w.showMinimized()
+            if any_visible:
+                # 游戏在后台但窗口可见 → 强制整窗消失
+                self._hide_all_windows()
+                action = "bg_hide"
+        self._prev_is_game_foreground = decision
+        self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
+                               enum_state="n/a",
+                               is_game_fg=decision, action=action)
+
+    def _append_focus_log(self, prev=None, fg=None, enum_state="n/a", is_game_fg=None, action="none"):
+        """V2019 诊断：把每次焦点定时器的状态追加到 overlay_focus_log.txt，最多 200 行环形。
+
+        让用户能直观确认：当前 Z-order 最顶层真实窗口 PID（top）与 self._game_pids / self.pid 的关系，
+        以及状态同步是否真的触发 fg_show / bg_hide。仅当 self._focus_log_path 已初始化才写文件，
+        且只在「状态真的变化」或「有动作」时写，无变化时每 16 拍（约 4 秒）写一次，避免日志刷屏。
+        """
+        path = self._focus_log_path
+        if not path:
+            return
+        # 仅在状态真正变化 / 触发动作 / 每 16 次（约 4 秒）记录一次，避免日志刷屏
+        last = self._focus_log_ring[-1] if self._focus_log_ring else None
+        sig = (prev, fg, enum_state, is_game_fg, action)
+        if last is not None and last["sig"] == sig and action == "none":
+            self._focus_log_skip = getattr(self, "_focus_log_skip", 0) + 1
+            if self._focus_log_skip < 16:
+                return
+            self._focus_log_skip = 0
+        else:
+            self._focus_log_skip = 0
+        import time as _t
+        entry = {
+            "ts": _t.strftime("%H:%M:%S"),
+            "ms": int(_t.monotonic() * 1000),
+            "sig": sig,
+            "prev": prev,
+            "fg": fg,
+            "enum_state": enum_state,
+            "game_pids": sorted(self._game_pids) if self._game_pids else [],
+            "self_pid": self.pid,
+            "is_game_fg": is_game_fg,
+            "action": action,
+        }
+        self._focus_log_ring.append(entry)
+        if len(self._focus_log_ring) > 200:
+            self._focus_log_ring = self._focus_log_ring[-200:]
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("# overlay focus diagnostic log (V2020) — last 200 entries, newest at bottom\n")
+                f.write("# ts | prev | fg(GetForeground PID) | enum_state(visible/iconic/none) | game_pids | self_pid | decision | action\n")
+                for e in self._focus_log_ring:
+                    f.write("{ts} | prev={prev} | fg={fg} | enum={en} | game_pids={gp} | self_pid={sp} | decision={dec} | action={act}\n".format(
+                        ts=e["ts"], prev=e["prev"], fg=e["fg"], en=e["enum_state"],
+                        gp=e["game_pids"], sp=e["self_pid"],
+                        dec=e["is_game_fg"], act=e["action"]))
+        except Exception:
+            pass
 
     def scan(self):
-        pid = find_pid()
+        # V2018：先把所有同名游戏进程 PID 都收进来，供「游戏是否在前台」判断使用。
+        # 这里不能再用 find_pid() 单值接口，因为多进程场景下 attach 用的 handle
+        # 只对应 self.pid，但前台窗口可能在另一个同名的子进程下。
+        game_pids = find_game_pids()
+        self._game_pids = set(game_pids)
+        pid = game_pids[0] if game_pids else None
         if pid is None:
             self.close_handle()
             self.status = "no_game"
             return
         if self.handle is None or self.pid != pid:
             self.pid = pid
+            # 新游戏进程接入：清除上一局的边沿状态，让焦点同步从干净状态重新检测
+            # （先开工具调设置、再启动游戏时，旧的边沿记忆不会残留，避免误触发）
+            self._prev_is_game_foreground = None
             self.handle = open_proc(pid)
             if not self.handle:
                 self.status = "no_game"
@@ -6605,11 +6525,6 @@ class GBFROverlayQt(QObject):
             if cd_max != self.settings.get("skill_cooldown_max", {}):
                 self.settings["skill_cooldown_max"] = cd_max
                 save_settings(self.settings)
-        skill_geo = ""
-        if hasattr(self, "skill_win"):
-            w = self.skill_win
-            skill_geo = (f" skill_win=({w.x()},{w.y()} {w.width()}x{w.height()} "
-                         f"vis={w.isVisible()} min={w.isMinimized()})")
 
         # ── 战斗/任务状态检测（用于「非战斗隐藏」）──
         # 非战斗 = 不在副本/任务中 且 不在训练场。
@@ -6660,8 +6575,6 @@ class GBFROverlayQt(QObject):
         self.pid = None
         self.mastery_reader = None
         self.current_mastery = None
-
-
 
     # ================================================================
     #  在线更新检测
@@ -6784,9 +6697,6 @@ class GBFROverlayQt(QObject):
             target=self._do_download_update, args=(url, part_path, target), daemon=True)
         self._dl_thread.start()
         return True
-
-    def _on_dl_cancel(self):
-        self._dl_cancel = True
 
     def _do_download_update(self, url, part_path, target_path):
         # HTTP/1.1 单连接下载，失败自动重试 3 次（不弹窗，状态显示在标题栏）。
@@ -7048,6 +6958,8 @@ class ModuleWindow(QWidget):
     def _begin_drag_or_resize(self, event):
         if self.ctrl.locked:
             return
+        # V2025：拖拽 / 缩放进行中置锁，焦点同步跳过、绝不隐藏（防止点模块瞬间被误杀）
+        self.ctrl._interacting = True
         pos = event.position().toPoint()
         corner = self._corner_at(pos)
         if corner is not None:
@@ -7121,6 +7033,8 @@ class ModuleWindow(QWidget):
                 w.blockSignals(False)
 
     def mouseReleaseEvent(self, event):
+        # V2025：拖拽 / 缩放结束，解除交互锁
+        self.ctrl._interacting = False
         if self.resize_mode is not None:
             self.resize_mode = None
             nx, ny = self.ctrl.norm_pos(self.x(), self.y())
@@ -7134,7 +7048,6 @@ class ModuleWindow(QWidget):
             self.ctrl.settings[f"{self.module_key}_window_y"] = ny
             save_settings(self.ctrl.settings)
         self.drag_pos = None
-
 
 class CoreWindow(ModuleWindow):
     """核心检测模块：尖刺圆 + 标题栏（含控制图标）。"""
@@ -7219,7 +7132,6 @@ class CoreWindow(ModuleWindow):
         elif btn == "settings":
             self.ctrl.open_settings()
 
-
 class DodgeWindow(ModuleWindow):
     """翻滚模块：独立窗口，可横/竖排。"""
 
@@ -7232,7 +7144,6 @@ class DodgeWindow(ModuleWindow):
 
     def render(self, painter):
         self.ctrl.render_roll(painter)
-
 
 class SkillWindow(ModuleWindow):
     """能力冷却模块：独立窗口，4 菱形。"""
@@ -7247,106 +7158,63 @@ class SkillWindow(ModuleWindow):
     def render(self, painter):
         self.ctrl.render_skill(painter)
 
-
-class StartupSplash(QWidget):
-    """双击启动时的读条窗口：显示当前正在做什么，初始化完成后显示完成消息。"""
-
-    def __init__(self):
-        super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SplashScreen)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setFixedSize(400, 80)
-        self._meta_base = f"v{APP_VERSION} · by Dangoooooo"
-        self._build_ui()
-        self._center()
-
-    def _build_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        container = QWidget()
-        # 方案 B · 胶囊形卡片：全圆角 + 对角深色渐变 + 外发光描边
-        container.setStyleSheet(
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #1a233a,stop:1 #111725);"
-            "border-radius:40px;"
-            "border:none;"
-        )
-        inner = QVBoxLayout(container)
-        inner.setContentsMargins(24, 0, 24, 0)
-        inner.setSpacing(3)
-        # 上下 stretch 把内容垂直居中
-        inner.addStretch(1)
-
-        # 标题（居中）
-        self.title_lbl = QLabel(_tr("GBFR 指示器"))
-        self.title_lbl.setStyleSheet("font-size:17px;font-weight:bold;color:#f1f5f9;letter-spacing:1px;background:transparent;border:none;")
-        self.title_lbl.setAlignment(Qt.AlignCenter)
-        inner.addWidget(self.title_lbl)
-
-        # 元信息行：状态 · 版本 · 作者（居中、淡灰）
-        self.status_lbl = QLabel(f"{_tr('正在准备…')} · {self._meta_base}")
-        self.status_lbl.setStyleSheet("font-size:9px;color:#94a3b8;letter-spacing:0.5px;background:transparent;border:none;")
-        self.status_lbl.setAlignment(Qt.AlignCenter)
-        inner.addWidget(self.status_lbl)
-
-        # 进度条（居中、发光胶囊，无轨道边框）
-        self.bar = QProgressBar()
-        self.bar.setRange(0, 100)
-        self.bar.setValue(0)
-        self.bar.setTextVisible(False)
-        self.bar.setFixedHeight(8)
-        self.bar.setFixedWidth(280)
-        self.bar.setStyleSheet(
-            "QProgressBar{background:transparent;border:none;border-radius:4px;}"
-            "QProgressBar::chunk{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
-            "stop:0 #6366f1,stop:0.5 #3b82f6,stop:1 #14b8a6);border-radius:4px;}"
-        )
-        bar_wrap = QHBoxLayout()
-        bar_wrap.addStretch()
-        bar_wrap.addWidget(self.bar)
-        bar_wrap.addStretch()
-        inner.addLayout(bar_wrap)
-
-        inner.addStretch(1)
-        layout.addWidget(container)
-
-    def _center(self):
-        geo = QApplication.primaryScreen().availableGeometry()
-        r = self.geometry()
-        self.move(geo.width() // 2 - r.width() // 2, geo.height() // 2 - r.height() // 2)
-
-    def set_progress(self, pct=None, msg=None):
-        if pct is not None:
-            self.bar.setValue(int(pct))
-        if msg:
-            self.status_lbl.setText(f"{msg} · {self._meta_base}")
-        QApplication.processEvents()
-
-    def finish(self, msg="启动完成"):
-        self.bar.setValue(100)
-        self.status_lbl.setText(f"{msg} · {self._meta_base}")
-        self.status_lbl.setStyleSheet("font-size:9px;color:#7ee0a0;font-weight:bold;letter-spacing:0.5px;")
-        QApplication.processEvents()
-        # 事件循环启动后才真正关闭，避免构造期间直接销毁
-        QTimer.singleShot(1000, self.close)
-
+# V2024 修复：Windows 区域=香港（繁体）/台湾 等非简体中文 Windows 下，
+# 整个 overlay 的中文（包括设置对话框的所有 tab/label/button）渲染成 □□ 方框。
+# 原因：Qt 在 Windows 上不读系统「亚洲字符字体回退」表，代码内 21 处全部 hardcode
+# QFont("Segoe UI", ...)，Segoe UI 不含 CJK glyph，常规情况下由 fontconfig/font fallback
+# 兜底，但港/繁系统下 Qt 默认行为直接退回 unicode 缺字矩形。修法：在 main() 启动时扫描
+# QFontDatabase.families()，挑出已装的 CJK 字体（优先 YaHei → JhengHei → 其他），
+# 对 Segoe UI 调用 QFont.insertSubstitution() 注册替代——之后所有 QFont("Segoe UI", ...)
+# 缺字时自动回退到该 CJK 字体，零调用点改动。
+_CJK_FALLBACK_FAMILY = ""  # 启动时填充；空串 = 没找到任何 CJK 字体（极端系统）
+def _setup_cjk_font_fallback():
+    global _CJK_FALLBACK_FAMILY
+    try:
+        from PySide6.QtGui import QFontDatabase
+        installed = set(QFontDatabase.families())
+    except Exception:
+        return
+    # 优先级顺序：大陆简体 → 港台繁体 → 日韩 + 开源 Source Han
+    # （港台系统反而 JhengHei/PMingLiU 命中，繁中系统 YaHei 也照常装着）
+    for cand in (
+        "Microsoft YaHei UI", "Microsoft YaHei",
+        "Microsoft JhengHei UI", "Microsoft JhengHei",
+        "PingFang SC", "PingFang TC",
+        "SimHei", "SimSun",
+        "Malgun Gothic",         # 韩
+        "Yu Gothic", "Meiryo",   # 日
+        "Source Han Sans CN", "Source Han Sans SC",
+        "Source Han Sans TC", "Noto Sans CJK SC", "Noto Sans CJK TC",
+    ):
+        if cand in installed:
+            _CJK_FALLBACK_FAMILY = cand
+            break
+    if not _CJK_FALLBACK_FAMILY:
+        # 兜底：找任何包含 CJK 字形特征的 family 名（heuristic）
+        for fam in installed:
+            if any(k in fam for k in ("YaHei", "JhengHei", "Hei", "Sim", "PingFang",
+                                       "Han", "CJK", "Yu Gothic", "Malgun", "Meiryo")):
+                _CJK_FALLBACK_FAMILY = fam
+                break
+    if _CJK_FALLBACK_FAMILY:
+        # 全局注册 Segoe UI → CJK 字体的字形替代
+        try:
+            QFont.insertSubstitution("Segoe UI", _CJK_FALLBACK_FAMILY)
+        except Exception:
+            pass
 
 def main():
     app = QApplication(sys.argv)
+    # V2024 修复：先注册 Segoe UI 的 CJK 字体替代，后面的 widget / overlay 全继承。
+    # 必须在 QApplication 构造后立即调（QFont.insertSubstitution 是 Qt 全局注册）。
+    _setup_cjk_font_fallback()
     if os.path.isfile(APP_ICON_PATH):
         app.setWindowIcon(QIcon(APP_ICON_PATH))
     app.setQuitOnLastWindowClosed(False)
-    _boot_settings = load_settings()
-    splash = None
-    if _boot_settings.get("show_startup_splash", True):
-        splash = StartupSplash()
-        splash.show()
-        splash.set_progress(4, "正在加载设置…")
-    overlay = GBFROverlayQt(progress_cb=splash.set_progress if splash else None)  # 构造内已创建并 show 三个模块窗口
-    if splash:
-        splash.finish()
+    load_settings()  # 预加载/迁移配置文件（构造内会再次加载，此处仅保留副作用）
+    # V2035：去掉启动画面（StartupSplash 类已删除）。直接构造 overlay，无任何进度回调。
+    overlay = GBFROverlayQt(progress_cb=None)  # 构造内已创建并 show 三个模块窗口
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()

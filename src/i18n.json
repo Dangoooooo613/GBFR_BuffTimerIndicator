@@ -3019,9 +3019,13 @@
       "zh_tw": "秘義",
       "en": "Crux"
     },
-    "隐藏尖刺与装饰小球（仅保留圆环+倒计时+文字）": {
-      "zh_tw": "隱藏尖刺與裝飾小球（僅保留圓環+倒計時+文字）",
-      "en": "Hide spikes & beads (keep ring + timer + text only)"
+    "显示尖刺（三角本体）": {
+      "zh_tw": "顯示尖刺（三角本體）",
+      "en": "Show spikes (the triangle bodies)"
+    },
+    "显示装饰小球（尖刺顶端圆点）": {
+      "zh_tw": "顯示裝飾小球（尖刺頂端圓點）",
+      "en": "Show decorative beads (spike-tip dots)"
     },
     "去下载": {
       "zh_tw": "去下載",
@@ -3419,13 +3423,18 @@
       "en": "Absolute paths of multiple exes, separated by semicolon or newline. Each entry may append \"||working dir\" to set its start location (same as a .lnk's Start-in; optional). At launch the app checks: those not running are started together (in the given working dir); those already running are skipped (not monitored, not killed).",
       "zh_tw": "多個 exe 的絕對路徑，用分號或換行分隔。每條可附加「||工作目錄」指定起始位置（等同 .lnk 的起始位置，可省略）。程式啟動時檢測：未執行則共同啟動（以指定工作目錄為起始位置），已執行則跳過（不監視、不殺程序）。"
     },
-    "标题栏底色行与圆环画布之间的垂直间距（像素）。\n": {
-      "en": "Vertical spacing (px) between the title-bar color row and the ring canvas.\n",
-      "zh_tw": "標題欄底色行與圓環畫布之間的垂直間距（像素）。\n"
+    "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆之间留出呼吸空间可加大。": {
+      "en": "Vertical spacing (px) between the title-bar color row and the ring canvas.\nDefault 0 = the two are touching; raise to leave breathing space between title bar and ring.",
+      "zh_tw": "標題欄底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題欄和圓之間留出呼吸空間可加大。"
     },
-    "显示启动画面": {
-      "en": "Show startup splash screen",
-      "zh_tw": "顯示啟動畫面"
+    "启用 EXE 同步列表": {
+      "zh_tw": "啟用 EXE 同步清單",
+      "en": "Enable EXE sync list"
+    },
+    "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。": {
+      "zh": "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。",
+      "zh_tw": "標題列底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題列和圓環之間留出呼吸空間可加大。",
+      "en": "Vertical gap (px) between the title-bar color row and the circle canvas.\n0 = they sit flush; raise this to add breathing room between title and circle."
     }
   }
 }

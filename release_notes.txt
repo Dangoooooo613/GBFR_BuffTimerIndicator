@@ -1,4 +1,121 @@
 [zh]
+== v20.40 ==
+- 死代码清理（P0+P1），零功能改动、行为不变。用 pyflakes + vulture + 自写 AST 脚本（排除注释/docstring 提及、Qt 框架虚函数、f-string 间接访问三类误报）从头排查 src/gbfr_overlay_qt_v6.py（7391 行）。
+- 删除 7 个零调用函数：_pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel（含整片「闪避描边图像」死逻辑，QBitmap/QRegion 导入随之级联删除）。
+- 删除 15 个死常量：FIELD_DRAGON_HEART / SIEGFRIED_CHAR_TYPE / ID_FORM_NORMAL / ID_POWER_SUB / ID_CELLS_SUB / ID_OVERDRIVE_SUB / CHAR_DB_PATH / CHAR_DB_FALLBACK / GW_HWNDNEXT / GW_OWNER / COLOR_FIELDS / DEFAULT_NUM_SPIKES / SPIKE_W / SHRIMP_LEFT_PAD / SHRIMP_RIGHT_PAD。
+- 删除 8 个死实例属性（赋值后从不读取）：warning_size_sld / warning_bw_sld / dragon_bottom_y / _btn_lock_rect / _btn_minimize_rect / _btn_settings_rect / _btn_exit_rect / _last_enum_state（前 2 个是 _mb_slider 解包首元素，改为 _ 丢弃）。
+- 删除 4 个死局部：th（layout 函数内未用）/ skill_geo（构建诊断块未参与输出）/ hide_spikes（原仅供给已删的 dragon_bottom_y）/ _boot_settings（冗余 load_settings 调用改为裸调用保留副作用）。
+- 删除 2 个死导入 re / QProgressBar（及级联的 QBitmap / QRegion）。
+- DEFAULT_SETTINGS 删除 15 个「设了但永不被读取」的死键：bg_color / bg_color_opacity / arc_color_opacity / icon_color_opacity / classmech_window_x / classmech_window_y / classmech_scale_percent / ex_status_offset / show_skill_cd / skill_cd_color_opacity / skill_cd_text_color_opacity / skill_cd_name_color_opacity / supersample / update_mirror_url / flash_dodge_outline。这些键无绑定控件、无 settings.get 读取路径，是「摆设」，删后行为不变（show_skill_cd 早被 show_skill_cd_module 取代，3384-3385 注释已写明「不再单独写 show_skill_cd」）。
+- 故意保留（非死代码）：main() 中 overlay 实例引用（保对象生命周期，删掉会被 GC 回收导致窗口关闭）；_draw_title_bar 内的 th（绘制中真实使用）；_btn_*_rect_win 命中矩形（活代码，与已删的非 _win 变体区分）；COLOR_FIELDS 内各颜色键本身（仍由 EXTERNAL_COLOR_KEYS / _get_color 消费，仅删包裹它们的列表常量）。
+- i18n 无新增/删除 UI 字符串（仅删后端代码）；三审计脚本确认 MISSING keys=0，330 DEAD i18n 键与 340 处裸中文属历史 P2 债务（非本版范围）。pyflakes 清理后仅剩 overlay 一处「未使用变量」告警，属故意保留的保活引用。
+- 版本号 +1（V2039 → V2040，标题栏自报 20.40），schema 94 不变。构建已出 dist/GBFR_CooldownIndicator_V2040.exe。
+
+== v20.39 ==
+- 颜色选择对话框「自定义颜色」16 格永久保留。问题：之前用 `QColorDialog.getColor()` 弹出系统 ColorPicker，调好色点「Add to Custom Colors」加到 16 格后，关闭软件再开就归零（因为 QColorDialog 的 16 格不跨进程持久化），用户要反复重调。修复：在 `pick_color()` 入口前从 `settings['custom_palette']` 把 16 个 hex 还原到 `QColorDialog.setCustomColor(i, QColor(hex))`，关闭后立即读 `QColorDialog.customColors()` 回写 `settings['custom_palette']` 并 `save_settings`；「恢复默认」按钮同步清空这 16 格并重置 Qt 全局。`DEFAULT_SETTINGS` 新增 `custom_palette: []` 字段。
+- 已知未修：①「Add to Custom Colors 永远覆盖第一个空格子」是 Windows 系统 ColorPicker 行为，不可定制；②「点已有格子立刻把当前色覆盖上去」同理。如需彻底灵活，要自己重写一个内部 ColorPicker（≈300 行），按本版范围暂不做。下次复改可参考 A 方案。
+- 版本号 +1（V2038 → V2039，标题栏自报 20.39），schema 94 不变；i18n 无新增/删除 UI 字符串（仅修改 `pick_color` 流程并新增一个 settings 字段）。
+
+== v20.38 ==
+- 修正伊德龙人化能力模块技能名显示错误（V2037 把龙人化技能名「复用」成 PL1900 人形态技能，但龙人化其实是独立编号 PL2000，技能本就不同）。经 GBFR Logs 的 lang/zh-CN/abilities.json 核实：伊德龙人化为独立 PL2000，专属技能 AB_PL2000_01~05（圣迹再临/天谴/永无止境/乐园之噬/神愿之力），与人形态 PL1900（无缚之斩/赎罪/末日形态）并非同一套。项目数据库原未收录 PL2000，导致龙人化 actor 的 +ABILITY_HASH_OFFSET 所存 PL2000 hash 在 _ab_hash_map 命中不到 → 显示空。改法：将 PL2000 真实技能（hash→三语名）正式收录进 GBFR_Character_Skills_Buffs.json，按 hash 直接命中龙人化真实技能名；并移除 V2037 误加的 PL1900→PL1900 / PL2000→PL1900 技能借用（避免错误技能名）。核心 Buff 区 PL2000 仍与 PL1900 共用（BUFF_PROFILES 逻辑，不受影响）。
+- 版本号 +1（V2037 -> V2038，标题栏自报 20.38），schema 94 不变；i18n 无新增/删除 UI 字符串（仅新增数据条目与数据通路修正）。
+
+== v20.37 ==
+- 真正修好伊德龙人化时技能模块（skill_cd 菱形）下方能力名（圣迹再临/无缚之斩/赎罪/末日形态）不显示的 bug。上一版 V2036 猜错了根因（试图让 read_skill_cooldowns 从真身 actor 读 ability hash，但游戏在龙人化时未必更新真身的 +ABILITY_HASH_OFFSET，反而读到 0 或旧值），所以"还是没有"。本次 V2037 彻底查到根因并真修复：龙人化的 pl_id 由 read_overlay_data 经 charid_hash 解析得"PL1900"（真身的角色ID，因为 CHAR_TYPE_TO_PL[0x20]="PL1900" 而不是 PL2000）；龙人化 actor 的 +ABILITY_HASH_OFFSET 处的 4 个 hash 是龙人化专属 hash（数据库未收录），`_ab_hash_map.get(h)` 必 miss；原 `PL_SKILL_FALLBACK` 只放 PL0100/PL2000，**PL1900 不在兜底里 → `_lookup_ability` 返回 None → `_skill_name=""` → `_draw_skill_cd_name` 直接 return → 4 个菱形下方全空**。改法：`PL_SKILL_FALLBACK` 加 `"PL1900":"PL1900"`，让龙人化 hash miss 时按 slot 借用真身 PL1900 的 ab_01-04（圣迹再临/无缚之斩/赎罪/末日形态）。同时撤销 V2036 的 `read_skill_cooldowns` 内部 `_resolve_id_actor` 改动（猜猜错根因了，恢复原直接读 char_base）。PL1900 真身路径完全不受影响（命中第一条分支返回同样的真身技能名）。（注：V2037 的方向有误，已被 V2038 修正取代。）
+- 版本号 +1（V2036 -> V2037，标题栏自报 20.37），schema 94 不变；i18n 无新增/删除 key（V2037 仅改 hash 兜底表 PL_SKILL_FALLBACK，未改任何 UI 字符串）。
+
+== v20.36 ==
+- 修复伊德龙人化时技能模块（skill_cd 菱形）下方能力名（紫银之力等）不显示的 bug。根因：read_skill_cooldowns 直接读 `char_base + ABILITY_HASH_OFFSET` 取 4 个 ability hash，但龙人化时 char_base 是龙人化 actor（0x20），其 4 个 hash 与真身 PL1900 不一致，导致 `_lookup_ability(pl_id="PL1900", ab_hash=龙人hash)` 查不到技能名 → `_skill_name` 返回空 → `_draw_skill_cd_name` 直接 return 整片不画。`read_overlay_data` 用 `_resolve_id_actor` 已修复 ExStatus 同源问题，read_skill_cooldowns 没跟上是漏网之鱼。
+- 改法：read_skill_cooldowns 内部加 `_resolve_id_actor` 把 ability hash 改从真身 actor 读；cd 倒计时仍读 char_base（龙人化 actor 自己的冷却状态，不改以免引入新风险）。普通形态/神威一体/其他角色不受影响。最小修复，逻辑清晰可回溯。
+- 版本号 +1（V2035 -> V2036，标题栏自报 20.36），schema 94 不变；i18n 无新增/删除 key（V2036 仅改后端数据通路，未改 UI 字符串）。
+
+== v20.35 ==
+- 彻底删掉「显示启动画面」功能（启动条），不再以 splash 形式冷启动：删 class StartupSplash（整个类约 80 行）、DEFAULT_SETTINGS['show_startup_splash']、设置面板该 checkbox 与 5 处触点（重置/创建/保存/读取/i18n）。main() 直接 `GBFROverlayQt(progress_cb=None)`，QApplication 启动立即进主界面，无任何启动卡片与进度条。i18n.json 删除「显示启动画面」三语 key。
+- 「EXE 同步列表」整行新增「启用 EXE 同步列表」勾选框（默认开启）：放在「EXE 同步」卡片顶部，玩家可一键关掉整个 EXE 同步功能（不勾 = 永不启动任何 EXE、也不枚举任何进程）。settings['enable_sync_exe_list'] 默认 True，_sync_exe_list_at_startup 读到 False 直接 return，CPU = 0 零开销。i18n.json 新增「启用 EXE 同步列表」三语 key。
+- 角色 Buff 顺位与专精门控三列（觉醒 / 真谛 / 秘义）列宽放大 1.5 倍：列标题宽度 86~100 -> 129~150px（MasteryBuffGroup._build line 1805）、每行 checkbox 宽度 86~100 -> 129~150px（_make_item line 1931）。修之前「真谛：回复类能力强化」长专精名截断问题。
+- 版本号 +1（V2034 -> V2035，标题栏自报 20.35），schema 94 不变。
+
+== v20.34 ==
+- 把「尖刺」和「装饰小球」的显示/隐藏彻底拆成两个互不耦合的独立开关。之前 V2033 用两个 hide 选项（「隐藏尖刺与装饰小球」+「仅隐藏上面的尖刺」）组合控制，语义绕、互相耦合，玩家不容易想清楚到底开了什么。本版改成最直白的：设置面板「尖刺与圆环」卡片下两个复选框——「显示尖刺（三角本体）」和「显示装饰小球（尖刺顶端圆点）」，各自独立勾选，四种组合任意切换：都勾（默认，全显示）/ 只勾装饰（只剩小球）/ 只勾尖刺（只剩三角）/ 都不勾（光秃秃圆环+倒计时+文字）。实现就是各自控制对应图层颜色不透明度为 0 或原值，不再有任何组合逻辑纠缠。
+- 旧存档自动迁移：原「隐藏尖刺与装饰小球」勾过 → 两开关都关；原「仅隐藏上面的尖刺」勾过 → 只关尖刺、保留装饰小球；都没勾 → 都开。
+- 版本号 +1（V2033 → V2034，标题栏自报 20.34），schema 94 不变。
+
+[修复 2026-08-27 09:30 重发同一版本号]
+- 用户截图反馈 `_draw_spikes` 还有两个 bug，重写该函数修掉：
+  · bug 1：buff 没有层数时仍凭空虚画 7 个装饰小球（满 max_stacks 槽位）。装饰小球依附尖刺，没尖刺就不该画。重写后 `draw_count <= 0` 直接 return，**两层都不画**（包括小球）。
+  · bug 2：只勾装饰小球不勾尖刺时，**尖刺和小球全都看不见**了。根因是 `painter.setOpacity(self._effective_opacity(key))` 在 `show_spikes=False` 时把全局 painter 透明度锁成 0，后面 `_draw_spike_bead` 沿用同一 painter 状态，被全局 0 透明度“吃掉”。
+  · 修复后 `_draw_spikes` 是单一清晰流程：draw_count<=0 早返；主循环分 A/B/C 三个分支——A（画尖刺三角本体+附属小球，用 spike_opacity 局部设置；带/无闪光内联处理）/ B（仅画装饰小球，显式 `painter.setOpacity(1.0)` 矫正被 0-opacity 污染的 painter 状态）/ C（两开关都关，啥都不画）。
+  · 版本号不变（仍 V2034 / 标题栏 20.34），schema 94 不变。
+
+== v20.33 ==
+- 新增「仅隐藏上面的尖刺（保留装饰小球）」选项（设置面板 → 尖刺模块区，紧跟在「隐藏尖刺与装饰小球」之后）。
+  · 与「隐藏尖刺与装饰小球」的区别：后者连根部的装饰小球(bead)一起藏，前者只藏向外发散的尖刺三角本体，装饰小球仍画在原位置——满足部分玩家“只要尖刺、不要外面那圈刺、但小球装饰保留”的视觉偏好。
+  · 实现：DEFAULT_SETTINGS 加 `hide_spikes_only`: False；抽 `_draw_spike_bead` 子函数，在 `_draw_spikes` 内部 `hide_only` 分支仅画 bead；新增 `_hide_spikes()` helper 合并判定（hide_spikes_and_beads OR hide_spikes_only），统一接画布计算 / empty 分支 / _render_buff_ui 三处调用点；外描边的 bead 勾边在 only 模式下仍画，与 spike 内部完全一致。
+  · 两者可同时勾选（UI 不做互斥强制），同时勾等价于「隐藏尖刺与装饰小球」（_draw_spikes 的 hide_all 早 return 已把两者都拦住）。
+  · 版本号 +1（V2032 → V2033，标题栏自报 20.33），schema 94 不变。
+== v20.32 ==
+- 撤销三次错改（一脉相承的连锁假修复）：V2026 把 `_any_active_buff_stacks()` 错用到 spike 隐藏判定，V2027 把它对齐到标题栏 buff 名段，V2031 又把它加到 render_core 外层 if。结果是用户每次反馈"什么都没了"或"只剩 buff 名"时，AI 都试图用同一个错误判定统一三处语义。本版彻底撤回，恢复 V2025 的原始语义：
+  · 行 4226 `spike_hidden` 判定：`not self._any_active_buff_stacks()` → `not self.active_buffs`
+  · 行 4255 `render_core` 外层分支：`if self.active_buffs and self._any_active_buff_stacks():` → `if self.active_buffs:`
+  · 行 5028 `_build_titlebar_status_text` 标题栏 buff 名段判定：`if not self._any_active_buff_stacks():` → `if not self.active_buffs:`
+- 三处统一只看 `active_buffs` 列表本身，不看 `stacks` 数值。玩家原意：active_buffs 真为空（没有任何 buff）才考虑整圈隐；「已配置 buff 但游戏里 stacks 暂时=0」应仍正常显示圆环 + spike + 倒计时 + buff 名。
+- 「隐藏尖刺与装饰小球」选项语义保持原状：仅控制 spike + bead 的绘制路径（`_draw_spikes` 早 return），不影响圆环 + 倒计时 + 文字。
+- 「无 buff 时隐藏尖刺圆模块」选项语义保持原状：仅在 active_buffs 为空时让整圈按 SPIKE_HIDDEN_KEYS 退 0% 隐形（spike_hide_when_no_buff=True + active_buffs=[] 时）。
+- V2031 的「标题→圆间距允许负值」改动保留。
+- 版本号 +1（V2031 → V2032，标题栏自报 20.32），schema 94 不变。
+
+== v20.31 ==
+- 修两个回归 bug（按用户截图反馈：「标题→圆间距」不允许负值 + buff 模块 UI 不显示只剩 buff 名标签飘着）：
+  · 设置面板「标题→圆间距」（`circle_pad_title`）QSpinBox 由 `setRange(0, 999)` 改成 `setRange(-999, 999)`，允许负值——需要让圆环画布上移、叠在标题栏之上时使用（`base_cy = TITLE_BAR_H + circle_pad_title + ...` 中的 `circle_pad_title` 本身就是活跃渲染参数，参与圆环 Y 位置计算，V2030 误判"是否还有用"被保留、但限制 >=0 没意义，限制为 <0 即允许）。
+  · 修 V2026 改 `_any_active_buff_stacks()` 后的连锁 bug——之前 `if self.active_buffs:` 直接进 buff 分支，会出现「active_buffs 列表非空、但所有 buff 的 stacks=0」时：圆环 / spike / 中心 icon / 倒计时弧等所有 SPIKE_HIDDEN_KEYS 按 `spike_hidden_opacity` (默认 0%) 全部变成 0% 不透明（即看不见），但 `_draw_buff_name` 用的是 `buff_name_color`（不在 SPIKE_HIDDEN_KEYS）依然正常显示——出现「整圈 buff UI 看不见、只剩一个 buff 名标签飘在空中」的诡异残留。
+  · 外层判定改为 `if self.active_buffs and self._any_active_buff_stacks():`——列表非空但 stacks 全 0 时直接并入 empty 分支（与列表空一致），由「无 buff 隐藏尖刺圆模块」选项统一控制「完全隐藏 / 显示空圆环」。三处一致：①spike 隐藏（V2026 起）②buff 模块渲染分支（本版）③标题栏 buff 名段（V2027 已用 `_any_active_buff_stacks()`）。
+- 版本号 +1（V2030 → V2031，标题栏自报 20.31），schema 94 不变。
+
+== v20.30 ==
+- 清理 3 处 UI 残留（按用户截图反馈）：
+  · 删除设置面板「更新检测版本地址」输入框下方那段长说明文字（V303 起的 url_hint QLabel）——输入框 placeholder 已足够提示，玩家不需要在这里再读一遍"为什么走 release CDN"。
+  · 删除死函数 `_open_config_dir`（"打开配置 & 日志目录"）——源码中除自身外零引用、托盘菜单从未 addAction 注册，玩家根本不知道这个入口在哪，索性彻底删干净。
+  · 顺手清掉 i18n.json 里只被 `_open_config_dir` 引用的孤儿键「打开失败」（「设置打开失败」键 5878 行仍被设置对话框使用，保留）。
+- 「标题→圆间距」（`circle_pad_title`）控件保留——它是活跃渲染参数，参与 `base_cy = TITLE_BAR_H + circle_pad_title + circle_r + spike_top_pad` 的圆环画布 Y 位置计算，并非无用功能。
+- 版本号 +1（V2029 → V2030，标题栏自报 20.30），schema 94 不变。
+
+== v20.29 ==
+- 清理审计报告列出的垃圾代码与缺失项（用户反馈）:
+  · 删 _detect_build_no() 死函数（line 84-99）+ 简化 `_BUILD_NO` 注释注释段（102-138 行 6 行说明改为 1 行）。该函数 AST 全量扫描证实零调用点——`_BUILD_NO` 此前已被硬编码、`_detect_build_no` 写出来却从未挂上任何调用链。
+  · 删 6 个未引用函数 / 类（AST 全量扫描证实 used_as_Name=False）：find_pid / resolve_player_ptr / read_raw_buffs / get_topmost_real_window_pid / enum_game_window_state（顺带删其 4 个内部依赖 _enum_pids / _enum_state / _enum_game_windows_proc / _EnumWindowsProc——这些是 enum_game_window_state 的全局 state 和回调辅助，父函数一删立即变孤儿）、BuffOrderGroup 类。
+  · 删 4 个无用 import（line 29-30，AST 全量扫描证实 used_as_Name=False）：QAction / QPolygonF（QtGui）；QAbstractSpinBox / QDialogButtonBox（QtWidgets）。
+  · 补 1 处缺失的 i18n 键: line 2363（原 2859）tooltip 整串键『标题栏底色行与圆环画布之间的垂直间距（像素）。
+默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。』——已在 i18n.json 加 zh / zh_tw / en 三条完整翻译。
+- 修正：用户原报告说 _tr("打开失败")（6026 / 原 6528）键不存在，实际 i18n.json 里『打开失败』键已经完整，zh_tw=『開啟失敗』/ en=『Open failed』均正常返回，无需修改。
+- 版本号 +1（V2028 → V2029，标题栏自报 20.29），schema 94 不变。
+
+== v20.28 ==
+- 第 6/7 次翻滚的警告牌（warning_mode）新增闪光：在红边黄底三角之上叠加一层 flash_color 的「警告牌形状（圆角三角）」透明度脉冲闪烁（flash_progress 越大越亮、随时间消退），外形始终是警告牌、绝不用白色方块遮挡。复用现有 flash_apply_dodge（开关）/ flash_color（颜色）/ flash_scale（放大脉冲）/ flash_duration_ms（时长），不新增设置。
+- 版本号 +1（V2027 → V2028，标题栏自报 20.28），schema 94 不变。
+
+== v20.27 ==
+- 修复勾选「无 buff 时隐藏尖刺圆模块」后，标题栏右侧状态文字里的 buff 名段（如"希耶提 - 集谛 - (造成伤害 UP)"）仍然显示、圆环已经透明的 bug（希耶提反馈：「关掉隐藏刺之后游戏里只剩 buff 名了，外面的都没了」）。根因：V2026 在 `render_core` 里把 spike 圆环的隐藏判定改成了 `not self._any_active_buff_stacks()`，但 5486 行 `_build_titlebar_status_text` 仍用旧判定 `if not self.active_buffs`，导致三阶专精全勾、stacks=0 时圆环透明、buff 名段却残留。V2027 把 5486 行改为同一判定，buff 名段与 spike 圆环同步隐藏。
+- 版本号 +1（V2026 → V2027，标题栏自报 20.27），schema 94 不变。
+
+== v20.26 ==
+- **修复「无buff时隐藏尖刺圆模块」选项在用户已经把某个 buff 的三阶专精全勾、但游戏里该 buff 实际层数为 0 时不生效、圆环仍然显示的 bug**（狼奶奶反馈：「勾了无BUFF隐藏圈圈尖刺，但是在没有BUFF的时候显示」）。根因：`render_core` 用的判定条件是 `len(active_buffs) == 0`，但一个 buff 即使被三阶专精全勾、永远在 active_buffs 列表里，只要游戏里它的 stacks=0，照样算「无 buff」——前者永远为 False → `spike_hidden=False` → 空圆环被 `_draw_circle` 以 `circle_color_normal` 满不透明度画出。修复：新增 `_any_active_buff_stacks()` 辅助函数，判定改为 `not _any_active_buff_stacks()`（active_buffs 里所有 buff 的 stacks 都 ≤ 0 即视为无 buff），与玩家对「无 buff」的直觉（无任何 buff 实际激活）一致。
+- 版本号 +1（V2025 → V2026，标题栏自报 20.26），schema 94 不变。
+
+== v20.25 ==
+- **修复「随游戏前后台自动显隐」把点击 / 拖拽 / 缩放 overlay 自身模块误判成游戏到后台、导致一点模块就整窗消失、根本没法调模块大小/位置/缩放**：根因是 `_game_is_foreground()` 只认游戏 PID（`self.pid` 存的是游戏进程），工具自身进程不在集合里，于是用户点/拖模块时前台变成工具自己的进程就被算成「后台」→ 隐藏。V2025 把工具自身进程（`os.getpid()`）也并入「前台」集合（点/拖模块时保持可见），并新增拖拽/缩放进行中的 `_interacting` 锁，焦点同步直接跳过、绝不隐藏。真正的「后台」只剩前台是游戏/工具之外的其它程序（桌面/浏览器/其它软件）。
+- 版本号 +1（V2024 → V2025，标题栏自报 20.25），schema 94 不变。
+
+== v20.24 ==
+- **修复 Windows 区域设为「香港（繁体中文）」时整个 overlay 中文渲染成 □□ 方框**：用户反馈「区域换香港就出方框，换回大陆就好了」。原因是 Qt 在 Windows 上不读系统「亚洲字符字体回退」表，全项目 21 处 QFont 都 hardcode `"Segoe UI"`，Segoe UI 不含中文字形时直接退回缺字矩形。V2024 在 `main()` 启动时扫描 `QFontDatabase.families()`，按优先级挑选系统已装的 CJK 字体（Microsoft YaHei → JhengHei → PingFang SC → SimHei → Malgun Gothic → Yu Gothic → Meiryo → Source Han Sans CN/TC → Noto Sans CJK），再调用 `QFont.insertSubstitution("Segoe UI", cjk_family)` 给 Segoe UI 全局注册字形替代——之后所有 `QFont("Segoe UI", ...)` 遇到缺字自动用 CJK 字体补齐，零调用点改动。
+- 版本号 +1（V2023 → V2024，标题栏自报 20.24），schema 94 不变。
+
+== v20.23 ==
+- **V2022 的「600ms 防抖」下掉**：上一版为了快速 Alt-Tab 来回时不让用户看到一闪而过的窗口加了 600ms 等待，实战发现这一等待让「游戏切回前台时 overlay 没及时弹回」成为常态。V2023 回到 V2021 的边沿节奏——`prev != decision` 的瞬间就 `_show_all_windows()` / `_hide_all_windows()`，焦点定时器 250ms 仍保留。
+- **非战斗状态也跟随前后台显隐**：V2013 时代把「窗口缩为仅标题栏」的非战斗状态当成 `auto_focus_minimize` 的死角直接 early return，于是非战斗（地图界面、任务接取区、NPC 旁）alt-tab 完全没反应。本版删掉那行 return，`hide()` 一次清空整窗（含标题栏），回前台时由 `_show_all_windows()` 一次性完整弹出，下一拍 tick 再按 `_ooc_content_mult` 恢复缩为标题栏的视觉状态。
+- 版本号 +1（V2022 → V2023，标题栏自报 20.23），schema 94 不变。
+- **重写「随游戏前后台自动显隐」逻辑，修复 6 个长期 bug**：(1) 尊重手动隐藏——按呼出/隐藏热键或双击托盘隐藏后，不再被自动同步在约 50ms 后强行弹回；(2) 游戏未运行时不再自动最小化，可以先开工具调好设置再启动游戏；(3) Steam/Discord 覆盖层与伴侣进程弹窗不再被误判为「游戏切到后台」而自动最小化；(4) 前景窗口轮询改为独立的低频定时器（250ms），不再挂在每 50ms 的扫描帧里，去掉无谓的逐帧 Win32 调用；(5) 设置等模态对话框打开时正确暂停同步；(6) 手动呼出后设短暂豁免期，避免「手动显示」与「自动最小化」竞速。
+- 版本号 +1（V2012 → V2013，标题栏自报 20.13），schema 93 → 94。
+
 == v20.12 ==
 - **修复设置弹窗深色主题下的黑色字看不清（QComboBox 弹出项 + EXE 同步文本框）**：原全局 setStyleSheet 只给 QComboBox 的「已选中行」设了 `color:#fff`，弹出项 `QComboBox QAbstractItemView` 走的是 Qt 的 OS 默认主题（浅色背景 + 黑色字），所以点开语言下拉看到的 `zh / zh_tw / en` 是黑字一片；EXE 同步列表的 `QPlainTextEdit` 根本不在 setStyleSheet 覆盖范围里，Qt 默认给的就是黑字。已在全局样式表补齐：QPlainTextEdit 文字 `#dce8f8`（与 QLabel 一致）、QComboBox 弹出视图背景 `#242c40` / 文字 `#ffffff` / 选中态 `#3a4860`，展开后字体看得清。
 - **语言下拉菜单硬编码为「简体中文 / 繁体中文（繁体的） / English」三项**：之前下拉里直接是 `zh / zh_tw / en` 这三字语言代码，像没翻译的占位符；现在改为三行固定文字 + `addItem(text, userData)` 把 `zh / zh_tw / en` 存在 userData 里，运行时改读 `currentData()`。**任何语言模式下这三项都保持原样不翻译**（retranslate_ui 走 findChildren(QLabel/QCheckBox/QPushButton/QLineEdit)，不会动 QComboBox 内部 item）。DEFAULT_SETTINGS 默认 `language` 改为 `"zh"`，新装用户首启即简体中文。
@@ -54,6 +171,121 @@
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v20.40 ==
+- 死程式碼清理（P0+P1），零功能變動、行為不變。用 pyflakes + vulture + 自寫 AST 腳本（排除註解/docstring 提及、Qt 框架虛函式、f-string 間接存取三類誤報）從頭排查 src/gbfr_overlay_qt_v6.py（7391 行）。
+- 刪除 7 個零呼叫函式：_pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel（含整片「閃避描邊圖像」死邏輯，QBitmap/QRegion 匯入隨之連鎖刪除）。
+- 刪除 15 個死常量、8 個死實例屬性、4 個死區域變數、2 個死匯入（re / QProgressBar 及連鎖的 QBitmap / QRegion）。
+- DEFAULT_SETTINGS 刪除 15 個「設了但永不被讀取」的死鍵（bg_color / bg_color_opacity / arc_color_opacity / icon_color_opacity / classmech_window_x|y|scale_percent / ex_status_offset / show_skill_cd / skill_cd_*_opacity / supersample / update_mirror_url / flash_dodge_outline）；無綁定控制項、無讀取路徑，屬擺設，刪後行為不變。
+- 故意保留：overlay 實例參照（保物件生命週期）、_draw_title_bar 內 th（繪製中使用）、_btn_*_rect_win 命中矩形、COLOR_FIELDS 內各顏色鍵本身（仍由 EXTERNAL_COLOR_KEYS / _get_color 消費）。
+- i18n 無新增/刪除 UI 字串；審計腳本確認 MISSING keys=0、三語齊全。pyflakes 清理後僅剩 overlay 一處「未使用變數」告警（故意保留的保活參照）。
+- 版本號 +1（V2039 → V2040，標題欄自報 20.40），schema 94 不變。
+
+== v20.39 ==
+- 顏色選擇對話框「自訂顏色」16 格永久保留。問題：之前用 `QColorDialog.getColor()` 彈出系統 ColorPicker，調好色點「Add to Custom Colors」加到 16 格後，關閉軟體再開就歸零（因為 QColorDialog 的 16 格不跨進程持久化），使用者要反覆重調。修法：在 `pick_color()` 入口前從 `settings['custom_palette']` 把 16 個 hex 還原到 `QColorDialog.setCustomColor(i, QColor(hex))`，關閉後立即讀 `QColorDialog.customColors()` 回寫 `settings['custom_palette']` 並 `save_settings`；「恢復預設」按鈕同步清空這 16 格並重置 Qt 全域。`DEFAULT_SETTINGS` 新增 `custom_palette: []` 欄位。
+- 已知未修：①「Add to Custom Colors 永遠覆蓋第一個空格」是 Windows 系統 ColorPicker 行為，不可定制；②「點已有格子立刻把當前色覆蓋上去」同理。如需徹底靈活，要自己重寫一個內部 ColorPicker（≈300 行），按本版範圍暫不做。下次復改可參考 A 方案。
+- 版本號 +1（V2038 → V2039，標題欄自報 20.39），schema 94 不變；i18n 無新增/刪除 UI 字串（僅修改 `pick_color` 流程並新增一個 settings 欄位）。
+
+== v20.38 ==
+- 修正伊度龍人化能力模組技能名顯示錯誤（V2037 把龍人化技能名「複用」成 PL1900 人形態技能，但龍人化其實是獨立編號 PL2000，技能本就不同）。經 GBFR Logs 的 lang/zh-CN/abilities.json 核實：伊度龍人化為獨立 PL2000，專屬技能 AB_PL2000_01~05（眾神意志‧重連刃/召禍/永欲/阿卡狄亞/神能解放），與人形態 PL1900（縛破/償罪/諸神黃昏‧型態）並非同一套。專案資料庫原未收錄 PL2000，導致龍人化 actor 的 +ABILITY_HASH_OFFSET 所存 PL2000 hash 在 _ab_hash_map 命中不到 → 顯示空。改法：將 PL2000 真實技能（hash→三語名）正式收錄進 GBFR_Character_Skills_Buffs.json，按 hash 直接命中龍人化真實技能名；並移除 V2037 誤加的 PL1900→PL1900 / PL2000→PL1900 技能借用（避免錯誤技能名）。核心 Buff 區 PL2000 仍與 PL1900 共用（BUFF_PROFILES 邏輯，不受影響）。
+- 版本號 +1（V2037 -> V2038，標題欄自報 20.38），schema 94 不變；i18n 無新增/刪除 UI 字串（僅新增資料條目與資料通路修正）。
+
+== v20.37 ==
+- 真正修好伊度龍人化時技能模組（skill_cd 菱形）下方能力名（眾神意志‧重連刃/縛破/償罪/諸神黃昏‧型態）不顯示的 bug。上一版 V2036 猜錯了根因（試圖讓 read_skill_cooldowns 從真身 actor 讀 ability hash，但遊戲在龍人化時未必更新真身的 +ABILITY_HASH_OFFSET，反而讀到 0 或舊值），所以「還是沒有」。本次 V2037 徹底查到根因並真修復：龍人化的 pl_id 由 read_overlay_data 經 charid_hash 解析得「PL1900」（真身的角色ID，因為 CHAR_TYPE_TO_PL[0x20]="PL1900" 而不是 PL2000）；龍人化 actor 的 +ABILITY_HASH_OFFSET 處的 4 個 hash 是龍人化專屬 hash（資料庫未收錄），`_ab_hash_map.get(h)` 必 miss；原 `PL_SKILL_FALLBACK` 只放 PL0100/PL2000，**PL1900 不在兜底裡 → `_lookup_ability` 返回 None → `_skill_name=""` → `_draw_skill_cd_name` 直接 return → 4 個菱形下方全空**。改法：`PL_SKILL_FALLBACK` 加 `"PL1900":"PL1900"`，讓龍人化 hash miss 時按 slot 借用真身 PL1900 的 ab_01-04。同步撤銷 V2036 的 `read_skill_cooldowns` 內部 `_resolve_id_actor` 改動（猜錯根因了，恢復原直接讀 char_base）。PL1900 真身路徑完全不變。（註：V2037 的方向有誤，已被 V2038 修正取代。）
+- 版本號 +1（V2036 -> V2037，標題欄自報 20.37），schema 94 不變；i18n 無新增/刪除 key（V2037 僅改 hash 兜底表 PL_SKILL_FALLBACK，未改任何 UI 字串）。
+
+== v20.36 ==
+- 修復伊度龍人化時技能模組（skill_cd 菱形）下方能力名（紫銀之力等）不顯示的 bug。根因：read_skill_cooldowns 直接讀 `char_base + ABILITY_HASH_OFFSET` 取 4 個 ability hash，但龍人化時 char_base 是龍人化 actor（0x20），其 4 個 hash 與真身 PL1900 不一致，導致 `_lookup_ability(pl_id="PL1900", ab_hash=龍人hash)` 查不到技能名 → `_skill_name` 返回空 → `_draw_skill_cd_name` 直接 return 整片不畫。`read_overlay_data` 用 `_resolve_id_actor` 已修復 ExStatus 同源問題，read_skill_cooldowns 沒跟上是漏網之魚。
+- 改法：read_skill_cooldowns 內部加 `_resolve_id_actor` 把 ability hash 改從真身 actor 讀；cd 倒計時仍讀 char_base（龍人化 actor 自己的冷卻狀態，不改以免引入新風險）。普通形態/神威一體/其他角色不受影響。最小修復，邏輯清晰可回溯。
+- 版本號 +1（V2035 -> V2036，標題欄自報 20.36），schema 94 不變；i18n 無新增/刪除 key（V2036 僅改後端資料通路，未改 UI 字串）。
+
+== v20.35 ==
+- 徹底刪除「顯示啟動畫面」功能（啟動條），不再以 splash 形式冷啟動：刪 class StartupSplash（整個類別約 80 行）、DEFAULT_SETTINGS['show_startup_splash']、設定面板該核取方塊與 5 處觸點（重置/創建/儲存/讀取/i18n）。main() 直接 `GBFROverlayQt(progress_cb=None)`，QApplication 啟動立即進入主介面，無任何啟動卡片與進度條。i18n.json 刪除「顯示啟動畫面」三語 key。
+- 「EXE 同步清單」整列新增「啟用 EXE 同步清單」核取方塊（預設開啟）：放在「EXE 同步」卡片頂部，使用者可一鍵關閉整個 EXE 同步功能（不勾 = 永不啟動任何 EXE、也不列舉任何進程）。settings['enable_sync_exe_list'] 預設 True，_sync_exe_list_at_startup 讀到 False 直接 return，CPU = 0 零開銷。i18n.json 新增「啟用 EXE 同步清單」三語 key。
+- 角色 Buff 順位與專精閘控三欄（覺醒 / 真諦 / 秘義）欄寬放大 1.5 倍：欄標題寬度 86~100 -> 129~150px（MasteryBuffGroup._build line 1805）、每行 checkbox 寬度 86~100 -> 129~150px（_make_item line 1931）。修之前「真諦：回復類能力強化」長專精名截斷問題。
+- 版本號 +1（V2034 -> V2035，標題欄自報 20.35），schema 94 不變。
+
+== v20.34 ==
+- 把「尖刺」與「裝飾小球」的顯示/隱藏徹底拆成兩個互不耦合的獨立開關。之前 V2033 用兩個 hide 選項（「隱藏尖刺與裝飾小球」+「僅隱藏上方的尖刺」）組合控制，語意繞、互相耦合，玩家不容易想清楚到底開了什麼。本版改成最直白的：設定面板「尖刺與圓環」卡片下兩個核取方塊——「顯示尖刺（三角本體）」與「顯示裝飾小球（尖刺頂端圓點）」，各自獨立勾選，四種組合任意切換：都勾（預設，全顯示）/ 只勾裝飾（只剩小球）/ 只勾尖刺（只剩三角）/ 都不勾（光禿禿圓環+倒計時+文字）。實作就是各自控制對應圖層顏色不透明度為 0 或原值，不再有任何組合邏輯糾纏。
+- 舊存檔自動遷移：原「隱藏尖刺與裝飾小球」勾過 → 兩開關都關；原「僅隱藏上方的尖刺」勾過 → 只關尖刺、保留裝飾小球；都沒勾 → 都開。
+- 版本號 +1（V2033 -> V2034，標題欄自報 20.34），schema 94 不變。
+
+[修復 2026-08-27 09:30 重發同一版本號]
+- 使用者截圖反饋 `_draw_spikes` 還有兩個 bug，重寫該函式修掉：
+  · bug 1：buff 沒有層數時仍憑空虛畫 7 個裝飾小球（滿 max_stacks 槽位）。裝飾小球依附尖刺，沒尖刺就不該畫。重寫後 `draw_count <= 0` 直接 return，**兩層都不畫**（包括小球）。
+  · bug 2：只勾裝飾小球不勾尖刺時，**尖刺和小球全都看不見**了。根因是 `painter.setOpacity(self._effective_opacity(key))` 在 `show_spikes=False` 時把全域 painter 透明度鎖成 0，後面 `_draw_spike_bead` 沿用同一 painter 狀態，被全域 0 透明度「吃掉」。
+  · 修復後 `_draw_spikes` 是單一清晰流程：draw_count<=0 早返；主迴圈分 A/B/C 三個分支——A（畫尖刺三角本體+附屬小球，用 spike_opacity 局部設置；帶/無閃光內聯處理）/ B（僅畫裝飾小球，顯式 `painter.setOpacity(1.0)` 矯正被 0-opacity 污染的 painter 狀態）/ C（兩開關都關，啥都不畫）。
+  · 版本號不變（仍 V2034 / 標題欄 20.34），schema 94 不變。
+
+== v20.33 ==
+- 新增「僅隱藏上方的尖刺（保留裝飾小球）」選項（設定面板 → 尖刺模組區，緊跟在「隱藏尖刺與裝飾小球」之後）。
+  · 與「隱藏尖刺與裝飾小球」的區別：後者連根部的裝飾小球(bead)一起藏，前者只藏向外發散的尖刺三角本體，裝飾小球仍畫在原位置——滿足部分玩家「只要尖刺、不要外面那圈刺、但小球裝飾保留」的視覺偏好。
+  · 實作：DEFAULT_SETTINGS 加 `hide_spikes_only`: False；抽 `_draw_spike_bead` 子函式，在 `_draw_spikes` 內部 `hide_only` 分支僅畫 bead；新增 `_hide_spikes()` helper 合併判定（hide_spikes_and_beads OR hide_spikes_only），統一接畫布計算 / empty 分支 / _render_buff_ui 三處呼叫點；外描邊的 bead 勾邊在 only 模式下仍畫，與 spike 內部完全一致。
+  · 兩者可同時勾選（UI 不做互斥強制），同時勾等價於「隱藏尖刺與裝飾小球」（_draw_spikes 的 hide_all 早 return 已把兩者都攔住）。
+  · 版本號 +1（V2032 → V2033，標題欄自報 20.33），schema 94 不變。
+
+== v20.32 ==
+- 撤回三次錯改（一脈相承的連鎖假修復）：V2026 把 `_any_active_buff_stacks()` 錯用到 spike 隱藏判定，V2027 把它對齊到標題欄 buff 名段，V2031 又把它加到 render_core 外層 if。結果是使用者每次回報「什麼都沒了」或「只剩 buff 名」時，AI 都試圖用同一個錯誤判定統一三處語義。本版徹底撤回，恢復 V2025 的原始語義：
+  · 行 4226 `spike_hidden` 判定：`not self._any_active_buff_stacks()` → `not self.active_buffs`
+  · 行 4255 `render_core` 外層分支：`if self.active_buffs and self._any_active_buff_stacks():` → `if self.active_buffs:`
+  · 行 5028 `_build_titlebar_status_text` 標題欄 buff 名段判定：`if not self._any_active_buff_stacks():` → `if not self.active_buffs:`
+- 三處統一只看 `active_buffs` 列表本身，不看 `stacks` 數值。使用者原意：active_buffs 真為空（沒有任何 buff）才考慮整圈隱；「已配置 buff 但遊戲裡 stacks 暫時=0」應仍正常顯示圓環 + spike + 倒計時 + buff 名。
+- 「隱藏尖刺與裝飾小球」選項語義保持原狀：僅控制 spike + bead 的繪製路徑（`_draw_spikes` 早 return），不影響圓環 + 倒計時 + 文字。
+- 「無 buff 時隱藏尖刺圓模組」選項語義保持原狀：僅在 active_buffs 為空時讓整圈按 SPIKE_HIDDEN_KEYS 退 0% 隱形（spike_hide_when_no_buff=True + active_buffs=[] 時）。
+- V2031 的「標題→圓間距允許負值」改動保留。
+- 版本號 +1（V2031 → V2032，標題欄自報 20.32），schema 94 不變。
+
+== v20.31 ==
+- 修正兩個回歸 bug（依使用者截圖回報：「標題→圓間距」不允許負值 + buff 模組 UI 不顯示只剩 buff 名標籤飄著）：
+  · 設定面板「標題→圓間距」（`circle_pad_title`）QSpinBox 由 `setRange(0, 999)` 改成 `setRange(-999, 999)`，允許負值——需要讓圓環畫布上移、疊在標題欄之上時使用（`base_cy = TITLE_BAR_H + circle_pad_title + ...` 中的 `circle_pad_title` 本身就是活躍渲染參數，參與圓環 Y 位置計算，V2030 誤判"是否還有用"被保留、但限制 >=0 沒意義，限制為 <0 即允許）。
+  · 修 V2026 改 `_any_active_buff_stacks()` 後的連鎖 bug——之前 `if self.active_buffs:` 直接進 buff 分支，會出現「active_buffs 列表非空、但所有 buff 的 stacks=0」時：圓環 / spike / 中心 icon / 倒計時弧等所有 SPIKE_HIDDEN_KEYS 按 `spike_hidden_opacity` (預設 0%) 全部變成 0% 不透明（即看不見），但 `_draw_buff_name` 用的是 `buff_name_color`（不在 SPIKE_HIDDEN_KEYS）依然正常顯示——出現「整圈 buff UI 看不見、只剩一個 buff 名標籤飄在空中」的詭異殘留。
+  · 外層判定改為 `if self.active_buffs and self._any_active_buff_stacks():`——列表非空但 stacks 全 0 時直接併入 empty 分支（與列表空一致），由「無 buff 隱藏尖刺圓模組」選項統一控制「完全隱藏 / 顯示空圓環」。三處一致：①spike 隱藏（V2026 起）②buff 模組渲染分支（本版）③標題欄 buff 名段（V2027 已用 `_any_active_buff_stacks()`）。
+- 版本號 +1（V2030 → V2031，標題欄自報 20.31），schema 94 不變。
+
+== v20.30 ==
+- 清理 3 處 UI 殘留（按使用者截圖回饋）：
+  · 刪除設定面板「更新檢測版本地址」輸入框下方那段長說明文字（V303 起的 url_hint QLabel）——輸入框 placeholder 已足夠提示，使用者不需要在這裡再讀一遍「為什麼走 release CDN」。
+  · 刪除死函式 `_open_config_dir`（「開啟設定 & 日誌目錄」）——原始碼中除自身外零引用、托盤選單從未 addAction 註冊，使用者根本不知道這個入口在哪，索性徹底刪乾淨。
+  · 順手清掉 i18n.json 裡只被 `_open_config_dir` 引用的孤兒鍵「開啟失敗」（「設定開啟失敗」鍵 5878 行仍被設定對話框使用，保留）。
+- 「標題→圓間距」（`circle_pad_title`）控制項保留——它是活躍渲染參數，參與 `base_cy = TITLE_BAR_H + circle_pad_title + circle_r + spike_top_pad` 的圓環畫布 Y 位置計算，並非無用功能。
+- 版本號 +1（V2029 → V2030，標題欄自報 20.30），schema 94 不變。
+
+== v20.29 ==
+- 清理審計報告列出的垃圾代碼與缺失項（用戶反饋）:
+  · 刪 _detect_build_no() 死函數（line 84-99）+ 簡化 `_BUILD_NO` 註解段（102-138 行 6 行說明改為 1 行）。該函數 AST 全量掃描證實零調用點——`_BUILD_NO` 此前已被硬編碼、`_detect_build_no` 寫出來卻從未掛上任何調用鏈。
+  · 刪 6 個未引用函數 / 類（AST 全量掃描證實 used_as_Name=False）：find_pid / resolve_player_ptr / read_raw_buffs / get_topmost_real_window_pid / enum_game_window_state（順帶刪其 4 個內部依賴 _enum_pids / _enum_state / _enum_game_windows_proc / _EnumWindowsProc——這些是 enum_game_window_state 的全局 state 和回呼輔助，父函數一刪立即變孤兒）、BuffOrderGroup 類。
+  · 刪 4 個無用 import（line 29-30，AST 全量掃描證實 used_as_Name=False）：QAction / QPolygonF（QtGui）；QAbstractSpinBox / QDialogButtonBox（QtWidgets）。
+  · 補 1 處缺失的 i18n 鍵: line 2363（原 2859）tooltip 整串鍵『標題列底色行與圓環畫布之間的垂直間距（像素）。
+預設 0 表示兩者直接貼在一起；想讓標題列和圓環之間留出呼吸空間可加大。』——已在 i18n.json 加 zh / zh_tw / en 三條完整翻譯。
+- 修正：用戶原報告說 _tr("打開失敗")（6026 / 原 6528）鍵不存在，實際 i18n.json 裡『打開失敗』鍵已經完整，zh_tw=『開啟失敗』/ en=『Open failed』均正常返回，無需修改。
+- 版本號 +1（V2028 → V2029，標題列自報 20.29），schema 94 不變。
+
+== v20.28 ==
+- 第 6/7 次翻滾的警告牌（warning_mode）新增閃光：在紅邊黃底三角之上疊加一層 flash_color 的「警告牌形狀（圓角三角）」透明度脈衝閃爍（flash_progress 越大越亮、隨時間消退），外形始終是警告牌、絕不用白色方塊遮擋。复用现有 flash_apply_dodge（開關）/ flash_color（顏色）/ flash_scale（放大脈衝）/ flash_duration_ms（時長），不新增設定。
+- 版本號 +1（V2027 → V2028，標題列自報 20.28），schema 94 不變。
+
+== v20.27 ==
+- 修復勾選「無 buff 時隱藏尖刺圓模組」後，標題列右側狀態文字裡的 buff 名段（如"希耶提 - 集諦 - (造成傷害 UP)"）仍然顯示、圓環已經透明的 bug（希耶提回饋：「關掉隱藏刺之後遊戲裡只剩 buff 名了，外面的都沒了」）。根因：V2026 在 `render_core` 裡把 spike 圓環的隱藏判定改成了 `not self._any_active_buff_stacks()`，但 5486 行 `_build_titlebar_status_text` 仍用舊判定 `if not self.active_buffs`，導致三階專精全勾、stacks=0 時圓環透明、buff 名段卻殘留。V2027 把 5486 行改為同一判定，buff 名段與 spike 圓環同步隱藏。
+- 版本號 +1（V2026 → V2027，標題列自報 20.27），schema 94 不變。
+
+== v20.26 ==
+- **修正「無 buff 時隱藏尖刺圓模組」選項在用戶已經把某個 buff 的三階專精全勾、但遊戲裡該 buff 實際層數為 0 時不生效、圓環仍然顯示的 bug**（狼奶奶回報：「勾了無BUFF隱藏圈圈尖刺，但是沒有BUFF的時候顯示」）。根因：`render_core` 的判定條件是 `len(active_buffs) == 0`，但一個 buff 即使被三階專精全勾、會永遠留在 active_buffs 列表裡，只要遊戲裡它的 stacks=0，照樣算「無 buff」——前者永遠為 False → `spike_hidden=False` → 空圓環被 `_draw_circle` 以 `circle_color_normal` 滿不透明度畫出。修正：新增 `_any_active_buff_stacks()` 輔助函式，判定改為 `not _any_active_buff_stacks()`（active_buffs 裡所有 buff 的 stacks 都 ≤ 0 即視為無 buff），與玩家對「無 buff」的直覺（無任何 buff 實際啟動）一致。
+- 版本號 +1（V2025 → V2026，標題欄自報 20.26），schema 94 不變。
+
+== v20.25 ==
+- **修正「隨遊戲前後台自動顯隱」把點擊 / 拖曳 / 縮放 overlay 自身模組誤判成遊戲到背景、導致一點模組就整窗消失、根本沒法調模組大小/位置/縮放**：根因是 `_game_is_foreground()` 只認遊戲 PID（`self.pid` 存的是遊戲程序），工具自身程序不在集合裡，於是使用者點/拖模組時前景變成工具自己的程序就被算成「背景」→ 隱藏。V2025 把工具自身程序（`os.getpid()`）也併入「前景」集合（點/拖模組時保持可見），並新增拖曳/縮放進行中的 `_interacting` 鎖，焦點同步直接跳過、絕不隱藏。真正的「背景」只剩前景是遊戲/工具之外的其它程式（桌面/瀏覽器/其它軟體）。
+- 版本號 +1（V2024 → V2025，標題欄自報 20.25），schema 94 不變。
+
+== v20.24 ==
+- **修正 Windows 區域設成「香港（繁體中文）」時整個 overlay 中文渲染成 □□ 方框**：使用者反映「區域換香港就出方框，換回大陸就好了」。原因是 Qt 在 Windows 上不讀系統「亞洲字型回退」表，全專案 21 處 QFont 都 hardcode `"Segoe UI"`，Segoe UI 不含中文字形時直接退回缺字矩形。V2024 在 `main()` 啟動時掃描 `QFontDatabase.families()`，按優先級挑選系統已裝的 CJK 字型（Microsoft YaHei → JhengHei → PingFang SC → SimHei → Malgun Gothic → Yu Gothic → Meiryo → Source Han Sans CN/TC → Noto Sans CJK），再呼叫 `QFont.insertSubstitution("Segoe UI", cjk_family)` 給 Segoe UI 全域註冊字形替代——之後所有 `QFont("Segoe UI", ...)` 遇到缺字自動用 CJK 字型補齊，零呼叫點改動。
+- 版本號 +1（V2023 → V2024，標題欄自報 20.24），schema 94 不變。
+
+== v20.23 ==
+- **拿掉 V2022 的「600ms 防抖」**：上一版為了快速 Alt-Tab 來回時不讓使用者看到一閃而過的視窗加了 600ms 等待，實戰發現這段等待讓「遊戲切回前景時 overlay 沒即時彈回」變常態。V2023 回到 V2021 的邊沿節奏——`prev != decision` 的瞬間就 `_show_all_windows()` / `_hide_all_windows()`，焦點定時器 250ms 仍保留。
+- **非戰鬥狀態也跟隨前後台顯隱**：V2013 時代把「視窗縮為僅標題列」的非戰鬥狀態當成 `auto_focus_minimize` 的死角直接 early return，於是非戰鬥（地圖介面、任務接取區、NPC 旁）alt-tab 完全沒反應。本版刪掉那行 return，`hide()` 一次清空整窗（含標題列），回前景時由 `_show_all_windows()` 一次性完整彈出，下一拍 tick 再按 `_ooc_content_mult` 恢復縮為標題列的視覺狀態。
+- 版本號 +1（V2022 → V2023，標題欄自報 20.23），schema 94 不變。
+- **重寫「隨遊戲前後台自動顯隱」邏輯，修復 6 個長期 bug**：(1) 尊重手動隱藏——按呼出/隱藏熱鍵或雙擊托盤隱藏後，不再被自動同步在約 50ms 後強行彈回；(2) 遊戲未執行時不再自動最小化，可以先開工具調好設定再啟動遊戲；(3) Steam/Discord 覆蓋層與伴侶程序彈窗不再被誤判為「遊戲切到後台」而自動最小化；(4) 前景視窗輪詢改為獨立的低頻定時器（250ms），不再掛在每 50ms 的掃描幀裡，去掉無謂的逐幀 Win32 呼叫；(5) 設定等模態對話框開啟時正確暫停同步；(6) 手動呼出後設短暫豁免期，避免「手動顯示」與「自動最小化」競速。
+- 版本號 +1（V2012 → V2013，標題欄自報 20.13），schema 93 → 94。
+
 == v20.12 ==
 - **修復設定彈窗深色主題下的黑色字看不清（QComboBox 彈出項 + EXE 同步文本框）**：原全局 setStyleSheet 僅給 QComboBox 的「已選中行」設了 `color:#fff`，彈出項 `QComboBox QAbstractItemView` 走的是 Qt 的 OS 預設主題（淺色背景 + 黑色字），所以點開語言下拉看到的 `zh / zh_tw / en` 是黑字一片；EXE 同步清單的 `QPlainTextEdit` 根本不在 setStyleSheet 覆蓋範圍裡，Qt 預設給的就是黑字。已在全域樣式表補齊：QPlainTextEdit 文字 `#dce8f8`（與 QLabel 一致）、QComboBox 彈出視圖背景 `#242c40` / 文字 `#ffffff` / 選中態 `#3a4860`，展開後字體看得清。
 - **語言下拉選單硬編碼為「簡體中文 / 繁體中文（繁體的） / English」三項**：之前下拉裡直接是 `zh / zh_tw / en` 這三字語言代碼，像沒翻譯的佔位符；現在改為三行固定文字 + `addItem(text, userData)` 把 `zh / zh_tw / en` 存在 userData 裡，執行時改讀 `currentData()`。**任何語言模式下這三項都保持原樣不翻譯**（retranslate_ui 走 findChildren(QLabel/QCheckBox/QPushButton/QLineEdit)，不會動 QComboBox 內部 item）。DEFAULT_SETTINGS 預設 `language` 改為 `"zh"`，新裝使用者首啟即簡體中文。
@@ -109,6 +341,122 @@
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+== v20.40 ==
+- Dead-code cleanup (P0+P1), zero functional change, behavior unchanged. Full re-audit of src/gbfr_overlay_qt_v6.py (7391 lines) with pyflakes + vulture + a custom AST script (excluding three false-positive classes: comment/docstring mentions, Qt framework virtuals, and f-string indirect access).
+- Removed 7 never-called functions: _pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel (the entire unused 'dodge outline image' code path; the QBitmap/QRegion imports were removed as a cascade).
+- Removed 15 dead constants, 8 dead instance attributes, 4 dead local variables, and 2 dead imports (re / QProgressBar, plus the now-orphaned QBitmap / QRegion).
+- DEFAULT_SETTINGS: removed 15 'defined-but-never-read' dead keys (bg_color / bg_color_opacity / arc_color_opacity / icon_color_opacity / classmech_window_x|y|scale_percent / ex_status_offset / show_skill_cd / skill_cd_*_opacity / supersample / update_mirror_url / flash_dodge_outline); no bound control and no read path, so pure dead weight - removing changes nothing.
+- Kept on purpose: the overlay instance reference in main() (keeps the object alive; deleting it would let Python GC the instance and close the windows), th inside _draw_title_bar (used in drawing), the _btn_*_rect_win hit-rectangles (live code, distinct from the removed non-_win variants), and the actual color keys inside COLOR_FIELDS (still consumed by EXTERNAL_COLOR_KEYS / _get_color - only the wrapping list constant was removed).
+- i18n: no UI string added/removed; audit scripts confirm MISSING keys=0 and all three languages complete. After cleanup pyflakes only reports the single overlay 'unused variable' warning, which is the intentional keep-alive.
+- Version +1 (V2039 -> V2040, title bar reports 20.40), schema 94 unchanged. Built dist/GBFR_CooldownIndicator_V2040.exe.
+
+== v20.39 ==
+- Color-picker dialog "Custom colors" (16-cell palette) now persist across sessions. Previously, `QColorDialog.getColor()` popped the system ColorPicker, and after clicking "Add to Custom Colors" to fill the 16 cells, closing the app and re-launching wiped them all back to white (Qt's `QColorDialog` palette is in-process only). Fix: in `pick_color()`, **before** showing the dialog, restore the 16 stored hex colors from `settings['custom_palette']` via `QColorDialog.setCustomColor(i, QColor(hex))`; **after** the dialog closes (regardless of OK/Cancel), immediately read back `QColorDialog.customColors()` → save to `settings['custom_palette']` and call `save_settings`. The "Reset to Defaults" button now also clears the 16 cells and resets the Qt global. `DEFAULT_SETTINGS` gains a `custom_palette: []` field.
+- Known limitations NOT fixed in V2039: ① "Add to Custom Colors" always fills the first empty cell — this is Windows system ColorPicker behavior, not customizable from Python; ② clicking an existing custom cell immediately overwrites the current selection with that cell's color — same reason. To get full flexibility would require writing a custom internal ColorPicker (~300 LOC); out of scope for V2039, see option A for a future revision.
+- Version +1 (V2038 → V2039, title bar reports 20.39), schema 94 unchanged; no i18n key added/removed (only `pick_color` flow changed + one settings field added).
+
+== v20.38 ==
+- Fix the ability-name display for Id's dragon form (V2037 wrongly reused PL1900 human-form skill names for the dragon form, but the dragon form is a *separate* PL2000 with its own skill set). Cross-checked against GBFR Logs `lang/zh-CN/abilities.json`: Id's dragon form is a distinct PL2000 whose abilities are AB_PL2000_01~05 (Reginleiv Recidive / Scourge / Never Enough / Arcadia / Fourfold Vengeance), NOT the same as human-form PL1900 (Unbound / Atonement / Ragnarok Form). The project DB did not include PL2000, so the PL2000 hashes stored at `+ABILITY_HASH_OFFSET` on the dragon actor never matched `_ab_hash_map` → blank names. Fix: formally add PL2000's real abilities (hash→trilingual name) to `GBFR_Character_Skills_Buffs.json` so the hash lookup hits the real dragon-form names directly; and remove the erroneous PL1900→PL1900 / PL2000→PL1900 fallbacks added in V2037 (which would show wrong names). Core Buff area still shares PL1900 data (BUFF_PROFILES logic, unaffected).
+- Version +1 (V2037 → V2038, title bar reports 20.38), schema 94 unchanged; no i18n key added/removed (data entries + data-path fix only).
+
+== v20.37 ==
+- **Real fix** for the bug where ability names under the Skill Module (skill_cd diamonds) disappeared when Id transformed into dragon form. V2036 misdiagnosed the cause (tried to make `read_skill_cooldowns` read the ability hash from the true-body actor via `_resolve_id_actor`, but the game does NOT necessarily update `+ABILITY_HASH_OFFSET` on the true body during dragon form — so V2036 still ended up reading 0 or stale values, hence "still nothing"). V2037 finally traces the root cause and fixes it: in dragon form, `pl_id` is resolved by `read_overlay_data` via `charid_hash` to **"PL1900"** (the true-body character ID — `CHAR_TYPE_TO_PL[0x20]="PL1900"`, NOT PL2000). The 4 hashes at `+ABILITY_HASH_OFFSET` on the dragon-form actor are *dragon-form-specific* hashes (not in the database), so `_ab_hash_map.get(h)` is a guaranteed miss. The original `PL_SKILL_FALLBACK` only listed PL0100/PL2000, **PL1900 was NOT in the fallback table → `_lookup_ability` returned None → `_skill_name=""` → `_draw_skill_cd_name` returned → all 4 diamonds rendered nameless**. Fix: add `"PL1900":"PL1900"` to `PL_SKILL_FALLBACK`, so dragon-form hash misses can borrow the true-body PL1900 ab_01-04 by slot (Reginleiv Recidive / Unbound / Atonement / Ragnarok Form). Also reverted V2036's `_resolve_id_actor` change inside `read_skill_cooldowns` (wrong root cause; restore direct `char_base` read). PL1900 true-body path is completely unaffected (first branch hits and returns the same true-body ability names). (Note: V2037's approach was wrong and is superseded by V2038.)
+- Version +1 (V2036 → V2037, title bar reports 20.37), schema 94 unchanged; no i18n key added/removed (V2037 only touches the hash fallback table `PL_SKILL_FALLBACK`, no UI strings).
+
+== v20.36 ==
+- Fixed the bug where ability names under the Skill Module (skill_cd diamonds) disappeared when Id transformed into dragon form. Root cause: `read_skill_cooldowns` reads 4 ability hashes directly from `char_base + ABILITY_HASH_OFFSET`, but in dragon form `char_base` is the dragon-form actor (0x20) whose 4 hashes differ from the true body PL1900; `_lookup_ability(pl_id="PL1900", ab_hash=dragonhash)` misses, `_skill_name` returns empty, and `_draw_skill_cd_name` returns immediately. `read_overlay_data` already uses `_resolve_id_actor` for the same issue on ExStatus; `read_skill_cooldowns` was the one stragglers left.
+- Fix: inside `read_skill_cooldowns`, add `_resolve_id_actor` to read the ability hash from the true body actor instead; cd cooldown still reads `char_base` (dragon actor's own cooldown state — left untouched to avoid introducing new risk). Normal form, Overdrive, and all other characters are unaffected. Minimal, traceable fix.
+- Version +1 (V2035 -> V2036, title bar reports 20.36), schema 94 unchanged; no i18n key added/removed (V2036 only touches the back-end data path, no UI string changes).
+
+== v20.35 ==
+- Removed the "Show startup splash screen" feature entirely; no more splash-at-launch. Deleted class StartupSplash (~80 LOC), DEFAULT_SETTINGS['show_startup_splash'], the checkbox and all 5 touch-points (reset/create/save/load/i18n). main() now goes straight to `GBFROverlayQt(progress_cb=None)`: no qlineargradient card, no progress bar, no loading stub. i18n.json dropped the "Show startup splash screen" trilingual key.
+- Added a master "Enable EXE sync list" checkbox on the EXE-Sync card row (default ON). One click to disable EXE sync entirely (unchecked = never launch any exe from the list, never enumerate any process). settings['enable_sync_exe_list'] defaults to True; _sync_exe_list_at_startup returns immediately when off, CPU = 0 overhead. i18n.json adds the "Enable EXE sync list" trilingual key.
+- Buff-order & Mastery-gating three-column width x 1.5: column header label width 86~100 -> 129~150px (MasteryBuffGroup._build line 1805); per-row checkbox width 86~100 -> 129~150px (_make_item line 1931). Fixes earlier truncation of long branch names like "真谛：回复类能力强化".
+- Version +1 (V2034 -> V2035, title bar reports 20.35), schema 94 unchanged.
+
+== v20.34 ==
+- Split spike-visibility and bead-visibility into two fully independent toggles. V2033 used two 'hide' options (hide spikes+beads / hide spikes only) whose combined semantics were convoluted and coupled. This build replaces them with the most straightforward design: two checkboxes under the 'Spikes & Ring' card — 'Show spikes (triangle bodies)' and 'Show decorative beads (spike-tip dots)' — each toggled independently, giving 4 free combinations: both on (default, everything shown) / beads only / spikes only / both off (bare ring + timer + text). Implementation simply forces the relevant layer's color opacity to 0 or its configured value; no coupled combo logic remains.
+- Old saves auto-migrate: previously 'hide spikes+beads' -> both off; 'hide spikes only' -> spikes off, beads on; neither -> both on.
+- Version +1 (V2033 -> V2034, title bar reports 20.34), schema 94 unchanged.
+
+[Bugfix 2026-08-27 09:30 re-issued, same version number]
+- User screenshots reported two rendering bugs still in `_draw_spikes` after the V2034 split; rewrite of that function fixed both:
+  · bug 1: buff with zero stacks still painted 7 phantom decorative beads at every max_stacks slot even though no spike exists to attach them. Decorative beads depend on spikes; no spike -> no bead.
+  · bug 2: when only 'Show decorative beads' is checked and 'Show spikes' is unchecked, **both** spikes and beads vanished from the screen. Root cause: `painter.setOpacity(self._effective_opacity(key))` wrote the spike-color opacity to the **global** painter; when `show_spikes=False` this resolves to 0, and the subsequent `_draw_spike_bead` call inherits the polluted state, making beads invisible.
+- Fixed by rewriting `_draw_spikes` with a single clean flow:
+  · `draw_count <= 0` -> return immediately (no spikes, no phantom beads either)
+  · Per-layer loop with three branches: A (draw triangle + bead together with local `setOpacity(spike_opacity)`, including flash) / B (draw beads only with explicit `setOpacity(1.0)` to recover from the polluted state) / C (both toggles off -> draw nothing).
+  · `_BUILD_NO` unchanged (still 2034), schema 94 unchanged.
+
+== v20.33 ==
+- New option "Hide spikes only (keep beads)" (Settings → Spike module, right after "Hide spikes & beads").
+  · Difference vs "Hide spikes & beads": the latter also hides the root decorative beads; the former only hides the outward spike triangles while keeping the beads in place — for players who want "just the ring + timer + text + beads, no spike triangles".
+  · Implementation: DEFAULT_SETTINGS adds `hide_spikes_only`: False; extracted `_draw_spike_bead` helper, called inside `_draw_spikes`' `hide_only` branch to draw beads only; new `_hide_spikes()` helper merges the two flags (hide_spikes_and_beads OR hide_spikes_only) used at the canvas-size / empty-branch / _render_buff_ui call sites; the outline's bead stroke is also kept in only mode, matching the spike internals.
+  · Both can be checked together (no UI mutual-exclusion); checking both is equivalent to "Hide spikes & beads" (the hide_all early-return in `_draw_spikes` already blocks both).
+  · Version +1 (V2032 -> V2033, title bar reports 20.33), schema 94 unchanged.
+
+== v20.32 ==
+- Reverted three chained over-fixes: V2026 misapplied `_any_active_buff_stacks()` to the spike-hidden check; V2027 aligned the title-bar buff-name segment to the same logic; V2031 added it to the render_core outer-if as well. Each time the user reported "everything is gone" or "only the buff-name tag is left", the AI tried to nail all three sites down with the same wrong predicate. This version rewinds all three back to the V2025 semantics, which only look at the `active_buffs` list itself, not at `stacks` values:
+  · line 4226 `spike_hidden` check: `not self._any_active_buff_stacks()` → `not self.active_buffs`
+  · line 4255 `render_core` outer-if: `if self.active_buffs and self._any_active_buff_stacks():` → `if self.active_buffs:`
+  · line 5028 `_build_titlebar_status_text` title-bar buff-name segment check: `if not self._any_active_buff_stacks():` → `if not self.active_buffs:`
+- Player intent: only when `active_buffs` is truly empty (no configured buff at all) does the whole module hide; "configured buff but live game stacks=0" should keep rendering the ring + spikes + timer + buff name normally.
+- "Hide spikes and decorative beads" option stays as-is: only short-circuits the spike / bead draw path (`_draw_spikes` early-return), no effect on ring / timer / text.
+- "Hide spike-circle module when no buff" option stays as-is: only when `active_buffs` is empty does it push every SPIKE_HIDDEN_KEYS entry to 0% opacity (full module invisible when spike_hide_when_no_buff=True + active_buffs=[]).
+- V2031's "title->circle spacing spinbox now accepts negative values" is kept.
+- Version +1 (V2031 -> V2032, title bar reports 20.32), schema 94 unchanged.
+
+== v20.31 ==
+- Fixed two regression bugs (per user screenshot reports: "title->circle spacing" spinbox rejecting negatives + buff modules' UI vanishing but leaving only the buff-name tag floating in air):
+  · **"Title -> Circle Spacing" (`circle_pad_title`) QSpinBox range changed from `setRange(0, 999)` to `setRange(-999, 999)`**, allowing negative values -- needed when the user wants the spike-circle canvas to overlap on top of the title bar (`base_cy = TITLE_BAR_H + circle_pad_title + ...` already uses `circle_pad_title` as an active render parameter; V2030 wrongly suspected it was unused but the >=0 lower bound was meaningless, removing it <=0 allows the canvas to slide up over the title bar).
+  · **Fixed a chain bug introduced when V2026 changed `_any_active_buff_stacks()`**: previously `if self.active_buffs:` entered the buff branch unconditionally, so when `active_buffs` was non-empty but every buff had `stacks == 0`, the circle / spikes / center icon / timer arc -- all of which belong to `SPIKE_HIDDEN_KEYS` -- got clamped to `spike_hidden_opacity` (default 0%, fully invisible), while `_draw_buff_name` uses `buff_name_color` (NOT in `SPIKE_HIDDEN_KEYS`) so the buff name tag kept rendering -- leaving the surreal visual of a perfectly drawn buff module whose circle/spikes/icon/timer are all invisible but a buff-name tag still floating in mid-air.
+  · Outer condition changed to `if self.active_buffs and self._any_active_buff_stacks():` -- when the list is non-empty but every buff's stacks=0 it now falls through to the empty branch (identical to the empty-list case), and the "hide spike circle when no buff" option controls "fully hidden / show empty circle" uniformly. Three places are now consistent: (1) spike hidden (since V2026), (2) buff module rendering branch (this version), (3) title-bar buff-name segment (already used `_any_active_buff_stacks()` since V2027).
+- Version +1 (V2030 -> V2031, title bar reports 20.31), schema 94 unchanged.
+
+== v20.30 ==
+- Cleaned up 3 leftover UI artifacts (per user-submitted screenshots):
+  · Removed the long hint QLabel that used to sit under the "Update Check URL" input box in the Settings panel (the V303 url_hint) -- the input's placeholder is now considered enough hint, no need to read a paragraph explaining "why release CDN" right there.
+  · Removed the dead `_open_config_dir` function ("Open Config & Log Directory") -- AST scan confirmed zero call sites (other than itself) and the tray menu never addAction'd it, so users never even knew where this entry was. Cleanly excised.
+  · Removed the orphan `打开失败` key from i18n.json (its sole reference was the deleted function). The "设置打开失败" key is still used by the Settings dialog (line 5878) and is kept.
+- The "Title -> Circle spacing" (`circle_pad_title`) control is kept -- it is an active render parameter that participates in `base_cy = TITLE_BAR_H + circle_pad_title + circle_r + spike_top_pad` (circle canvas Y position), NOT dead code.
+- Version +1 (V2029 -> V2030, title bar reports 20.30), schema 94 unchanged.
+
+== v20.29 ==
+- Cleaned up the dead code and missing items in the audit report (user-submitted):
+  · Removed the dead `_detect_build_no()` function (lines 84-99) and simplified the `_BUILD_NO` comment block (the 102-138 changelog was reduced from 6 lines to 1). AST scan confirmed zero call sites -- `_BUILD_NO` was always hard-coded, and `_detect_build_no` was written but never wired up to any call chain.
+  · Removed 6 dead top-level functions / classes (AST scan confirmed `used_as_Name=False`): `find_pid`, `resolve_player_ptr`, `read_raw_buffs`, `get_topmost_real_window_pid`, `enum_game_window_state` (also removed its 4 internal helpers `_enum_pids`/`_enum_state`/`_enum_game_windows_proc`/`_EnumWindowsProc` -- these were the parent function's globals and EnumWindows callback, which immediately became orphans once the parent was deleted), and the `BuffOrderGroup` class.
+  · Removed 4 unused imports (lines 29-30, AST confirmed unused): `QAction`, `QPolygonF` (QtGui); `QAbstractSpinBox`, `QDialogButtonBox` (QtWidgets).
+  · Patched 1 missing i18n key: line 2363 (originally 2859) -- the full tooltip string starting with `标题栏底色行与圆环画布之间的垂直间距` -- added complete zh/zh_tw/en translations to i18n.json.
+- Note: the user's report claimed `_tr("打开失败")` (line 6026, originally 6528) was a missing key, but the key actually exists in i18n.json and all three languages (`zh_tw=開啟失敗`, `en=Open failed`) resolve correctly. No change needed.
+- Version +1 (V2028 -> V2029, title bar self-reports 20.29). Schema 94 unchanged.
+
+== v20.28 ==
+- Added a flash to the 6th/7th-roll warning sign (warning_mode): on top of the red-outline yellow-fill rounded triangle, an additional pulse of `flash_color` in the warning-sign shape (rounded triangle) fades in/out with the flash progress -- the outline always stays the warning sign, never a white box. Reuses the existing `flash_apply_dodge` (toggle) / `flash_color` / `flash_scale` (pulse) / `flash_duration_ms` settings; no new setting added.
+- Version bump +1 (V2027 -> V2028, title bar self-reports 20.28). Schema 94 unchanged.
+
+== v20.27 ==
+- Fixed a bug where, after enabling "Hide spiked circle when no buff", the buff-name segment in the title bar status text (e.g. "Seofon - Crux: Edge of the Vanguard - (DMG ↑)") still rendered while the spike circle had become transparent. (Seofon user report: "after I turn off the spike hide option, all that's left in the game is the buff name, the rest is gone.") Root cause: V2026 changed the spike visibility check in `render_core` to `not self._any_active_buff_stacks()`, but line 5486 in `_build_titlebar_status_text` was still using the old `if not self.active_buffs` check, so when a buff was fully specced but had stacks=0 the circle hid but the buff name lingered. V2027 aligns line 5486 with the same predicate so the buff-name segment hides in lockstep with the spike circle.
+- Version bump +1 (V2026 → V2027, title bar self-reports 20.27). Schema 94 unchanged.
+
+== v20.26 ==
+- **Fixed "hide spike circle when no buff" failing in the case where the user has a buff's three mastery tiers all checked but the buff's actual game-state stacks are 0 -- the empty circle (and its outline) still rendered** (reporter 狼奶奶: "I checked the option but it still shows when there's no buff"). Root cause: `render_core` checked `len(active_buffs) == 0`, but a buff fully enabled across all three mastery tiers is permanently in `active_buffs` regardless of live game-state -- even when its real-time stacks are 0. So the condition was always False, `spike_hidden=False`, and `_draw_circle` painted the empty ring at full `circle_color_normal` opacity. Fix: introduced `_any_active_buff_stacks()` and changed the condition to `not _any_active_buff_stacks()` (every entry in `active_buffs` has stacks `<= 0` means truly "no buff"), aligning with what the option label promises to the player.
+- Version +1 (V2025 -> V2026, title bar reports 20.26), schema 94 unchanged.
+
+== v20.25 ==
+- **Fixed "auto-hide when game loses focus" wrongly treating click/drag/resize of the overlay's own modules as "game in background"**: clicking or dragging a module made the whole window vanish, so users couldn't adjust module size/position/scale at all. Root cause: `_game_is_foreground()` only accepted the game PID (`self.pid` holds the game process), so when a user clicked/dragged a module the foreground became the tool's own process (not in the set) and was judged "background" -> hidden. V2025 now also counts the tool's own process (`os.getpid()`) as "foreground" (stays visible while you interact with modules), and adds an `_interacting` lock during drag/resize so the focus-sync is skipped entirely and never hides. True "background" is now only when the foreground is a third-party program (desktop/browser/other app).
+- Version +1 (V2024 -> V2025, title bar reports 20.25), schema 94 unchanged.
+
+== v20.24 ==
+- **Fixed overlay text rendering as tofu boxes (□□) on Windows regional settings = "Hong Kong (Traditional Chinese)"**: A user reported "boxes appear when region is Hong Kong, switching back to mainland fixes it". Root cause: Qt on Windows does not read the system's Asian-font fallback table, and the entire codebase has 21 hardcoded `QFont("Segoe UI", ...)` calls -- Segoe UI contains no CJK glyphs so Qt falls back to the missing-glyph rectangle. V2024 scans `QFontDatabase.families()` at startup (in `main()`), picks an installed CJK family by priority (Microsoft YaHei -> JhengHei -> PingFang SC -> SimHei -> Malgun Gothic -> Yu Gothic -> Meiryo -> Source Han Sans CN/TC -> Noto Sans CJK), and calls `QFont.insertSubstitution("Segoe UI", cjk_family)` so every `QFont("Segoe UI", ...)` request that hits a missing glyph is filled by the CJK family -- zero call-site changes.
+- Version +1 (V2023 -> V2024, title bar reports 20.24), schema 94 unchanged.
+
+== v20.23 ==
+- **Removed V2022's 600ms debounce**: V2022 added a 600ms wait to mask the brief window flicker caused by rapid Alt-Tab, but the wait actually made "overlay fails to come back when the game returns to foreground" the new norm. V2023 restores the V2021 edge-triggered cadence -- the instant `prev != decision`, call `_show_all_windows()` / `_hide_all_windows()` (the 250ms focus timer itself is kept).
+- **Out-of-combat now also follows foreground/background**: Since V2013 the early-return for `_ooc_content_hidden=True` meant alt-tab while out of combat (map screen, quest NPCs, town) was dead. V2023 removes that early return so `hide()` clears the whole window (title bar included), and `_show_all_windows()` brings it back whole on the next edge; the next tick's `_ooc_content_mult` then re-applies the title-bar-only shrink.
+- Version +1 (V2022 -> V2023, title bar reports 20.23), schema 94 unchanged.
+- **Reworked "auto-hide when the game loses focus" (随游戏前后台自动显隐)**: fixed 6 long-standing bugs. (1) Manual hide is now respected - pressing the Show/Hide hotkey or double-clicking the tray no longer gets force-restored by the auto-sync ~50ms later. (2) When the game isn't running the overlay no longer auto-minimizes, so you can open the tool first and tune settings before launching. (3) Steam/Discord overlays & companion pop-ups no longer trigger a false "game switched to background" minimize. (4) The foreground-window poll is now a separate low-frequency timer (250ms) instead of piggybacking on every 50ms scan tick. (5) Modal dialogs (e.g. Settings) now correctly suspend the sync. (6) A short grace window after a manual show prevents the race between manual-show and auto-minimize.
+- Version +1 (V2012 -> V2013, title bar reports 20.13), schema 93 -> 94.
+
 == v20.12 ==
 - **Fixed unreadable black-on-dark text in the settings dialog (QComboBox drop-down items + EXE-sync plain text box)**: the old global setStyleSheet only set `color:#fff` on QComboBox's *selected* row, so its `QComboBox QAbstractItemView` drop-down fell back to Qt's OS default theme (light background, black text) and the `zh / zh_tw / en` items looked like a black blob. The EXE-sync `QPlainTextEdit` wasn't covered by the stylesheet at all, so Qt default gave it black text too. The global stylesheet now also covers QPlainTextEdit (text `#dce8f8`, matching QLabel) and QComboBox's drop-down view (background `#242c40`, text `#ffffff`, selection `#3a4860`).
 - **Language drop-down is now hard-coded to three labels: 「简体中文 / 繁体中文（繁体的） / English」**: the previous list just showed the raw language codes `zh / zh_tw / en` like untranslated placeholders. The three labels are now fixed text + `addItem(text, userData)` so the actual `zh / zh_tw / en` codes live in userData and the runtime reads `currentData()`. **These three labels stay the same in every language mode** (retranslate_ui only walks findChildren(QLabel/QCheckBox/QPushButton/QLineEdit), never QComboBox items). DEFAULT_SETTINGS `language` default is now `"zh"`, so fresh installs start in Simplified Chinese.
