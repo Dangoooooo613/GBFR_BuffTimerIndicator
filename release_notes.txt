@@ -1,4 +1,133 @@
 [zh]
+== v21.06 ==
+- 把作者本人调好的全部设置（overlay_settings.json，schema 90，约 100 个标量/颜色/位置/缩放键 + 启用的 14 个角色 buff_enabled）烘焙进源码 DEFAULT_SETTINGS——新下载玩家开箱即作者调好的布局。保留项：① 全部 allbuff_*（全 Buff 模块，作者文件无此键）；② buff_order / buff_mastery / skill_cooldown_max（作者文件为空 {}，保留源码预置的 119 条专精 + 79 条技能冷却，避免清空开箱即用数据）；③ settings_schema_version 常量。作者文件里的 13 个孤儿键经核对均为 V2033/V2040 清理过的死键，不写入 DEFAULT（避免复活死键）。版本号 +1（V2105 → V2106，标题栏自报 21.06），schema 不变。
+
+== v21.05 ==
+- Debuff 判定改为「查表」而非「编号阈值」：现在 Debuff 直接由 buff_attrs.json 里新增的「是否debuff」字段决定（该字段由 BuffMonitor 的 buff_attrs_v4.xlsx 末列标注合并而来），不再用旧的「编号 ≥ 1000」硬阈值。命中表则用表内标记（26 个已知 debuff 已正确标注，包括中毒/灼热/缓速/昏迷/冰冻等 ailment，以及攻击DOWN/防御DOWN/最大HP减少等低编号 debuff；注意 1009/1010/1013/1014 虽 ≥1000 但未标记，正确识别为 Buff）；未命中（未知 id）才回退旧阈值 1000 兜底。同时删除「ailment 分类阈值」门限设置（及其 UI/连接/重置/保存）。版本号 +1（V2104 → V2105，标题栏自报 21.05），schema 不变。
+
+== v21.04 ==
+- 全 Buff 模块逻辑简化：① Debuff 不再单独分行——所有 Buff 在前、所有 Debuff 接在其后（按原有排序），不另起一行；② 「每行数量」(per_row) 与新增的「显示行数」(allbuff_rows) 恢复为可调，模块整体尺寸 = per_row × rows × 卡片尺寸 + 行/列间隙，完全由这两个值和卡片尺寸/间隙动态算出（不再随 buff 数量伸缩，空 buff / 无角色时也预留固定网格）；③ 容量 = per_row × rows，超出直接截断丢弃；④ 删除「Debuff 强制另起一行」开关及其设置项/i18n/重置/保存逻辑。版本号 +1（V2103 → V2104，标题栏自报 21.04），schema 不变。
+
+== v20.68 ==
+- 修复 V2067 的「NaN 归零误杀」真凶：read_exstatus_buffs 把 NaN/Inf 时长字段（永续 buff 与触发型 buff 在游戏中常为 NaN）归零成 0 写入字典；这些 buff 通过 reader 进入 all_buffs_filtered 后，被 render 的「最小初始时间 0.05s」「最小剩余时间 0.05s」门限全部误杀——全 Buff 模块空白（核心区不受影响，核心区不依赖 initial/remaining 字段）。
+- 本次按 GBFR_BuffMonitor 的 _parse_statusbase 行为接管——reader 直接把 NaN/Inf 时长的 buff 整条 discard（continue 跳过）；render 同步给 min_initial_time 加 `not infinite` 守卫生效。
+- 所有 V2067 的 5+5 数值门限 / BUFF_ATTRS 白名单 / 5 个老过滤开关保持不变——现在 monitor 与指示器「门限一致设置」完全同款行为。
+
+== v20.67 ==
+- 修复 V2066 引入的「门限」层数矛盾检查 bug：原 `cur_stacks>max_stacks` 缺少 `max_stacks>0` 守卫。GBFR 大量 buff 的 max_stacks 为 0（无上限/未定义），导致所有有层数的 buff 被当成「层数矛盾」整批丢光，全 Buff 模块 Blank。
+- 现与 GBFR_BuffMonitor 一致——仅在 max_stacks>0 时才判矛盾（max_stacks=0 视为「无上限」，不触发丢弃）。
+
+== v20.66 ==
+- 撤销 V2064/V2065 的「过滤垃圾」黑名单/白名单方案，改为搬自 GBFR_BuffMonitor 的「门限」(gate) 数值废料过滤。
+- 门限全部可独立开关、实时生效（勾选=启用该项检查，取消=跳过；数值框自动灰显）：
+  · 过滤 status_id == 0（攻击UP 等，默认关：保留 id=0 的 buff）
+  · status_id 上限（默认 0xFFFF，超出当垃圾）
+  · sub_id 上限（默认 0xFFFF，超出当垃圾）
+  · ailment 分类阈值（默认 1000，>= 标记 debuff，同时接管 debuff 颜色边界）
+  · 当前层数上限（默认 100，超出范围丢弃）
+  · 上限层数上限（默认 100，超出范围丢弃）
+  · 层数矛盾检查（stacks>上限 丢弃，默认开）
+  · 时长上限（默认 10000s，remaining/initial 任一超就丢）
+  · 最小剩余时间（默认 0.05s，remaining 少于则丢）
+  · 最小持续时间（默认 0.05s，initial 少于则丢）
+  · NaN / Inf 检查（默认开）
+- 「筛选显示」恢复 V2063 的「过滤」命名，并补回「不显示永续的」开关。
+
+== v20.65 ==
+- 修复打开设置时的崩溃 bug「cannot access free variable 'QLabel' where it is not associated with a value in enclosing scope」。
+  原因：「过滤垃圾」tab 的构建方法内多写了两行 `from PySide6.QtWidgets import QPlainTextEdit, QLabel` 和 `from PySide6.QtWidgets import QDoubleSpinBox`，
+  但 QLabel / QPlainTextEdit / QDoubleSpinBox 已在文件顶部 import 过；方法内重复 import 会让它们成为该方法的 local 变量，
+  进而让所有内嵌 closure（textChanged/stateChanged 等回调中引用同名符号的）抛「cannot access free variable ... where it is not associated with a value in enclosing scope」。
+  修法：删掉这两行方法内 import，复用模块顶部已 import 的同名符号。
+
+== v20.64 ==
+- 全Buff模块：新增「过滤垃圾」标签页（硬核 monitor 风格废料过滤）——内置硬编码黑名单（不可关闭，根据 buff_attrs.json 自动识别 invisible/hidden/passive tracker 等典型废料）+ 用户黑名单（多行文本框，支持十进制/0x16 进制）+ 用户白名单 + 白名单模式 toggle + 最短持续秒数（默认 0.5s 硬核 monitor 风格）+ 隐藏零层 buff + 隐藏 debuff。
+- 全Buff模块：原「过滤」标签页改名为「筛选显示」（i18n 三语同步）；移除「不显示永续的」（搬到「过滤垃圾」的最短秒数控制），保留 4 个显示层开关（核心/角色专属/专精专属/单层）。
+- 全Buff模块：新增「画布背景填充」滑块（配色与文字子页），默认 0% 透明，玩家可调到 30~70% 遮罩住背景窗口（如设置对话框的文件路径标签）的透出——修复「ndicator_Debug / dist / buff_Attrs.json」之类路径片段穿透的视觉 bug。
+- 全Buff模块：buff 名称字号自适应阶梯 `name_fs → 10 → 9 → 8`——5 字中文 buff 名（如「钳蟹的据固」）现在能完整显示，不再被 ElideRight 截断。
+
+== v20.63 ==
+- 全Buff模块：布局子页新增「排序方式」下拉，支持「按ID升序」（历史默认）/「按出现时间」（新出现的buff排在末尾，消失后重新出现的buff保持原位）。
+- 全Buff模块：与技能/核心/翻滚模块同步生效「非战斗隐藏」——勾选后离开战斗状态时整窗 hide() 避免挡鼠标；回到战斗自动 show。
+- 翻滚图标：删掉原先的橙色矩形兜底，PNG 加载失败/未设置时改为 QPainter 现场绘制的「白对号 ✓ + 深透明圆角底」徽章，UI 风格统一。
+
+[zh_tw]
+== v21.06 ==
+- 把作者本人調好的全部設定（overlay_settings.json，schema 90，約 100 個純量/顏色/位置/縮放鍵 + 啟用的 14 個角色 buff_enabled）烘焙進源碼 DEFAULT_SETTINGS——新下載玩家開箱即作者調好的佈局。保留項：① 全部 allbuff_*（全 Buff 模組，作者檔案無此鍵）；② buff_order / buff_mastery / skill_cooldown_max（作者檔案為空 {}，保留源碼預置的 119 條專精 + 79 條技能冷卻，避免清空開箱即用資料）；③ settings_schema_version 常數。作者檔案裡的 13 個孤兒鍵經核對均為 V2033/V2040 清理過的死鍵，不寫入 DEFAULT（避免復活死鍵）。版本號 +1（V2105 → V2106，標題欄自報 21.06），schema 不變。
+
+== v21.05 ==
+- Debuff 判定改為「查表」而非「編號閾值」：現在 Debuff 直接由 buff_attrs.json 裡新增的「是否debuff」欄位決定（該欄位由 BuffMonitor 的 buff_attrs_v4.xlsx 末列標註合併而來），不再用舊的「編號 ≥ 1000」硬閾值。命中表則用表內標記（26 個已知 debuff 已正確標註，包括中毒/灼熱/緩速/昏迷/冰結等 ailment，以及攻擊DOWN/防禦DOWN/最大HP減少等低編號 debuff；注意 1009/1010/1013/1014 雖 ≥1000 但未標註，正確識別為 Buff）；未命中（未知 id）才回退舊閾值 1000 兜底。同時刪除「ailment 分類閾值」門限設定（及其 UI/連接/重置/儲存）。版本號 +1（V2104 → V2105，標題欄自報 21.05），schema 不變。
+
+== v21.04 ==
+- 全 Buff 模組邏輯簡化：① Debuff 不再單獨分行——所有 Buff 在前、所有 Debuff 接在其後（依原有排序），不另起一行；② 「每行數量」(per_row) 與新增的「顯示行數」(allbuff_rows) 恢復為可調，模組整體尺寸 = per_row × rows × 卡片尺寸 + 行/列間隙，完全由這兩個值與卡片尺寸/間隙動態算出（不再隨 buff 數量伸縮，空 buff / 無角色時也預留固定網格）；③ 容量 = per_row × rows，超出直接截斷丟棄；④ 刪除「Debuff 強制另起一行」開關及其設定項/i18n/重置/儲存邏輯。版本號 +1（V2103 → V2104，標題欄自報 21.04），schema 不變。
+
+== v20.68 ==
+- 修復 V2067 的「NaN 歸零誤殺」真兇：read_exstatus_buffs 把 NaN/Inf 時長欄位（永續 buff 與觸發型 buff 在遊戲中常為 NaN）歸零成 0 寫入字典；這些 buff 通過 reader 進入 all_buffs_filtered 後，被 render 的「最小初始時間 0.05s」「最小剩餘時間 0.05s」門限全部誤殺——全 Buff 模組空白（核心區不受影響，核心區不依賴 initial/remaining 欄位）。
+- 本次按 GBFR_BuffMonitor 的 _parse_statusbase 行為接管——reader 直接把 NaN/Inf 時長的 buff 整條 discard（continue 跳過）；render 同步給 min_initial_time 加 `not infinite` 守衛生效。
+- 所有 V2067 的 5+5 數值門限 / BUFF_ATTRS 白名單 / 5 個老過濾開關保持不變——現在 monitor 與指示器「門限一致設定」完全同款行為。
+
+== v20.66 ==
+- 撤銷 V2064/V2065 的「過濾垃圾」黑名單/白名單方案，改為搬自 GBFR_BuffMonitor 的「門限」(gate) 數值廢料過濾。
+- 門限全部可獨立開關、即時生效（勾選=啟用該項檢查，取消=跳過；數值框自動灰顯）：
+  · 過濾 status_id == 0（攻擊UP 等，預設關：保留 id=0 的 buff）
+  · status_id 上限（預設 0xFFFF，超出當垃圾）
+  · sub_id 上限（預設 0xFFFF，超出當垃圾）
+  · ailment 分類閾值（預設 1000，>= 標記 debuff，同時接管 debuff 顏色邊界）
+  · 目前層數上限（預設 100，超出範圍丟棄）
+  · 上限層數上限（預設 100，超出範圍丟棄）
+  · 層數矛盾檢查（stacks>上限 丟棄，預設開）
+  · 時長上限（預設 10000s，remaining/initial 任一超就丟）
+  · 最小剩餘時間（預設 0.05s，remaining 少於則丟）
+  · 最小持續時間（預設 0.05s，initial 少於則丟）
+  · NaN / Inf 檢查（預設開）
+- 「篩選顯示」恢復 V2063 的「過濾」命名，並補回「不顯示永續的」開關。
+
+== v20.65 ==
+- 修復開啟設定時的崩潰 bug「cannot access free variable 'QLabel' where it is not associated with a value in enclosing scope」。
+  原因：「過濾垃圾」tab 的建構方法內多寫了兩行 `from PySide6.QtWidgets import QPlainTextEdit, QLabel` 與 `from PySide6.QtWidgets import QDoubleSpinBox`，
+  但 QLabel / QPlainTextEdit / QDoubleSpinBox 已在檔案頂部 import 過；方法內重複 import 會讓它們成為該方法的 local 變數，
+  進而讓所有內嵌 closure（textChanged/stateChanged 等回呼中引用同名符號的）拋出「cannot access free variable ... where it is not associated with a value in enclosing scope」。
+  修法：刪除這兩行方法內 import，複用模組頂部已 import 的同名符號。
+
+== v20.64 ==
+- 全Buff模組：新增「過濾垃圾」標籤頁（硬核 monitor 風格廢料過濾）——內建硬編碼黑名單（無法關閉，根據 buff_attrs.json 自動辨識 invisible/hidden/passive tracker 等典型廢料）+ 使用者黑名單（多行文字框，支援十進位/0x16 進位）+ 使用者白名單 + 白名單模式切換 + 最短持續秒數（預設 0.5s 硬核 monitor 風格）+ 隱藏零層 buff + 隱藏 debuff。
+- 全Buff模組：原「過濾」標籤頁改名為「篩選顯示」（i18n 三語同步）；移除「不顯示永續的」（搬到「過濾垃圾」的最短秒數控制），保留 4 個顯示層開關（核心/角色專屬/專精專屬/單層）。
+- 全Buff模組：新增「畫布背景填充」滑桿（配色與文字子頁），預設 0% 透明，玩家可調到 30~70% 遮罩住背景視窗（如設定對話框的檔案路徑標籤）的透出——修復「ndicator_Debug / dist / buff_Attrs.json」之類路徑片段穿透的視覺 bug。
+- 全Buff模組：buff 名稱字號自適應階梯 `name_fs → 10 → 9 → 8`——5 字中文 buff 名（如「鉗蟹的據固」）現在能完整顯示，不再被 ElideRight 截斷。
+
+== v20.63 ==
+- 全Buff模組：佈局子頁新增「排序方式」下拉，支援「按ID升序」（歷史預設）/「按出現時間」（新出現的buff 排在末尾，消失後重新出現的 buff 保持原位）。
+- 全Buff模組：與技能/核心/翻滾模組同步生效「非戰鬥隱藏」——勾選後離開戰鬥狀態時整窗 hide() 避免擋滑鼠；回到戰鬥自動 show。
+- 翻滾圖示：刪掉原先的橙色矩形兜底，PNG 載入失敗/未設定時改為 QPainter 現場繪製的「白對號 ✓ + 深透明圓角底」徽章，UI 風格統一。
+
+== v20.62 ==
+- 全 Buff 模块【衬底宽/高 改为自适应 floor】：每帧按当前字体/元素间距/进度条/外框计算最小可见尺寸，再取 `max(自适应最小值, 用户设置)`，玩家拖到多小都不会裁切 buff 内容（用户截图设的 75×58 会被自动顶到不裁切的最小值 75×62 左右）。
+- 全 Buff 模块【布局子页取消「显示行数」控件】：行数 = `ceil(buff 总数 / 每行数量)` 自动延伸（3 个 buff + 每行 3 ⇒ 1 行；30 个 buff ⇒ 10 行），窗口按实际 buff 数精确收/扩。**每行数量**作为唯一布局参数保留。
+- i18n：删 1 条过期键（`显示行数` / `顯示行數` / `Rows`），加 2 条 「自适应 floor」tooltip 提示（三语完整、审计 MISSING=0）。
+- 版本号 +1（V2061 → V2062，标题栏自报 20.62），schema 不变。构建 exe 名 `GBFR_CooldownIndicator_V2062.exe`，更新地址 version.json → 20.62，下载链接仍走 GitHub Release CDN（releases/latest/download/）。
+
+== v20.61 ==
+- 全 Buff 模块：衬底默认宽度 72→80、默认高度 52→64，避免进度条溢出衬底底边扎入下一行卡片（用户截图反馈「字被遮住」）。
+- 【元素统一间距】控件本身确实生效（line 6178/6193/6201 都在用 elem_sp），只是默认值让总高不够，并非控件缺失；「每行数量」控件也早已在布局子页（第 2799 行）。
+- 新增工程红线⑥（写入项目长期记忆 MEMORY.md）：每次修改源码 `_BUILD_NO` 必须 +1，同步 bump version.json/README 双语 Changelog/release_notes 三语。
+- 版本号 +1（V2060 → V2061，标题栏自报 20.61），schema 不变。
+
+== v20.60 ==
+- 全 Buff 模块新增【元素统一间距】（单参通用）：默认 4 px，让卡片内 名称 ↔ 层数 ↔ 时间 ↔ 进度条 之间留出呼吸空间。
+- 全 Buff 模块新增【进度条 100% 外框】：默认 2 px 描边，颜色与进度条相同，作为可识别的「上限参考框」；可在布局子页把粗细设回 0 关闭。
+- 全 Buff 模块新增【倒计时尾声警告】：剩余百分比低于阈值时，时间文字与进度条统一切到警告色；支持「启用 / 阈值（1-99%）/ 警告颜色 / 不透明度」四件套独立可调。
+- 全 Buff 模块新增【Debuff 配色（编号 ≥ 1000）】：中毒/灼热/缓速/昏迷/冰冻 等 debuff（编号 ≥ 1000）独立 名称·层数·时间·进度条 四色，与普通 buff 视觉区分；Debuff 警告默认开启（纯白更醒目）。
+- 修复 V2050「角色检测失效」回归（`read_exstatus_buffs` 内 `gate` NameError 导致读取线程每帧崩溃），同时移除由此引入的多余 sub_id 读取与 GATE_DEFAULTS 死代码，恢复与 V2040 行为一致。
+- 版本号 +10（V2050 → V2060，标题栏自报 20.60），schema 不变。构建保留 exe 名 GBFR_CooldownIndicator_V2050.exe，更新地址 version.json → 20.60，下载链接仍走 GitHub Release CDN（releases/latest/download/）。
+
+== v20.50 ==
+- 新增【全 Buff 显示模块】（第四模块）：网格化轻量卡片，列出当前主控角色可读到的全部 buff（与 BuffMonitor 同源，统一 gate 过滤后供给核心模块与全 Buff 模块）。
+- 复用三大模块交集特质：独立显隐开关 / 独立屏幕位置 XY / 整体缩放 / 位置与缩放子页 / 元素级透明度（名称·层数·时间各字号+颜色；倒计时条与文字衬底各带独立不透明度）。
+- 每张卡片自上而下：buff 名 → 层数/最大层（单层显示 1/1）→ 剩余/持续秒 → 横向倒计时条；布局可调（行数 / 每行数量 / 行间距 / 卡片间距）。
+- 5 个可选过滤开关（默认全关=显示全部）：不显示核心区已展示的 / 不显示永续的 / 不显示角色专属的 / 不显示专精专属 / 不显示单层，分别对齐 BuffMonitor 的 单层 / 是否专属 / 是否专精buff 字段。
+- 数据源改用 GBFR_BuffMonitor 的 buff_attrs.json（143 个游戏内 buff 的三语名与专属/专精/单层标记），已随打包一并分发；i18n 新增 31 个 UI 键（zh/zh_tw/en 三语齐全），三审计脚本 MISSING keys=0。
+- 版本号 +10（V2040 → V2050，标题栏自报 20.50），schema 94 不变。构建已出 dist/GBFR_CooldownIndicator_V2050.exe。
+
 == v20.40 ==
 - 死代码清理（P0+P1），零功能改动、行为不变。用 pyflakes + vulture + 自写 AST 脚本（排除注释/docstring 提及、Qt 框架虚函数、f-string 间接访问三类误报）从头排查 src/gbfr_overlay_qt_v6.py（7391 行）。
 - 删除 7 个零调用函数：_pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel（含整片「闪避描边图像」死逻辑，QBitmap/QRegion 导入随之级联删除）。
@@ -171,6 +300,34 @@
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v20.62 ==
+- 全 Buff 模組【襯底寬/高 改為自適應下限】：每幀按當前字型/元素間距/進度條/外框計算最小可見尺寸，再取 `max(自適應最小值, 使用者設定)`，玩家拖到多小都不會裁切 buff 內容（用戶截圖設的 75×58 會被自動頂到不裁切的最小值 75×62 左右）。
+- 全 Buff 模組【佈局子頁取消「顯示行數」控件】：行數 = `ceil(buff 總數 / 每行數量)` 自動延伸（3 個 buff + 每行 3 ⇒ 1 行；30 個 buff ⇒ 10 行），視窗按實際 buff 數精準收/擴。**每行數量**作為唯一佈局參數保留。
+- i18n：刪 1 條過期鍵（`顯示行數` / `Rows`），加 2 條「自適應下限」tooltip 提示（三語完整、稽核 MISSING=0）。
+- 版本號 +1（V2061 → V2062，標題欄自報 20.62），schema 不變。構建 exe 名 `GBFR_CooldownIndicator_V2062.exe`，更新位址 version.json → 20.62，下載連結仍走 GitHub Release CDN（releases/latest/download/）。
+
+== v20.61 ==
+- 全 Buff 模組：襯底預設寬度 72→80、預設高度 52→64，避免進度條溢位襯底底邊扎入下一行卡片（用戶截圖回饋「字被遮住」）。
+- 【元素統一間距】控件本身確實生效，僅是預設值讓總高不夠，並非控件缺失；「每行數量」控件也早已在佈局子頁。
+- 新增工程紅線⑥（寫入專案長期記憶 MEMORY.md）：每次修改源碼 `_BUILD_NO` 必須 +1，版本號/Release 連結同步 bump。
+- 版本號 +1（V2060 → V2061，標題欄自報 20.61），schema 不變。
+
+== v20.60 ==
+- 全 Buff 模組新增【元素統一間距】（單參通用）：預設 4 px，讓卡片內 名稱 ↔ 層數 ↔ 時間 ↔ 進度條 之間留出呼吸空間。
+- 全 Buff 模組新增【進度條 100% 外框】：預設 2 px 描邊，顏色與進度條相同，作為可識別的「上限參考框」；可在佈局子頁把粗細設回 0 關間。
+- 全 Buff 模組新增【倒數計時尾聲警告】：剩餘百分比低於闘值時，時間文字與進度條統一切到警告色；支提「啟用 / 闘值（1-99%）/ 警告顏色 / 不透明度」四件套獨立可調。
+- 全 Buff 模組新增【Debuff 配色（編號 ≥ 1000）】：中毒/灼热/緩速/昏迷/冰凍 等 debuff（編號 ≥ 1000）獨立 名稱·層數·時間·進度條 四色，與普通 buff 視覺區分；Debuff 警告預設開啟（細白更醒目）。
+- 修復 V2050「角色偵測失效」回歸（`read_exstatus_buffs` 內 `gate` NameError 導致讀取執程每帧崩潰），同時移除由此引入的多餘 sub_id 讀取與 GATE_DEFAULTS 死代碼，息修復與 V2040 行為一致。
+- 版本號 +10（V2050 → V2060，標題欄自報 20.60），schema 不變。構建保留 exe 名 GBFR_CooldownIndicator_V2050.exe，更新地址 version.json → 20.60，下載鏈接仍走 GitHub Release CDN（releases/latest/download/）。
+
+== v20.50 ==
+- 新增【全 Buff 顯示模組】（第四模組）：網格化輕量卡片，列出目前主控角色可讀到的全部 buff（與 BuffMonitor 同源，統一 gate 過濾後供給核心模組與全 Buff 模組）。
+- 復用三大模組交集特質：獨立顯隱開關 / 獨立螢幕位置 XY / 整體縮放 / 位置與縮放子頁 / 元素級不透明度（名稱·層數·時間各字號+顏色；倒數條與文字襯底各帶獨立不透明度）。
+- 每張卡片自上而下：buff 名 → 層數/最大層（單層顯示 1/1）→ 剩餘/持續秒 → 橫向倒數條；佈局可調（列數 / 每行數量 / 列間距 / 卡片間距）。
+- 5 個可選過濾開關（預設全關=顯示全部）：不顯示核心區已展示的 / 不顯示永續的 / 不顯示角色專屬的 / 不顯示專精專屬 / 不顯示單層，分別對齊 BuffMonitor 的 單層 / 是否專屬 / 是否專精buff 欄位。
+- 資料源改用 GBFR_BuffMonitor 的 buff_attrs.json（143 個遊戲內 buff 的三語名與專屬/專精/單層標記），已隨打包一併分發；i18n 新增 31 個 UI 鍵（zh/zh_tw/en 三語齊全），三審計腳本 MISSING keys=0。
+- 版本號 +10（V2040 → V2050，標題欄自報 20.50），schema 94 不變。建置已出 dist/GBFR_CooldownIndicator_V2050.exe。
+
 == v20.40 ==
 - 死程式碼清理（P0+P1），零功能變動、行為不變。用 pyflakes + vulture + 自寫 AST 腳本（排除註解/docstring 提及、Qt 框架虛函式、f-string 間接存取三類誤報）從頭排查 src/gbfr_overlay_qt_v6.py（7391 行）。
 - 刪除 7 個零呼叫函式：_pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel（含整片「閃避描邊圖像」死邏輯，QBitmap/QRegion 匯入隨之連鎖刪除）。
@@ -341,6 +498,72 @@
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+== v21.06 ==
+- Baked the author's personally tuned settings (overlay_settings.json, schema 90 — ~100 scalar/color/position/scale keys plus the 14 enabled characters in buff_enabled) directly into the source DEFAULT_SETTINGS, so fresh downloads ship with the author's tuned layout out of the box. Preserved: (1) all allbuff_* keys (the All-Buff module, absent from the author's file); (2) buff_order / buff_mastery / skill_cooldown_max (the author's file had these as empty {}, so the source-preset 119 mastery entries + 79 skill cooldowns are kept, avoiding wiping out-of-box data); (3) the settings_schema_version constant. The 13 orphan keys in the author's file were verified to be dead keys already removed in V2033/V2040 and are NOT written to DEFAULT (no resurrection of dead keys). Version +1 (V2105 → V2106, title bar reports 21.06), schema unchanged.
+
+== v21.05 ==
+- Debuff classification is now table-driven instead of a numeric threshold. Debuffs are decided by the new `是否debuff` (is-debuff) field in buff_attrs.json (merged from the last column of buff_attrs_v4.xlsx), replacing the old `sid ≥ 1000` hard cutoff. Known buffs use the table flag (the 26 known debuffs are correctly flagged, including Poison/Burn/Slow/Dizzy/Glaciate ailments and low-id debuffs like ATK↓/DEF↓/Max HP↓; notably 1009/1010/1013/1014 are ≥1000 but NOT flagged, so they correctly show as Buffs). Unknown ids fall back to the old `sid >= 1000` rule as a safety net. Also removed the "ailment classification threshold" gate setting (and its UI/connect/reset/save wiring). Version +1 (V2104 → V2105, title bar reports 21.05), schema unchanged.
+
+== v21.04 ==
+- All-Buff module logic simplified: (1) Debuffs no longer get their own row — all Buffs come first, then all Debuffs appended after them in their existing sort order (no row break); (2) "Per Row" (per_row) and the new "Rows" (allbuff_rows) are both adjustable again; the module's overall size = per_row × rows × card size + row/column gaps, derived dynamically from these two values and the card size/gaps (it no longer scales with buff count, and a fixed grid is reserved even when empty / no character); (3) capacity = per_row × rows, overflow truncated; (4) removed the "Debuff Force New Row" toggle and its setting/i18n/reset/save wiring. Version +1 (V2103 → V2104, title bar reports 21.04), schema unchanged.
+
+== v20.68 ==
+- Fixed the deeper "NaN-to-zero" root cause that V2067 left in: read_exstatus_buffs was writing NaN/Inf duration fields as 0 (GBFR stores NaN for infinite / pending buffs). Those buffs entered all_buffs_filtered and were then killed by the render gate's `min_initial_time < 0.05s` and `min_remaining_time < 0.05s` checks — leaving the entire All-Buff module blank (the Core module is unaffected, as it does not read initial/remaining).
+- Now matches GBFR_BuffMonitor's _parse_statusbase: the reader discards any buff with NaN/Inf duration at parse time (continue skip). Render also adds a `not infinite` guard to `min_initial_time` for defense.
+- All V2067 5+5 numeric gates / BUFF_ATTRS whitelist / 5 legacy filter toggles are unchanged — the Indicator and the Monitor are now behaviorally identical with matching gate settings.
+
+== v20.67 ==
+- Fixed a bug introduced in v20.66 in the Gate's stack-conflict check: the `cur_stacks>max_stacks` test lacked the `max_stacks>0` guard. GBFR reports max_stacks==0 ("uncapped/undefined") for many buffs, so every buff with any stacks was wrongly treated as a "stack conflict" and dropped — leaving the entire All-Buff module blank. Now matches GBFR_BuffMonitor: conflict is only judged when max_stacks>0.
+
+== v20.66 ==
+- Reverted the V2064/V2065 blacklist/whitelist "Junk Filter" and replaced it with the Gate (from GBFR_BuffMonitor) numerical junk filter. Each threshold is independently toggleable and live: filter status_id==0 / status_id max / sub_id max / ailment threshold / current-stacks max / max-stacks max / stack conflict / duration max / min remaining / min initial / NaN∪Inf checks. The "Display Filter" tab reverts to V2063's "Filter" naming and restores the "Hide Infinite" toggle.
+
+== v20.65 ==
+- Fixed crash on opening the Settings dialog: "cannot access free variable 'QLabel' where it is not associated with a value in enclosing scope".
+  Cause: the Junk Filter tab builder method had two stray lines: `from PySide6.QtWidgets import QPlainTextEdit, QLabel` and `from PySide6.QtWidgets import QDoubleSpinBox`.
+  QLabel / QPlainTextEdit / QDoubleSpinBox were already imported at module top; re-importing them inside a method made them locals of that method,
+  which broke every nested closure that referenced them (textChanged / stateChanged callbacks etc.) with the above error.
+  Fix: removed both method-local imports; reuse the module-top names.
+
+== v20.64 ==
+- All-Buff module: new "Junk Filter" tab (hardcore monitor-style junk filter). Built-in hardcoded blacklist (cannot disable; auto-detects invisible/hidden/passive tracker buffs from buff_attrs.json), user blacklist (multi-line, decimal/0x16 hex), user whitelist + whitelist mode toggle, minimum duration threshold (default 0.5s hardcore monitor-style), hide zero-stack buffs, hide debuffs.
+- All-Buff module: renamed "Filter" tab to "Display Filter" (i18n trilingual); removed "Hide Infinite" (moved to "Min Duration" in Junk Filter); kept 4 display-layer toggles (Core/Exclusive/Mastery/Single).
+- All-Buff module: new "Canvas Background Fill" slider (in Colors & Text sub-tab). Default 0% transparent. Raise to 30–70% to mask background-window bleed-through (e.g. file-path labels in the settings dialog) — fixes the visual bug where "ndicator_Debug / dist / buff_Attrs.json" path fragments showed through the translucent cards.
+- All-Buff module: buff-name font auto-shrink staircase `name_fs → 10 → 9 → 8` — long 5-char Chinese buff names like "钳蟹的据固" now display fully without being ElideRight-truncated.
+
+== v20.63 ==
+- All-Buff module: new "Sort Mode" combo in the Layout sub-tab. Two options: **"By ID (Ascending)"** (default, historical behavior) / **"By Appearance Time"** — each buff gets a monotonic first-seen sequence; new buffs go to the end; buffs that left and came back keep their original position.
+- All-Buff module: now respects the global **"Hide out of combat"** toggle exactly like Skill / Core / Roll. When combat ends and "hide" is on, the whole window `hide()`s (no transparent rectangle covering the game mouse area). Returns to `show()` the moment combat starts again. If out-of-combat opacity > 0%, the cards soft-fade along with the multiplier.
+- Dodge icon: the old orange rounded-rect fallback is gone. When the dodge icon PNG fails to load (or no custom path is set), the indicator now draws a **clean white check-mark + dark semi-transparent rounded square** at runtime — a consistent "dodge ready" badge UI.
+
+== v20.62 ==
+- All-Buff module: card backing **width / height now treated as an auto-fit floor**. Every render frame the layout recomputes the minimum visible size from the current font / element spacing / bar / frame settings, then takes `max(auto_min, user_value)`. The card is never clipped regardless of how small the user sets the slider (the screenshot value 75×58 is automatically bumped up to a non-clipping minimum around 75×62).
+- All-Buff module: the **"Rows" control has been removed from the Layout sub-tab**. Row count is now `ceil(buff_total / per_row)` and the window auto-resizes to the actual buff count. The **per-row count** control is preserved as the only layout knob.
+- i18n: removed 1 obsolete key (`显示行数` / `顯示行數` / `Rows`); added 2 `auto-fit floor` tooltip strings (zh / zh_tw / en complete, audit MISSING=0).
+- Version +1 (V2061 → V2062, title bar reports 20.62), schema unchanged. Built `GBFR_CooldownIndicator_V2062.exe`, `version.json` → 20.62, download URL still hosted on GitHub Release CDN (releases/latest/download/).
+
+== v20.61 ==
+- All-Buff module: default card backing width 72 → 80 and height 52 → 64, preventing the countdown bar from spilling past the card and overlapping the next row (user screenshot reported "text being obscured").
+- The Element Spacing control is actually wired in correctly (line 6178 / 6193 / 6201 all use elem_sp); only the default values were too tight. The "per-row count" control was also already in the Layout sub-tab (line 2799).
+- Added Red Line ⑥ (persisted into the project's long-term MEMORY.md): every source-code edit must bump `_BUILD_NO` (+1) and sync version.json + README Changelog + trilingual release_notes.
+- Version +1 (V2060 → V2061, title bar reports 20.61), schema unchanged.
+
+== v20.60 ==
+- All-Buff module: new Unified Element Spacing (single parameter): default 4 px between name <-> stacks <-> time <-> bar.
+- All-Buff module: new Bar 100% Outline Frame: default 2 px stroke, same color as the bar, as a visible upper-limit reference; set thickness to 0 in Layout to disable.
+- All-Buff module: new End-of-Timer Warning: when remaining % < threshold, time text and bar switch to the warning color. Enable / threshold (1-99%) / warning color / opacity are independently adjustable.
+- All-Buff module: new Debuff Colors (ID >= 1000): Poison/Burn/Slow/Dizzy/Glaciate etc. debuffs have independent name/stacks/time/bar colors, visually distinct from normal buffs. Debuff warning is on by default (pure white for higher visibility).
+- Fixed V2050 regression: character detection failed because `read_exstatus_buffs` referenced undefined `gate` (NameError per frame). Also removed the now-unused sub_id read and GATE_DEFAULTS dead code introduced with it; core behavior is back to V2040.
+- Version +10 (V2050 -> V2060; title bar reads 20.60). Schema unchanged. exe filename keeps GBFR_CooldownIndicator_V2050.exe (for release URL continuity); version.json bumped to 20.60; download URL still points to GitHub Release CDN (releases/latest/download/).
+
+== v20.50 ==
+- New 'All-Buff Display' module (4th module): a grid of lightweight cards listing every buff currently readable on the main character (same source as BuffMonitor, supplied to both the core module and the all-buff module after a unified gate filter).
+- Reuses the shared traits of the three existing modules: independent show/hide toggle / independent screen XY / overall scale / Position & Scale sub-tab / per-element opacity (name/stacks/time each have their own font size + color; the countdown bar and text backing each have independent opacity).
+- Each card, top to bottom: buff name -> stacks/max-stacks (single-layer shows 1/1) -> remaining/duration seconds -> a horizontal countdown bar; layout is adjustable (rows / per-row / row spacing / card spacing).
+- 5 optional filter switches (all off by default = show everything): hide core-module buffs / hide infinite buffs / hide character-exclusive buffs / hide mastery buffs / hide single-layer buffs, mapped to BuffMonitor's single-layer / exclusive / mastery fields.
+- Data source switched to GBFR_BuffMonitor's buff_attrs.json (143 in-game buffs with trilingual names and exclusive/mastery/single-layer flags), now bundled with the build; i18n adds 31 UI keys (zh/zh_tw/en all complete), three audit scripts report MISSING keys=0.
+- Version +10 (V2040 -> V2050, title bar reports 20.50), schema 94 unchanged. Built dist/GBFR_CooldownIndicator_V2050.exe.
+
 == v20.40 ==
 - Dead-code cleanup (P0+P1), zero functional change, behavior unchanged. Full re-audit of src/gbfr_overlay_qt_v6.py (7391 lines) with pyflakes + vulture + a custom AST script (excluding three false-positive classes: comment/docstring mentions, Qt framework virtuals, and f-string indirect access).
 - Removed 7 never-called functions: _pl_display_name / _resolve_gauge_addr / _any_active_buff_stacks / _get_dodge_alpha_path / _get_dodge_outline_img / _show_about / _on_dl_cancel (the entire unused 'dodge outline image' code path; the QBitmap/QRegion imports were removed as a cascade).

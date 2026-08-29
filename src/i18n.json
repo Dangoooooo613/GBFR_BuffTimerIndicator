@@ -2819,9 +2819,9 @@
       "zh_tw": "永遠置頂",
       "en": "Always on Top"
     },
-    "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": {
-      "zh_tw": "未進入戰鬥時隱藏整個UI（尖刺圓／翻滾／技能UI 全部）",
-      "en": "Hide entire UI when not in combat (spike/roll/skill UI all)"
+    "非战斗时隐藏全部 UI（尖刺圆/全 Buff/核心/翻滚/技能 UI）": {
+      "zh_tw": "非戰鬥時隱藏全部 UI（尖刺圓／全 Buff／核心／翻滾／技能 UI）",
+      "en": "Hide all UI when not in combat (spike ring / all-Buff / core / dodge / skill UI)"
     },
     "Buff名衬色块宽度微调:": {
       "zh_tw": "Buff名襯色塊寬度微調:",
@@ -3435,6 +3435,362 @@
       "zh": "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。",
       "zh_tw": "標題列底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題列和圓環之間留出呼吸空間可加大。",
       "en": "Vertical gap (px) between the title-bar color row and the circle canvas.\n0 = they sit flush; raise this to add breathing room between title and circle."
+    },
+    "全Buff显示模块": {
+      "zh_tw": "全Buff顯示模組",
+      "en": "All-Buff Display Module"
+    },
+    "全Buff模块": {
+      "zh_tw": "全Buff模組",
+      "en": "All-Buff Module"
+    },
+    "布局": {
+      "zh_tw": "佈局",
+      "en": "Layout"
+    },
+    "筛选显示": {
+      "zh_tw": "篩選顯示",
+      "en": "Display Filter"
+    },
+    "过滤垃圾": {
+      "zh_tw": "過濾垃圾",
+      "en": "Junk Filter"
+    },
+    "用户黑名单（要过滤的 buff 编号，每行 1 个或空格分隔，支持十进制/0x16进制）:": {
+      "zh_tw": "使用者黑名單（要過濾的 buff 編號，每行 1 個或空格分隔，支援十進位/0x16進位）:",
+      "en": "User Blacklist (buff sids to filter, one per line or space-separated; decimal or 0x16 hex):"
+    },
+    "用户白名单（仅在白名单模式开启时生效）:": {
+      "zh_tw": "使用者白名單（僅在白名單模式開啟時生效）:",
+      "en": "User Whitelist (only when whitelist mode is enabled):"
+    },
+    "白名单模式（只显示白名单中的 buff）": {
+      "zh_tw": "白名單模式（只顯示白名單中的 buff）",
+      "en": "Whitelist Mode (only show whitelisted buffs)"
+    },
+    "最短持续秒数": {
+      "zh_tw": "最短持續秒數",
+      "en": "Min Duration (s)"
+    },
+    "隐藏层数=0 的 buff（已配满但尚未激活计数）": {
+      "zh_tw": "隱藏層數=0 的 buff（已配滿但尚未激活計數）",
+      "en": "Hide buffs with stack=0 (configured but not yet active)"
+    },
+    "隐藏 debuff（编号 ≥ 1000）": {
+      "zh_tw": "隱藏 debuff（編號 ≥ 1000）",
+      "en": "Hide debuffs (sid ≥ 1000)"
+    },
+    "填入要过滤的 buff sid。十进制（如 1024）或十六进制（如 0x400）。多个用空格/逗号/换行分隔。\n示例：\n  1024 1032\n  0x450,0x460": {
+      "zh_tw": "填入要過濾的 buff sid。十進位（如 1024）或十六進位（如 0x400）。多個用空格/逗號/換行分隔。\n範例：\n  1024 1032\n  0x450,0x460",
+      "en": "Enter buff sids to filter. Decimal (e.g. 1024) or hex (e.g. 0x400). Multiple separated by spaces/commas/newlines.\nExample:\n  1024 1032\n  0x450,0x460"
+    },
+    "白名单模式开启时，只显示列表中的 sid（其余全部隐藏）。格式同用户黑名单。": {
+      "zh_tw": "白名單模式開啟時，只顯示列表中的 sid（其餘全部隱藏）。格式同使用者黑名單。",
+      "en": "When whitelist mode is on, only listed sids show (everything else hidden). Format same as blacklist."
+    },
+    "开启后，黑名单失效，按白名单显示。注意：白名单也受「最短秒数」「隐藏零层/debuff」约束。": {
+      "zh_tw": "開啟後，黑名單失效，按白名單顯示。注意：白名單也受「最短秒數」「隱藏零層/debuff」約束。",
+      "en": "When enabled, blacklist is ignored and only the whitelist is shown. Note: whitelist still respects 'Min Duration' / 'Hide zero-stack/debuff'."
+    },
+    "持续秒数低于此值的 buff 一律视为闪屏废料被过滤。0 = 不过滤。\nmonitor 风格硬核：默认 0.5s，覆盖绝大多数闪屏（DOT 跳字 / 触发瞬间的瞬时 buff）。": {
+      "zh_tw": "持續秒數低於此值的 buff 一律視為閃屏廢料被過濾。0 = 不過濾。\nmonitor 風格硬核：預設 0.5s，覆蓋絕大多數閃屏（DOT 跳字 / 觸發瞬間的瞬時 buff）。",
+      "en": "Buffs lasting less than this many seconds are treated as flicker-junk and filtered out. 0 = no filter.\nMonitor-style hardcore: default 0.5s covers most flicker (DoT ticks / momentary buffs)."
+    },
+    "内置硬编码黑名单（monitor 风格兜底，不可关闭）: ": {
+      "zh_tw": "內建硬編碼黑名單（monitor 風格底線，無法關閉）: ",
+      "en": "Built-in hardcoded blacklist (monitor-style fallback, cannot be disabled): "
+    },
+    "画布背景填充": {
+      "zh_tw": "畫布背景填充",
+      "en": "Canvas Background Fill"
+    },
+    "画布背景不透明度": {
+      "zh_tw": "畫布背景不透明度",
+      "en": "Canvas BG Opacity"
+    },
+    "V2064：在 buff 卡片下面整张画布填充一层半透明黑色，防止背景窗口（如设置对话框的文件路径标签）的内容透到 overlay 上来。0 = 纯透明（默认，沿用旧观感）；30~70 = 显著遮罩；100 = 全不透明黑底。": {
+      "zh_tw": "V2064：在 buff 卡片下面整張畫布填充一層半透明黑色，防止背景視窗（如設定對話框的檔案路徑標籤）的內容透到 overlay 上來。0 = 純透明（預設，沿用舊觀感）；30~70 = 顯著遮罩；100 = 全不透明黑底。",
+      "en": "V2064: Fills the entire canvas under the buff cards with a semi-transparent black layer to block content from background windows (e.g. file-path labels in the settings dialog) bleeding through the overlay. 0 = fully transparent (default, old look); 30–70 = significant mask; 100 = fully opaque black."
+    },
+    "个 buff 已自动屏蔽——无需设置，总是从结果中移除。": {
+      "zh_tw": "個 buff 已自動遮罩——無需設置，總是從結果中移除。",
+      "en": " buffs auto-blocked — no setup needed, always removed from results."
+    },
+    "配色与文字": {
+      "zh_tw": "配色與文字",
+      "en": "Colors & Text"
+    },
+    "每行数量": {
+      "zh_tw": "每行數量",
+      "en": "Per Row"
+    },
+    "显示行数": {
+      "zh_tw": "顯示行數",
+      "en": "Rows"
+    },
+    "V2062：作为「自适应 floor」——按当前进度条宽度+外框计算的最小可视宽度之上再叠加。比最小值更小会被自动向上取。": {
+      "zh_tw": "V2062：作為「自適應下限」──以目前進度條寬度+外框計算的最小可視寬度之上再疊加。比最小值更小會被自動向上取。",
+      "en": "V2062: Acts as an auto-fit floor — layout adds the bar width + frame as the minimum visible width. Values smaller than the minimum are bumped up automatically."
+    },
+    "排序方式": {
+      "zh_tw": "排序方式",
+      "en": "Sort Mode"
+    },
+    "按ID升序": {
+      "zh_tw": "按ID升序",
+      "en": "By ID (Ascending)"
+    },
+    "按出现时间": {
+      "zh_tw": "按出現時間",
+      "en": "By Appearance Time"
+    },
+    "决定 buff 卡片的排列方式。「按ID」按编号数值升序（稳定）；「按出现时间」按首次进入列表的相对顺序，新出现的Buff 排在末尾；V2076 修复：消失-再出现的Buff **重新**分配排序号（先出的在最前，消失后清空它自己的排序号，回归时按当前最大号+1 重新算）。例：ABC 依次出现 → ABC；B 消失 → AC；B 重现 → ACB。": {
+      "zh_tw": "決定 Buff 卡片的排列方式。「按ID」按編號數值升序（穩定）；「按出現時間」按首次進入列表的相對順序，新出現的 Buff 排在末尾；V2076 修復：消失-再出現的 Buff **重新**分配排序號（先出的在最前，消失後清空它自己的排序號，回歸時按當前最大號+1 重新算）。例：ABC 依序出現 → ABC；B 消失 → AC；B 重現 → ACB。",
+      "en": "Decides the order of buff cards. \"By ID\" sorts by ascending ID (stable). \"By Appearance Time\" preserves insertion order — new buffs go to the end; V2076 fix: a buff that left and came back gets a **fresh** sort slot (its old slot is cleared, and a new one is allocated as max+1). Example: ABC appear in order → ABC; B expires → AC; B reappears → ACB."
+    },
+    "V2062：作为「自适应 floor」——按当前字体+元素间距+进度条+外框计算的最小可视高度之上再叠加。比最小值更小会被自动向上取。": {
+      "zh_tw": "V2062：作為「自適應下限」──以目前字型+元素間距+進度條+外框計算的最小可視高度之上再疊加。比最小值更小會被自動向上取。",
+      "en": "V2062: Acts as an auto-fit floor — layout adds fonts + element spacing + bar + frame as the minimum visible height. Values smaller than the minimum are bumped up automatically."
+    },
+    "行间距": {
+      "zh_tw": "行間距",
+      "en": "Row Spacing"
+    },
+    "卡片间距": {
+      "zh_tw": "卡片間距",
+      "en": "Card Spacing"
+    },
+    "不显示核心区已展示的": {
+      "zh_tw": "不顯示核心區已展示的",
+      "en": "Hide buffs shown in Core"
+    },
+    "不显示永续的": {
+      "zh_tw": "不顯示永續的",
+      "en": "Hide Infinite"
+    },
+    "不显示角色专属的": {
+      "zh_tw": "不顯示角色專屬的",
+      "en": "Hide Character-Exclusive"
+    },
+    "不显示专精专属": {
+      "zh_tw": "不顯示專精專屬",
+      "en": "Hide Mastery-Exclusive"
+    },
+    "不显示单层": {
+      "zh_tw": "不顯示單層",
+      "en": "Hide Single-Layer"
+    },
+    "名称字号": {
+      "zh_tw": "名稱字號",
+      "en": "Name Font Size"
+    },
+    "名称颜色": {
+      "zh_tw": "名稱顏色",
+      "en": "Name Color"
+    },
+    "层数字号": {
+      "zh_tw": "層數字號",
+      "en": "Stacks Font Size"
+    },
+    "层数颜色": {
+      "zh_tw": "層數顏色",
+      "en": "Stacks Color"
+    },
+    "时间字号": {
+      "zh_tw": "時間字號",
+      "en": "Time Font Size"
+    },
+    "时间颜色": {
+      "zh_tw": "時間顏色",
+      "en": "Time Color"
+    },
+    "进度条宽度": {
+      "zh_tw": "進度條寬度",
+      "en": "Bar Width"
+    },
+    "进度条高度": {
+      "zh_tw": "進度條高度",
+      "en": "Bar Height"
+    },
+    "进度条颜色": {
+      "zh_tw": "進度條顏色",
+      "en": "Bar Color"
+    },
+    "进度条不透明度": {
+      "zh_tw": "進度條不透明度",
+      "en": "Bar Opacity"
+    },
+    "衬底宽度": {
+      "zh_tw": "襯底寬度",
+      "en": "Backing Width"
+    },
+    "衬底高度": {
+      "zh_tw": "襯底高度",
+      "en": "Backing Height"
+    },
+    "衬底颜色": {
+      "zh_tw": "襯底顏色",
+      "en": "Backing Color"
+    },
+    "衬底不透明度": {
+      "zh_tw": "襯底不透明度",
+      "en": "Backing Opacity"
+    },
+    "── 全Buff显示模块 ──": {
+      "zh_tw": "── 全Buff顯示模組 ──",
+      "en": "── All-Buff Display Module ──"
+    },
+    "全Buff模块（未检测到角色）": {
+      "zh_tw": "全Buff模組（未偵測到角色）",
+      "en": "All-Buff (no character)"
+    },
+    "全Buff模块（无活动Buff）": {
+      "zh_tw": "全Buff模組（無活動Buff）",
+      "en": "All-Buff (no active buff)"
+    },
+    "元素间距": {
+      "zh_tw": "元素間距",
+      "en": "Element Spacing"
+    },
+    "行高加成": {
+      "zh_tw": "行高加成",
+      "en": "Row Height Extra"
+    },
+    "每行文字自己的高度加成。0=自动（按系统字体测量，保证不切字）；调大=每行字与卡片上下边留更多空隙。与「元素间距」不同——元素间距是行与行之间的空隙，行高加成是每行自己的高度。": {
+      "zh_tw": "每行文字自己的高度加成。0=自動（按系統字體測量，保證不切字）；調大=每行字與卡片上下邊留更多空隙。與「元素間距」不同——元素間距是行與行之間的空隙，行高加成是每行自己的高度。",
+      "en": "Extra height added to each text row's measured font height. 0=auto (measured from system font, guarantees no clipping); increase=gives each row more padding above/below the text. Differs from 'Element Spacing' — that controls the gap between rows; this controls each row's own height."
+    },
+    "进度条边框粗细": {
+      "zh_tw": "進度條邊框粗細",
+      "en": "Bar Frame Thickness"
+    },
+    "倒计时尾声警告": {
+      "zh_tw": "倒數計時尾聲警告",
+      "en": "End-of-Timer Warning"
+    },
+    "启用警告色": {
+      "zh_tw": "啟用警告色",
+      "en": "Enable Warning Color"
+    },
+    "剩余百分比阈值": {
+      "zh_tw": "剩餘百分比閾值",
+      "en": "Remaining % Threshold"
+    },
+    "警告颜色": {
+      "zh_tw": "警告顏色",
+      "en": "Warning Color"
+    },
+    "Debuff 配色（编号 ≥ 1000）": {
+      "zh_tw": "Debuff 配色（編號 ≥ 1000）",
+      "en": "Debuff Colors (ID >= 1000)"
+    },
+    "Debuff 名称颜色": {
+      "zh_tw": "Debuff 名稱顏色",
+      "en": "Debuff Name Color"
+    },
+    "Debuff 层数颜色": {
+      "zh_tw": "Debuff 層數顏色",
+      "en": "Debuff Stacks Color"
+    },
+    "Debuff 时间颜色": {
+      "zh_tw": "Debuff 時間顏色",
+      "en": "Debuff Time Color"
+    },
+    "Debuff 进度条颜色": {
+      "zh_tw": "Debuff 進度條顏色",
+      "en": "Debuff Bar Color"
+    },
+    "Debuff 警告色": {
+      "zh_tw": "Debuff 警告色",
+      "en": "Debuff Warning Color"
+    },
+    "Debuff 启用警告色": {
+      "zh_tw": "Debuff 啟用警告色",
+      "en": "Debuff Enable Warning Color"
+    },
+    "最小出现持续时间 (秒, 首次观测后不足则丢)": {
+      "zh_tw": "最小出現持續時間 (秒, 首次觀測後不足則丟)",
+      "en": "Min Appearance Duration (s, dropped if below after first seen)"
+    },
+    "── 倒计时尾声警告 ──": {
+      "zh_tw": "── 倒數計時尾聲警告 ──",
+      "en": "── End-of-Timer Warning ──"
+    },
+    "过滤": {
+      "zh_tw": "過濾",
+      "en": "Filter"
+    },
+    "门限": {
+      "zh_tw": "門限",
+      "en": "Gate"
+    },
+    "门限 (实时生效)": {
+      "zh_tw": "門限 (即時生效)",
+      "en": "Gate (Live)"
+    },
+    "过滤 status_id == 0 (攻击UP 等)": {
+      "zh_tw": "過濾 status_id == 0 (攻擊UP 等)",
+      "en": "Filter status_id == 0 (Damage Up, etc.)"
+    },
+    "status_id 上限 (超出当垃圾)": {
+      "zh_tw": "status_id 上限 (超出當垃圾)",
+      "en": "status_id max (above = junk)"
+    },
+    "sub_id 上限 (超出当垃圾)": {
+      "zh_tw": "sub_id 上限 (超出當垃圾)",
+      "en": "sub_id max (above = junk)"
+    },
+    "ailment 分类阈值 (>= 标记 debuff)": {
+      "zh_tw": "ailment 分類閾值 (>= 標記 debuff)",
+      "en": "ailment threshold (>= = debuff)"
+    },
+    "当前层数上限 (超范围丢弃)": {
+      "zh_tw": "當前層數上限 (超範圍丟棄)",
+      "en": "Current stacks max (out of range = drop)"
+    },
+    "上限层数上限 (超范围丢弃)": {
+      "zh_tw": "上限層數上限 (超範圍丟棄)",
+      "en": "Max stacks max (out of range = drop)"
+    },
+    "层数矛盾检查 (stacks>上限 丢弃)": {
+      "zh_tw": "層數矛盾檢查 (stacks>上限 丟棄)",
+      "en": "Stack conflict check (stacks>max = drop)"
+    },
+    "时长上限 (秒, remaining/initial 任一超就丢)": {
+      "zh_tw": "時長上限 (秒, remaining/initial 任一超就丟)",
+      "en": "Max duration (s; remaining/initial over = drop)"
+    },
+    "最小剩余时间 (秒, remaining 少于则丢)": {
+      "zh_tw": "最小剩餘時間 (秒, remaining 少於則丟)",
+      "en": "Min remaining (s; below = drop)"
+    },
+    "最小持续时间 (秒, initial 少于则丢)": {
+      "zh_tw": "最小持續時間 (秒, initial 少於則丟)",
+      "en": "Min initial (s; below = drop)"
+    },
+    "NaN / Inf 检查": {
+      "zh_tw": "NaN / Inf 檢查",
+      "en": "NaN / Inf check"
+    },
+    "V2065：在 buff 卡片下面整张画布填充一层半透明黑色，防止背景窗口（如设置对话框的文件路径标签）的内容透到 overlay 上来。0 = 纯透明（默认，沿用旧观感）；30~70 = 显著遮罩；100 = 全不透明黑底。": {
+      "zh_tw": "V2065：在 buff 卡片下面整張畫布填充一層半透明黑色，防止背景視窗（如設定對話框的檔案路徑標籤）的內容透到 overlay 上來。0 = 純透明（預設，沿用舊觀感）；30~70 = 顯著遮罩；100 = 全不透明黑底。",
+      "en": "V2065: fill a translucent black layer under the buff canvas to block background windows (e.g. a settings dialog's file-path label) from showing through. 0 = fully transparent (default, old look); 30~70 = visible mask; 100 = solid black."
+    },
+    "排序号消失宽限": {
+      "zh_tw": "排序號消失寬限",
+      "en": "Sort Slot Grace"
+    },
+    "仅对「按出现时间」排序生效。Buff 从游戏数据里读不到后，等待这么多秒才真正清除它的排序号。0 = 立即清除；调大可防止读取抖动导致卡片位置跳变，但真消失的 Buff 要等更久才会重新排到队尾。": {
+      "zh_tw": "僅對「按出現時間」排序生效。Buff 從遊戲資料裡讀不到後，等待這麼多秒才真正清除它的排序號。0 = 立即清除；調大可防止讀取抖動導致卡片位置跳變，但真消失的 Buff 要等更久才會重新排到隊尾。",
+      "en": "Only applies to \"By Appearance Time\" sorting. How many seconds to wait after a buff stops being readable from the game data before its sort slot is truly cleared. 0 = clear immediately; larger values prevent read glitches from making cards jump, but a genuinely expired buff takes longer to be re-queued at the end."
+    },
+    "ID=0 排除永续（攻击UP 不可能永续）": {
+      "zh_tw": "ID=0 排除永續（攻擊UP 不可能永續）",
+      "en": "ID=0 exclude infinite (ATK↑ can't be infinite)"
+    },
+    "status_id=0（攻击UP）在游戏里不可能是永续 buff。勾上时，若读到 sid=0 且被标记为永续，判定为残留的垃圾条目并丢弃。": {
+      "zh_tw": "status_id=0（攻擊UP）在遊戲裡不可能是永續 buff。勾選時，若讀到 sid=0 且被標記為永續，判定為殘留的垃圾條目並丟棄。",
+      "en": "status_id=0 (ATK↑) can never be a perpetual buff in-game. When checked, a sid=0 entry marked as infinite is treated as leftover garbage and dropped."
     }
   }
 }

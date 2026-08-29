@@ -75,8 +75,147 @@ else:
 DEFAULT_SHRIMP_IMG_PATH = os.path.join(_BUNDLE_DIR, "embedded_roll_icon.png")
 APP_ICON_PATH = os.path.join(_BUNDLE_DIR, "app_icon.ico")
 
+# V2050：全 Buff 显示模块数据源（全游戏 buff 属性 + 三语名），来自 GBFR_BuffMonitor 的 buff_attrs.json。
+# V2070：改用与 i18n_loader 同款的健壮查找（多候选路径 + 递归兜底），避免运行期 BUFF_ATTRS 为空导致全 Buff 空白。
+def _load_buff_attrs():
+    import glob as _glob
+    candidates = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(os.path.join(meipass, "buff_attrs.json"))
+    candidates.append(os.path.join(EXE_DIR, "buff_attrs.json"))
+    candidates.append(os.path.join(_BUNDLE_DIR, "buff_attrs.json"))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "buff_attrs.json"))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0] if getattr(sys, "argv", [None]) else __file__)), "buff_attrs.json"))
+    # 兜底：在 _MEIPASS / EXE_DIR 递归找第一个 buff_attrs.json
+    for base in (meipass, EXE_DIR, os.path.dirname(os.path.abspath(__file__))):
+        if base:
+            try:
+                hits = _glob.glob(os.path.join(base, "**", "buff_attrs.json"), recursive=True)
+                for h in hits:
+                    candidates.append(h)
+            except Exception:
+                pass
+    chosen = None
+    for p in candidates:
+        if p and os.path.isfile(p):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    data = json.load(f)
+                chosen = p
+                break
+            except Exception:
+                pass
+    if chosen is None:
+        return {}
+    return data
+BUFF_ATTRS = _load_buff_attrs()
+
+# V2105：debuff 判定改为查 buff_attrs.json 的「是否debuff」字段（来自 GBFR_BuffMonitor 的 xlsx 末列标注），
+# 不再用 sid>=1000 的硬阈值。命中表则用表内标记；未命中（未知 id）才回退旧阈值 1000，保留对新增 ailment 的安全兜底。
+def _is_debuff(sid):
+    entry = BUFF_ATTRS.get("0x{:X}({})".format(sid, sid))
+    if entry is not None:
+        return bool(entry.get("是否debuff", False))
+    return sid >= 1000
+
 # 版本号：标题栏与自动更新共用同一基线，与 release_notes / version.json 同步。
-_BUILD_NO = 2040  # 标题栏自报 20.40 / V2040；
+_BUILD_NO = 2106  # V2106：把作者本人的 overlay_settings.json（当前调好的全部设置）烘焙进 DEFAULT_SETTINGS——以源码默认为底，覆盖作者 json 中存在的约 100 个标量/颜色/位置/缩放键 + buff_enabled（作者启用的 14 个角色清单）。保留：全部 allbuff_*（全 Buff 模块，作者文件无）、buff_order/buff_mastery/skill_cooldown_max（作者文件为空 {}，保留源码预置的 119 条专精 + 79 条技能冷却，避免清空开箱即用数据）、settings_schema_version 常量。作者文件里的 13 个孤儿键经核对均为 V2033/V2040 清理过的死键（bg_color*/arc_color_opacity/icon_color_opacity/classmech_*/ex_status_offset/show_skill_cd/skill_cd_*_opacity/hide_spikes_and_beads），不写入 DEFAULT。新下载玩家开箱即作者调好的布局。
+                       # V2085：① 修 V2084 加 _refresh_memref 时把 def 嵌进 __init__ 函数体（空行不打断）→
+                       #              __init__ 末尾 layout.addLayout/addWidget 误归到 _refresh_memref → NameError。
+                       #              修法：把"信号/按钮"段移到 _refresh_memref 之前（真正 __init__ 末尾），删冗余 def。
+                       #          ② 全 Buff 模块占位提示（_draw_allbuff_placeholder）对齐 _draw_module_backdrop 风格：
+                       #              锁定时整个 return（不画背景/边框/文字），未锁定时画 8% 黑底 + 15% 白细边 + 居中文字。
+                       #          ③ 修 render_allbuff 之前只读 _out_of_combat_mult 但没应用到绘制的问题——
+                       #              加 if self._out_of_combat_mult <= 0.0: return（与 render_core 一致）。
+                       # V2097：修「钳蟹的报恩 sid=125 显示∞ 8/8 + 进度条不动」——游戏对该 buff 同时设 infinite=True 和\n#                       真实 remaining=8 initial=8（数据矛盾的伪永续）。V2095 信任游戏 flag 加了 ∞ 符号，\n#                       但 钳蟹本就是 8 秒链接奖励 buff（不是永续），∞ 让进度条不倒计时 = 时间显示错误。\n#                       修法：判定 `infinite=True and 0<remaining<9999 and 0<initial<9999`\n#                       → 视作「数据矛盾的伪永续」，覆写 infinite=False，按有限 buff 走。\n#                       真永续 buff 通常 initial=0/NaN/Inf 或 remaining>600s，不会满足此条件。\n# V2096：修「新 buff 出现时会闪一下」——根因是最小出现持续时间门限(g_e_minappear)的实现缺陷：
+#   旧逻辑 `if g_e_minappear and not _was_new` 让刚出现的 1 帧因 _was_new 跳过检查而显示，
+#   之后 _was_new=False 且还没满阈值(默认0.1s) → 被门限排除 → 视觉「闪一下」后重新加入。
+#   修法：新增 `_buff_ever_shown` 集合记录「本会话出现过(哪怕一帧)的 sid」，出现过即永久放行，
+#   直到该 buff 真正从游戏数据消失(底部 _raw_sids 清理)才清除 → 重新出现会重新计时。
+#   结果：新 buff 立即显示、中途不再被时间门限丢掉(消除闪烁)；真正瞬时垃圾 buff 显示到自身消失为止。
+# V2095：三件事：① 新增门限「ID=0 排除永续」（allbuff_gate_status_id_zero_not_infinite，默认开）——
+#                       status_id=0（攻击UP）在游戏里不可能是永续 buff，但 sid=0 槽位残留的垃圾条目
+#                       会把 infinite 标志位置 1，被误显示成永续。勾上时把这种条目丢弃。
+#                       ② 全 Buff 模块时间显示「真实秒数」——百分比型 buff（如龙人化 sid=29，pct_cap=40）
+#                       游戏存的是 0~100 的百分比读数，之前卡片直接显示原始读数（显示 76.7 而不是 30.7 秒）。
+#                       现在从 BUFF_PROFILES 合并出 sid→pct_cap 映射（缓存到 self._pct_cap_by_sid），
+#                       在 items.append 前把 remaining/initial 折算成真实秒数（核心区早已这样做，全 Buff 漏了）。
+#                       ③ 永续 buff 在名称右侧加无限符号 ∞——阶梯缩字/elide 都把 ∞ 计入宽度。
+# V2094：修「按出现时间排序根本没生效」——render_allbuff 在 GBFROverlayQt 类里（self == GBFROverlayQt 自己），
+#                       但代码用 getattr(self, "ctrl", None) 试图从 ctrl 拿 _buff_first_seen_seq，
+#                       而 self.ctrl 在 GBFROverlayQt 上**根本没设置**（只有 SettingsDialog / ModuleWindow 才有）→
+#                       ctrl_self=None → seq_map=None → 走防御性回退按 sid 升序排！
+#                       结果就是"按出现时间"设置**完全没生效**，玩家看到的"按 ID 升序"实际就是回退路径。
+#                       修法：self 已经是 GBFROverlayQt，_buff_first_seen_seq / _buff_next_seq / _buff_gone_since
+#                       都在 self 上（4376-4377 行 __init__ 里初始化），直接用 self 即可。
+# V2093：「按出现时间」排序加「消失宽限期」——排序逻辑本身正确（ABC→ACB 推演验证通过），
+#                       但 seq_map 清理是"一帧读不到就立刻清"，内存读取抖动会让排序号被误清，
+#                       buff 下一帧回来就被重新分配到队尾 → 位置跳变，玩家感觉"排序不对"。
+#                       修法：记录首次消失时间 _buff_gone_since[sid]，超过 allbuff_seq_gone_grace_sec
+#                       （默认 1.0s，已做成 UI 选项"排序号消失宽限"）才真清。
+#                       抖动（<1s）保住原排序号；真消失（>1s）排队尾——符合用户"消失后重新排队尾"的原始需求。
+# V2092：修「全 Buff 模块抓不到 sid=0 攻击力强化」——根因不在 render_allbuff 主循环（17 个 gate/ex
+#                       都有开关且用户已全关），而在数据源 read_exstatus_buffs 里**两处硬编码过滤**没有开关：
+#                       ①  —— 0 是合法 sid（攻击力强化），但  = True 被 continue；
+#                          写代码的人当时可能以为"0 号槽是 sentinel"，但 GBFR 里 sid=0 是真实 buff。
+#                          V2012 时代全 Buff 模块还没加（V2062 才有），没人发现。
+#                       ②  —— V2089 我加的永续守护，
+#                          对正常 buff（remaining>0.01）不触发，留着。
+#                       修法：① 改  —— 只过滤 read_u32 失败返回的 None，
+#                          不过滤合法的 0。
+# V2091：① 修 About 实时区每秒刷新把滚动条弹回顶——保存原位置/底部标志，刷新后恢复；
+#                       ② 全局滚动条加宽到 2.4 倍（系统默认 16px → 38px）—— QSS 写在主对话框，
+#                       子 widget 的 QScrollBar 通过 Qt 样式继承自动应用，
+#                       设置对话框里所有滚动条（含子页/列表等）统一变宽。
+# V2090：修伊德龙人化核心区 buff 空白（真正的根因，V2089 只修了一半）——
+#                       V2038 为「能力模块技能名」把 PL2000 加进 GBFR_Character_Skills_Buffs.json 角色库，
+#                       _pl_hash_map 因此多了 PL2000 的 hash 映射；龙人态 charid_hash 解析成 "PL2000"，
+#                       而 BUFF_PROFILES（i18n.json 的 buffs）只有 PL1900、没有 PL2000
+#                       → profile=None → buffs_out 为空 → 核心区空白。
+#                       V2012 正常是因为那时角色库里还没有 PL2000（charid 解析不到 → 回退 CHAR_TYPE_TO_PL）。
+#                       修法：pl_id 解析不到有效 BUFF_PROFILES 时强制回退 CHAR_TYPE_TO_PL
+#                       （0x20 → PL1900）。能力模块零影响（走 ability_hash，不读 pl_id）。
+# V2089：修伊德龙人化核心区 buff 空白——read_exstatus_buffs 的 V2068 NaN/Inf 整条
+#                       discard 把 2.0.4 后龙人态下紫银之力(sid=60)等永续 buff 全丢了。改回 V2012
+#                       行为：NaN/Inf 归零保留（永续 buff 由 infinite=True 守卫保住）。
+#                       V2012 与 V2088 核心区循环体本身几乎一样，差异只在 read_exstatus_buffs。
+#                       V2068 注释当时说"核心模块不受影响"——但 V2012 时代游戏还没改字段，
+#                       2.0.4 更新后触发这个隐藏回归。
+# V2088：修"全 Buff 模块疯狂闪烁"——两个 bug：
+                       #   ① V2087 的 `_seen[sid] = _now` 是**无条件刷新**，每帧都把"首次观测时间"
+                       #      改写成当前时间 → 已知 buff 的 `_now - _seen[sid]` 永远≈0 → 每帧被 minappear
+                       #      丢一次 → 帧1显示/帧2丢/帧3显示... = 疯狂闪烁。
+                       #      修法：只在首次记录（`if _was_new: _seen[sid] = _now`），之后不再刷新。
+                       #   ② 循环外清理（_seen 与排序 seq_map）用**过滤后**的 items 判断"谁消失了"——
+                       #      被其他门限（minrem/mininit/nan/ex_*）丢的 buff 不在 items → 每帧被判"消失"
+                       #      → 计时/排序号反复重置 → 加剧震荡。
+                       #      修法：改用**原始数据源** `buffs.keys()` 判断，只有游戏里真的没了才重置。
+                       #   ③ 顺带清理用户明令禁止的探针代码（红线：分发工具不带诊断）：
+                       #      移除 allbuff_debug.log 三处写盘（_load_buff_attrs 两条 + render_allbuff
+                       #      头尾各一块）+ `drop_reasons` / `attr_none_sids` 全部诊断残留。
+                       # V2087：修 V2084 加的"最小出现持续时间"allbuff_gate_min_appearance_time 门限逻辑 bug——
+                       #              原版：`_seen[sid] = _now` 后立刻判 `_now - _seen[sid] < 阈值`
+                       #                   → 第一次见到的任何 buff 都因 `_now - _now = 0 < 阈值` 被丢
+                       #                   → 表现："启动后全 Buff 模块空白，必须手动开关一次才恢复"
+                       #                   （开 → 关的循环里会触发 _emit_changed → save_settings → allbuff_win.show()）
+                       #              修法：用 _was_new 标记"刚被记录的 sid"，minappear 仅对已知 buff 生效。
+                       # V2086：修 V2085 删"信号/按钮"段时把真 retranslate_ui 的 def 也一起删了，
+                       #              导致剩下那段"按语言刷文本"的代码就地成了孤儿方法（被错误命名为 _connect_live_signals），
+                       #              启动设置弹窗调 self.retranslate_ui() → AttributeError。
+                       #              修法：把那段错误命名的 def 改名回 retranslate_ui(self, *_)。
+                       #              （真正的 _connect_live_signals 在 3437 行——这个定义不受影响）
+                       # V2084：① 修缮「非战斗时隐藏整个 UI」文本——列入「全 Buff 模块」（之前漏了），
+                       #              改用 _tr 三语（zh_tw/en 同步 i18n.json）。② About 页新增「重要内存地址与数据」
+                       #              card：上半静态偏移速查（与 skill 同步），下半实时值（QTimer 每 1 秒刷新，
+                       #              从 self.ctrl 读 pptr/base/quest_mgr/角色名/ID/状态/专精/翻滚/技能数/全 Buff 数）。
+                       #              ③ 全 Buff 模块门限新加「最小出现持续时间」allbuff_gate_min_appearance_time
+                       #              （默认 0.1s）——防瞬时 buff 闪现即逝被误判，逻辑：记录每个 sid 首次观测时间，
+                       #              _now - first_seen[sid] < 阈值则丢，消失的 sid 在循环外清理重置。
+                       #              主程序仍保持零扫描零诊断（memref 在用户主动打开 About 时才跑）。
+                       # V2079 CSS border 渲染成方块），改用 QHBoxLayout 套独立 QLabel "▼" 字符。QLabel 是普通
+                       # widget，100% 可靠。QComboBox 自身 setStyleSheet 去掉右上右下的圆角让 ▼ Label 接管右侧视觉。
+                       # 同时诊断日志加入 buff_attrs_len / 命中路径，便于后续核对。若 BUFF_ATTRS 仍为空，日志会记录候选路径。
 # V2040：死代码清理（P0+P1）。删除未使用的函数/常量/属性/局部/导入，以及 DEFAULT_SETTINGS 中
 #       从未被读取的死键（bg_color/bg_color_opacity/arc_color_opacity/icon_color_opacity/
 #       classmech_window_x|y|scale_percent/ex_status_offset/show_skill_cd/skill_cd_*_opacity/
@@ -490,7 +629,9 @@ QUEST_TRAINING_TIMER_OFFSETS = (0xB20, 0xB28)
 
 # quest_mgr 全局指针变量地址 与 player 全局指针变量地址(pptr) 的相对偏移。
 # 二者同属 game.exe 同一模块，相减即与 ASLR 无关的相对距离。
-QM_DELTA = 0xc1dfd0
+# V2082：游戏 2.0.4 后旧值 0xc1dfd0 漂移；用独立工具 GBFR_OffsetFinder_V2 在 2.0.4 下实测出新值 0xC1E030。
+# 实测见 src_backups/2026-08-29_09-55-*/V2082_qm_delta_0xC1E030/。
+QM_DELTA = 0xC1E030
 
 # 角色类型字节值 → 名称 (zh / en)
 # 来源: CE实测 [玩家]+0x1FD 字节值；这里按十六进制记录
@@ -808,6 +949,7 @@ STATUS_INFINITE_FLAG = 0x79  # StatusBase → 永续标记 (byte)
 STATUS_INITIAL_DUR = 0x7C    # StatusBase → 初始持续时间 (f32) — timer_max
 STATUS_REMAINING_DUR = 0x80  # StatusBase → 剩余时间 (f32) — 实时倒计时
 STATUS_MAX_STACKS = 0xB0     # StatusBase → 上限层数 (i32)
+STATUS_SUB_ID = 0x4C         # StatusBase → sub_id / cause 区分符 (u32) — 搬自 monitor 门限
 EX_STATUS_PTR_SLOTS = 16     # 指针数组扫描槽位数
 
 # 技能冷却偏移（来自 GBFR_SkillCooldown 验证）
@@ -1140,11 +1282,22 @@ def resolve_quest_mgr_with_addr(handle, base, size):
     hit = aob_scan(handle, base, size, pat, mask)
     return resolve_quest_mgr_from_hit(handle, hit)
 
+# read_exstatus_buffs 在 V2050 中曾尝试接入 GBFR_BuffMonitor 的 gate 过滤，
+# 但因 gate 默认会按 min_remaining_time/min_initial_time 无差别过滤「永续 buff（remaining=0）」，
+# 会干扰核心模块依赖的 all_buffs，故此版撤销该接入，还原为 V2040 的基础过滤。
+# V2068：与 GBFR_BuffMonitor 的 `_parse_statusbase` 同款 parse 行为——
+#   NaN/Inf 时长的 buff（包括永续 buff）整条 discard（continue 跳过），不进 result 字典。
+#   这样全 Buff 模块渲染时字典里只有「时间戳正常」的 buff，永续 buff 不会被
+#   「最小初始时间 0.05s」「最小剩余时间 0.05s」门限误杀。
+#   核心模块不受影响：核心模块读 `active_buffs`（= buffs_out，结构化 dict 来自 profile 配表），
+#   不直接读 initial/remaining；ExStatus 的 NaN 字段只对核心区「计时是否生效」相关分支有间接影响，
+#   但那些分支都已经各自有 None/0 兜底（line 1346-1350）。
 def read_exstatus_buffs(handle, char_base, ex_status_offset=ACTOR_EX_STATUS):
     """从 Actor 的 ExStatus 指针数组读取全部活跃 buff。
 
-    返回 {status_id: {"stacks", "max_stacks", "initial", "remaining", "infinite"}} 字典。
+    返回 {status_id: {"stacks", "max_stacks", "initial", "remaining", "infinite", "sub_id"}} 字典。
     无效或无 buff 时返回空字典。
+    V2068：与 GBFR_BuffMonitor 的 parse 行为对齐——NaN/Inf 时长字段的 buff 整条 discard。
     """
     ex_status = read_u64(handle, char_base + ex_status_offset)
     if not ex_status or ex_status < 0x10000:
@@ -1159,9 +1312,16 @@ def read_exstatus_buffs(handle, char_base, ex_status_offset=ACTOR_EX_STATUS):
                 break
             continue
         consecutive_nulls = 0
-        sid = read_u32(handle, ptr + STATUS_ID_OFFSET)
-        if not sid or sid > 0xFFFF:
+        sid_raw = read_u32(handle, ptr + STATUS_ID_OFFSET)
+        # V2092 BUGFIX：`if not sid` 把 sid=0（攻击力强化「攻击UP」）直接跳过——
+        # 写代码的人当时可能以为"0 号槽是 sentinel/header"，但 GBFR 里 sid=0 是真实 buff。
+        # V2012 时代全 Buff 模块还没加，没人发现；V2062 加全 Buff 模块后这个 bug 一直存在。
+        # 玩家把门限全关后仍然抓不到 sid=0 就是这个原因——sid 在 read_exstatus_buffs
+        # 这一关就被 continue 了，根本到不了 render_allbuff 的门限循环。
+        # 修法：只过滤 read_u32 失败返回的 None（is None），不过滤合法的 0。
+        if sid_raw is None or sid_raw > 0xFFFF:
             continue
+        sid = sid_raw
         stacks = read_u32(handle, ptr + STATUS_CUR_STACKS) or 0
         if stacks > 9999:
             stacks = 0
@@ -1171,20 +1331,28 @@ def read_exstatus_buffs(handle, char_base, ex_status_offset=ACTOR_EX_STATUS):
         initial = read_f32(handle, ptr + STATUS_INITIAL_DUR) or 0
         remaining = read_f32(handle, ptr + STATUS_REMAINING_DUR) or 0
         infinite = (read_u8(handle, ptr + STATUS_INFINITE_FLAG) or 0) != 0
-        # 过滤 NaN/Inf
+        sub_id = read_u32(handle, ptr + STATUS_SUB_ID) or 0
+        # V2089 BUGFIX：改回 V2012 行为——NaN/Inf 归零保留（不再整条 discard）。
+        # V2068 误以为"核心模块不受影响"，但 2.0.4 更新后，伊德龙人态下紫银之力(sid=60)等
+        # 永续 buff 的 STATUS_INITIAL_DUR/STATUS_REMAINING_DUR 字段在游戏内存中变成 NaN/Inf
+        # （V2012 时代是合法 float）→ 整条 discard 把这些 buff 从 all_buffs 字典里删掉
+        # → 核心模块 `if sid in all_buffs` 判定失败 → 伊德龙人化时核心区 buff 全空白。
+        # 改回归零后：永续 buff remaining=0 initial=0 但 `infinite=True` 让第二关
+        # `if not infinite and remaining<=0.01 and initial<=0.01: continue` 不丢它们（V2012 行为）。
+        # 对全 Buff 模块零影响：永续 buff 一直就被 `infinite` 守护；非永续 NaN/Inf 仍走第二关被过滤。
         if math.isnan(remaining) or math.isinf(remaining):
             remaining = 0
         if math.isnan(initial) or math.isinf(initial):
             initial = 0
-        # 过滤空槽：非永续且时间都为0
         if not infinite and remaining <= 0.01 and initial <= 0.01:
             continue
         result[sid] = {
             "stacks": stacks,
             "max_stacks": max_stacks,
             "initial": initial,
-            "remaining": remaining,
+            "remaining": remaining,  # 名字是 remaining，存量
             "infinite": infinite,
+            "sub_id": sub_id,  # V2066：搬自 monitor 门限 sub_id 溢出门限
         }
     return result
 
@@ -1218,6 +1386,19 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
     all_buffs = read_exstatus_buffs(handle, read_base)
     pl_id = _pl_hash_map.get(charid_hash)
     if not pl_id and char_type in CHAR_TYPE_TO_PL:
+        pl_id = CHAR_TYPE_TO_PL[char_type]
+    # V2090 BUGFIX：伊德龙人化(PL2000) 在 BUFF_PROFILES 里【没有配表】——
+    #   V2038 为「能力模块技能名」把 PL2000 加进了 GBFR_Character_Skills_Buffs.json 的角色库
+    #   （PL2000 有专属 AB_PL2000_01~05 技能），于是 _pl_hash_map 多了 PL2000 的 hash 映射。
+    #   龙人态时 charid_hash 解析成 "PL2000" → 上面的 `if not pl_id` 回退不生效
+    #   → BUFF_PROFILES.get("PL2000") = None → `if profile:` 为 False → buffs_out 为空
+    #   → 核心区 buff 全空白（全 Buff 模块不受影响：它用 all_buffs，不依赖 profile）。
+    #   V2012 正常是因为那时角色库里还没有 PL2000。
+    # 修法：pl_id 解析不到有效 BUFF_PROFILES 时，强制回退到 CHAR_TYPE_TO_PL 的同族 PL
+    #   （伊德龙人化 0x20 → PL1900，与核心 Buff 区共用配表）。
+    # 对能力模块零影响：read_skill_cooldowns 走 ABILITY_HASH_OFFSET + _ab_hash_map，
+    #   完全不读 pl_id，PL2000 的专属技能名仍然正常显示。
+    if not BUFF_PROFILES.get(pl_id) and char_type in CHAR_TYPE_TO_PL:
         pl_id = CHAR_TYPE_TO_PL[char_type]
     profile = BUFF_PROFILES.get(pl_id)
     buffs_out = []
@@ -1360,6 +1541,7 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
 
     return {"status": "ok", "dodge": dodge or 0, "char_type": char_type,
             "charid_hash": charid_hash, "pl_id": pl_id, "buffs": buffs_out,
+            "all_buffs": all_buffs,  # V2050：gate 过滤后的全量 buff（供全 Buff 模块使用）
             "raw_locked": new_locked,
             "duration_max": duration_max}
 
@@ -1423,186 +1605,294 @@ DEFAULT_SETTINGS = {
     "scan_ms": 20,
     "circle_radius": 40,
     "spike_length": 64,
-    "spike_axis_pos_percent": 16,
-    "spike_width": 26,
-    "spike_waist_pos_percent": 28,
+    "spike_axis_pos_percent": 12,
+    "spike_width": 25,
+    "spike_waist_pos_percent": 31,
     "spike_bead_radius": 3,
-    "spike_bead_pos_percent": 10,
+    "spike_bead_pos_percent": 9,
     "use_indicator_outline": True,
     "indicator_outline_width": 1,
     "title_bar_color": "#000000",
-    "title_bar_color_opacity": 50,
-    "titlebar_font_size": 10,
+    "title_bar_color_opacity": 5,
+    "titlebar_font_size": 8,
     "title_align": "left",
     "titlebar_status_indent": 16,
-    "circle_color_normal": "#ffe608",
+    "circle_color_normal": "#8c00ff",
     "circle_color_normal_opacity": 100,
-    "circle_color_lv7": "#ff4a4a",
+    "circle_color_lv7": "#dd2e28",
     "circle_color_lv7_opacity": 100,
-    "spike_color_normal": "#ffe608",
+    "spike_color_normal": "#8c00ff",
     "spike_color_normal_opacity": 100,
-    "spike_color_lv7": "#ff4a4a",
+    "spike_color_lv7": "#dd2e28",
     "spike_color_lv7_opacity": 100,
     "arc_color": "#55ff00",
     "text_color": "#ffffff",
     "text_color_opacity": 100,
-    "dh_text_outline_color": "#7d2a00",
+    "dh_text_outline_color": "#8c00ff",
     "dh_text_outline_color_opacity": 50,
-    "timer_text_color": "#fce408",
+    "timer_text_color": "#ffee88",
     "timer_text_color_opacity": 100,
-    "indicator_outline_color": "#7d2a00",
-    "indicator_outline_color_opacity": 50,
+    "indicator_outline_color": "#ffffff",
+    "indicator_outline_color_opacity": 60,
     "use_default_dodge_icon": True,
     "shrimp_img_path": "",
     "dodge_icon_scale_percent": 100,
     "timer_style": "sector",
-    "timer_arc_radius_offset": 5,
+    "timer_arc_radius_offset": 4,
     "dh_font_size": 34,
-    "timer_font_size": 10,
-    "core_scale_percent": 77,
-    "roll_scale_percent": 131,
-    "skill_scale_percent": 85,
+    "timer_font_size": 9,
+    "core_scale_percent": 100,
+    "roll_scale_percent": 100,
+    "skill_scale_percent": 100,
     "circle_pad_title": 0,
     "flash_color": "#ffffff",
-    "flash_scale": 120,
-    "flash_duration_ms": 100,
+    "flash_scale": 140,
+    "flash_duration_ms": 400,
     "flash_apply_spikes": True,
     "flash_apply_skill_ready": True,
     "flash_apply_dodge": True,
-    "warning_size_scale": 1.0,
-    "warning_outline_width": 0.16,
+    "warning_size_scale": 0.68,
+    "warning_outline_width": 0.24,
     "warning_corner_radius": 6,
     "warning_outline_color": "#e53935",
     "warning_fill_color": "#ffef00",
     "roll_orientation": "horizontal",
-    "core_window_x": 2,
-    "core_window_y": 538,
-    "roll_window_x": 772,
-    "roll_window_y": 971,
-    "skill_window_x": 1178,
-    "skill_window_y": 930,
-    "center_text_offset_x": 2,
+    "core_window_x": 424,
+    "core_window_y": 696,
+    "roll_window_x": 620,
+    "roll_window_y": 770,
+    "skill_window_x": 300,
+    "skill_window_y": 770,
+    "center_text_offset_x": 0,
     "center_text_offset_y": 2,
-    "dh_text_outline_width": 4,
+    "dh_text_outline_width": 3,
     "dh_font_size_timer": 30,
     "center_text_offset_x_timer": 1,
-    "center_text_offset_y_timer": -6,
-    "dh_text_outline_width_timer": 4,
+    "center_text_offset_y_timer": -4,
+    "dh_text_outline_width_timer": 3,
     "text_color_timer": "#ffffff",
     "text_color_timer_opacity": 100,
-    "dh_text_outline_color_timer": "#7d2a00",
-    "dh_text_outline_color_timer_opacity": 50,
-    "icon_color": "#ffff00",
+    "dh_text_outline_color_timer": "#000000",
+    "dh_text_outline_color_timer_opacity": 100,
+    "icon_color": "#ff55ff",
     "roll_icon_opacity": 100,
     "timer_center_offset_y": 0,
     "auto_focus_minimize": False,
     "resolution_auto_scale": True,
-    "sync_exe_list": "C:\\Program Files\\GBFR Logs\\GBFR Logs.exe\nD:\\Program Files (x86)\\Steam\\steamapps\\common\\Granblue Fantasy Relink\\granblue_fantasy_relink.exe\nD:\\Program Files (x86)\\Netease\\UU\\uu_launcher.exe",
+    "sync_exe_list": "",
     "lv7_timer_y_offset": 6,
-    "lv7_timer_badge_width": 10,
-    "single_timer_y_offset": 0,
+    "lv7_timer_badge_width": 9,
+    "single_timer_y_offset": 6,
     "single_timer_badge_width": 9,
-    "single_timer_font_size": 12,
-    "single_timer_text_color": "#fce408",
+    "single_timer_font_size": 11,
+    "single_timer_text_color": "#ffee88",
     "single_timer_text_color_opacity": 100,
     "spike_hide_when_no_buff": True,
     "spike_hidden_opacity": 0,
     "show_spikes": True,
     "show_bead": True,
-    "out_of_combat_hide": True,
+    "out_of_combat_hide": False,
     "out_of_combat_opacity": 0,
     "show_titlebar_status": True,
-    "buff_enabled": {"PL0000_0": True, "PL0100_0": True, "PL0000_1": True, "PL0100_1": True, "PL0000_2": True, "PL0100_2": True, "PL0000_3": False, "PL0100_3": False, "PL0200_0": True, "PL0200_1": True, "PL0200_2": True, "PL0200_3": True, "PL0300_0": True, "PL0300_1": True, "PL0300_2": True, "PL0400_0": True, "PL0400_1": True, "PL0400_2": True, "PL0400_3": True, "PL0500_0": True, "PL0500_1": False, "PL0600_0": True, "PL0600_1": True, "PL0600_2": True, "PL0600_3": False, "PL0700_0": True, "PL0700_1": True, "PL0700_2": True, "PL0800_0": True, "PL0800_1": True, "PL0800_2": True, "PL0800_3": True, "PL0900_0": True, "PL0900_1": True, "PL0900_2": True, "PL0900_3": False, "PL1000_0": True, "PL1000_1": True, "PL1000_2": True, "PL1000_3": True, "PL1100_0": True, "PL1100_1": True, "PL1100_2": True, "PL1100_3": False, "PL1200_0": True, "PL1200_1": True, "PL1200_2": True, "PL1200_3": False, "PL1300_0": True, "PL1300_1": True, "PL1300_2": False, "PL1400_0": True, "PL1400_1": True, "PL1400_2": True, "PL1400_3": True, "PL1500_0": True, "PL1500_1": False, "PL1600_0": True, "PL1600_1": True, "PL1600_2": True, "PL1600_3": False, "PL1700_0": True, "PL1700_1": True, "PL1700_2": True, "PL1700_3": True, "PL1700_4": True, "PL1700_5": True, "PL1800_0": True, "PL1800_1": True, "PL1800_2": True, "PL1800_3": True, "PL1900_0": True, "PL1900_1": True, "PL1900_2": True, "PL1900_3": True, "PL1900_4": False, "PL2100_0": True, "PL2100_1": True, "PL2100_2": False, "PL2200_0": True, "PL2200_1": True, "PL2200_2": True, "PL2200_3": True, "PL2300_0": True, "PL2300_1": True, "PL2300_2": True, "PL2300_3": False, "PL2300_4": False, "PL2300_5": False, "PL2400_0": True, "PL2400_1": True, "PL2400_2": True, "PL2400_3": True, "PL2400_4": True, "PL2400_5": False, "PL2500_0": True, "PL2500_1": True, "PL2500_2": False, "PL2600_0": False, "PL2600_1": False, "PL2600_2": False, "PL2600_3": False, "PL2600_4": True, "PL2600_5": True, "PL2600_6": True, "PL2600_7": True, "PL2600_8": False, "PL2700_0": True, "PL2700_1": True, "PL2700_2": False, "PL2800_0": False, "PL2800_1": True, "PL2800_2": True, "PL2800_3": False, "PL2800_4": True, "PL2800_5": True, "PL2900_0": True, "PL2900_1": True, "PL2900_2": True},
+    "buff_enabled": {
+      "PL1100_0": True,
+      "PL2400_0": True,
+      "PL0700_0": True,
+      "PL0800_0": True,
+      "PL1900_0": True,
+      "PL2300_0": True,
+      "PL1700_0": True,
+      "PL1700_1": True,
+      "PL1600_0": True,
+      "PL1800_0": True,
+      "PL1000_0": True,
+      "PL2100_0": True,
+      "PL2200_0": True,
+      "PL2200_1": True
+    },
     "buff_order": {"PL0000_0": 1, "PL0100_0": 1, "PL0000_1": 2, "PL0100_1": 2, "PL0000_2": 3, "PL0100_2": 3, "PL0000_3": 4, "PL0100_3": 4, "PL0200_0": 1, "PL0200_1": 2, "PL0200_2": 3, "PL0200_3": 4, "PL0300_0": 1, "PL0300_1": 2, "PL0300_2": 3, "PL0400_0": 1, "PL0400_1": 2, "PL0400_2": 3, "PL0400_3": 4, "PL0500_0": 1, "PL0500_1": 2, "PL0600_0": 1, "PL0600_1": 2, "PL0600_2": 3, "PL0600_3": 4, "PL0700_0": 1, "PL0700_1": 2, "PL0700_2": 3, "PL0800_0": 1, "PL0800_1": 2, "PL0800_2": 3, "PL0800_3": 4, "PL0900_0": 1, "PL0900_1": 2, "PL0900_2": 3, "PL0900_3": 4, "PL1000_0": 1, "PL1000_1": 2, "PL1000_2": 3, "PL1000_3": 4, "PL1100_0": 1, "PL1100_1": 2, "PL1100_2": 3, "PL1100_3": 4, "PL1200_0": 1, "PL1200_1": 2, "PL1200_2": 3, "PL1200_3": 4, "PL1300_0": 1, "PL1300_1": 2, "PL1300_2": 3, "PL1400_0": 1, "PL1400_1": 2, "PL1400_2": 3, "PL1400_3": 4, "PL1500_0": 1, "PL1500_1": 2, "PL1600_0": 1, "PL1600_1": 2, "PL1600_2": 3, "PL1600_3": 4, "PL1700_0": 1, "PL1700_1": 2, "PL1700_2": 3, "PL1700_3": 4, "PL1700_4": 5, "PL1700_5": 6, "PL1800_0": 1, "PL1800_1": 2, "PL1800_2": 3, "PL1800_3": 4, "PL1900_0": 1, "PL1900_1": 2, "PL1900_2": 3, "PL1900_3": 4, "PL1900_4": 5, "PL2100_0": 1, "PL2100_1": 2, "PL2100_2": 3, "PL2200_0": 1, "PL2200_1": 2, "PL2200_2": 3, "PL2200_3": 4, "PL2300_0": 1, "PL2300_1": 2, "PL2300_2": 3, "PL2300_3": 4, "PL2300_4": 5, "PL2300_5": 6, "PL2400_0": 1, "PL2400_1": 2, "PL2400_2": 3, "PL2400_3": 4, "PL2400_4": 5, "PL2400_5": 6, "PL2500_0": 1, "PL2500_1": 2, "PL2500_2": 3, "PL2600_0": 1, "PL2600_1": 2, "PL2600_2": 3, "PL2600_3": 4, "PL2600_4": 5, "PL2600_5": 6, "PL2600_6": 7, "PL2600_7": 8, "PL2600_8": 9, "PL2700_0": 1, "PL2700_1": 2, "PL2700_2": 3, "PL2800_0": 1, "PL2800_1": 2, "PL2800_2": 3, "PL2800_3": 4, "PL2800_4": 5, "PL2800_5": 6, "PL2900_0": 1, "PL2900_1": 2, "PL2900_2": 3},
     "buff_mastery": {"PL0000_0": {"awakening": False, "truth": True, "secret": False}, "PL0100_0": {"awakening": False, "truth": True, "secret": False}, "PL0000_1": {"awakening": False, "truth": False, "secret": True}, "PL0100_1": {"awakening": False, "truth": False, "secret": True}, "PL0000_2": {"awakening": True, "truth": True, "secret": True}, "PL0100_2": {"awakening": True, "truth": True, "secret": True}, "PL0000_3": {"awakening": False, "truth": False, "secret": False}, "PL0100_3": {"awakening": False, "truth": False, "secret": False}, "PL0200_0": {"awakening": False, "truth": True, "secret": False}, "PL0200_1": {"awakening": False, "truth": False, "secret": True}, "PL0200_2": {"awakening": True, "truth": False, "secret": False}, "PL0200_3": {"awakening": True, "truth": True, "secret": True}, "PL0300_0": {"awakening": True, "truth": False, "secret": False}, "PL0300_1": {"awakening": True, "truth": True, "secret": True}, "PL0300_2": {"awakening": True, "truth": True, "secret": True}, "PL0400_0": {"awakening": True, "truth": True, "secret": True}, "PL0400_1": {"awakening": True, "truth": False, "secret": False}, "PL0400_2": {"awakening": True, "truth": False, "secret": False}, "PL0400_3": {"awakening": True, "truth": True, "secret": True}, "PL0500_0": {"awakening": True, "truth": False, "secret": False}, "PL0500_1": {"awakening": False, "truth": False, "secret": False}, "PL0600_0": {"awakening": True, "truth": True, "secret": True}, "PL0600_1": {"awakening": True, "truth": False, "secret": False}, "PL0600_2": {"awakening": True, "truth": False, "secret": False}, "PL0600_3": {"awakening": False, "truth": False, "secret": False}, "PL0700_0": {"awakening": False, "truth": True, "secret": False}, "PL0700_1": {"awakening": False, "truth": False, "secret": True}, "PL0700_2": {"awakening": True, "truth": True, "secret": True}, "PL0800_0": {"awakening": True, "truth": True, "secret": True}, "PL0800_1": {"awakening": True, "truth": False, "secret": False}, "PL0800_2": {"awakening": False, "truth": True, "secret": False}, "PL0800_3": {"awakening": True, "truth": True, "secret": True}, "PL0900_0": {"awakening": False, "truth": False, "secret": True}, "PL0900_1": {"awakening": True, "truth": False, "secret": False}, "PL0900_2": {"awakening": False, "truth": True, "secret": False}, "PL0900_3": {"awakening": False, "truth": False, "secret": False}, "PL1000_0": {"awakening": True, "truth": False, "secret": False}, "PL1000_1": {"awakening": False, "truth": True, "secret": False}, "PL1000_2": {"awakening": False, "truth": False, "secret": True}, "PL1000_3": {"awakening": True, "truth": True, "secret": True}, "PL1100_0": {"awakening": False, "truth": False, "secret": True}, "PL1100_1": {"awakening": True, "truth": False, "secret": False}, "PL1100_2": {"awakening": False, "truth": True, "secret": False}, "PL1100_3": {"awakening": False, "truth": False, "secret": False}, "PL1200_0": {"awakening": True, "truth": False, "secret": False}, "PL1200_1": {"awakening": False, "truth": True, "secret": False}, "PL1200_2": {"awakening": False, "truth": False, "secret": True}, "PL1200_3": {"awakening": False, "truth": False, "secret": False}, "PL1300_0": {"awakening": False, "truth": True, "secret": False}, "PL1300_1": {"awakening": False, "truth": False, "secret": True}, "PL1300_2": {"awakening": False, "truth": False, "secret": False}, "PL1400_0": {"awakening": True, "truth": False, "secret": False}, "PL1400_1": {"awakening": True, "truth": False, "secret": False}, "PL1400_2": {"awakening": False, "truth": True, "secret": False}, "PL1400_3": {"awakening": True, "truth": True, "secret": True}, "PL1500_0": {"awakening": True, "truth": False, "secret": False}, "PL1500_1": {"awakening": False, "truth": False, "secret": False}, "PL1600_0": {"awakening": True, "truth": False, "secret": False}, "PL1600_1": {"awakening": False, "truth": True, "secret": False}, "PL1600_2": {"awakening": False, "truth": False, "secret": True}, "PL1600_3": {"awakening": False, "truth": False, "secret": False}, "PL1700_0": {"awakening": True, "truth": True, "secret": True}, "PL1700_1": {"awakening": True, "truth": False, "secret": False}, "PL1700_2": {"awakening": False, "truth": True, "secret": False}, "PL1700_3": {"awakening": False, "truth": False, "secret": True}, "PL1700_4": {"awakening": True, "truth": True, "secret": True}, "PL1700_5": {"awakening": True, "truth": True, "secret": True}, "PL1800_0": {"awakening": False, "truth": True, "secret": False}, "PL1800_1": {"awakening": True, "truth": True, "secret": True}, "PL1800_2": {"awakening": True, "truth": False, "secret": False}, "PL1800_3": {"awakening": True, "truth": True, "secret": True}, "PL1900_0": {"awakening": True, "truth": False, "secret": False}, "PL1900_1": {"awakening": True, "truth": True, "secret": True}, "PL1900_2": {"awakening": True, "truth": True, "secret": True}, "PL1900_3": {"awakening": True, "truth": True, "secret": True}, "PL1900_4": {"awakening": False, "truth": False, "secret": False}, "PL2100_0": {"awakening": True, "truth": False, "secret": False}, "PL2100_1": {"awakening": False, "truth": True, "secret": False}, "PL2100_2": {"awakening": False, "truth": False, "secret": False}, "PL2200_0": {"awakening": True, "truth": False, "secret": False}, "PL2200_1": {"awakening": False, "truth": False, "secret": True}, "PL2200_2": {"awakening": False, "truth": False, "secret": True}, "PL2200_3": {"awakening": True, "truth": True, "secret": True}, "PL2300_0": {"awakening": True, "truth": False, "secret": False}, "PL2300_1": {"awakening": False, "truth": True, "secret": True}, "PL2300_2": {"awakening": False, "truth": True, "secret": False}, "PL2300_3": {"awakening": False, "truth": False, "secret": False}, "PL2300_4": {"awakening": False, "truth": False, "secret": False}, "PL2300_5": {"awakening": False, "truth": False, "secret": False}, "PL2400_0": {"awakening": True, "truth": True, "secret": True}, "PL2400_1": {"awakening": False, "truth": False, "secret": True}, "PL2400_2": {"awakening": False, "truth": True, "secret": False}, "PL2400_3": {"awakening": False, "truth": True, "secret": False}, "PL2400_4": {"awakening": True, "truth": False, "secret": False}, "PL2400_5": {"awakening": False, "truth": False, "secret": False}, "PL2500_0": {"awakening": False, "truth": True, "secret": False}, "PL2500_1": {"awakening": True, "truth": True, "secret": True}, "PL2500_2": {"awakening": False, "truth": False, "secret": False}, "PL2600_0": {"awakening": False, "truth": False, "secret": False}, "PL2600_1": {"awakening": False, "truth": False, "secret": False}, "PL2600_2": {"awakening": False, "truth": False, "secret": False}, "PL2600_3": {"awakening": False, "truth": False, "secret": False}, "PL2600_4": {"awakening": False, "truth": True, "secret": False}, "PL2600_5": {"awakening": False, "truth": True, "secret": False}, "PL2600_6": {"awakening": False, "truth": True, "secret": False}, "PL2600_7": {"awakening": False, "truth": True, "secret": False}, "PL2600_8": {"awakening": False, "truth": False, "secret": False}, "PL2700_0": {"awakening": False, "truth": False, "secret": True}, "PL2700_1": {"awakening": True, "truth": True, "secret": True}, "PL2700_2": {"awakening": False, "truth": False, "secret": False}, "PL2800_0": {"awakening": False, "truth": False, "secret": False}, "PL2800_1": {"awakening": True, "truth": False, "secret": False}, "PL2800_2": {"awakening": True, "truth": False, "secret": False}, "PL2800_3": {"awakening": False, "truth": False, "secret": False}, "PL2800_4": {"awakening": True, "truth": True, "secret": True}, "PL2800_5": {"awakening": True, "truth": True, "secret": True}, "PL2900_0": {"awakening": True, "truth": False, "secret": False}, "PL2900_1": {"awakening": False, "truth": False, "secret": True}, "PL2900_2": {"awakening": True, "truth": True, "secret": True}},
     "buff_order_direction": "ltr",
-    "multi_buff_scale_2": 100,
-    "multi_buff_hgap_2": 185,
-    "multi_buff_dy_2": 38,
+    "multi_buff_scale_2": 80,
+    "multi_buff_hgap_2": 110,
+    "multi_buff_dy_2": 34,
     "multi_buff_ext_color_2": True,
-    "multi_buff_int_color_2": False,
-    "multi_buff_color_mode_2": "monochrome",
-    "multi_buff_mono_span_2": -27,
-    "multi_buff_scale_3": 100,
-    "multi_buff_hgap_3": 158,
-    "multi_buff_dy_3": -38,
+    "multi_buff_int_color_2": True,
+    "multi_buff_color_mode_2": "uniform",
+    "multi_buff_mono_span_2": 15,
+    "multi_buff_scale_3": 70,
+    "multi_buff_hgap_3": 104,
+    "multi_buff_dy_3": 30,
     "multi_buff_ext_color_3": True,
-    "multi_buff_int_color_3": False,
-    "multi_buff_color_mode_3": "monochrome",
-    "multi_buff_mono_span_3": -11,
-    "multi_buff_scale_4": 100,
-    "multi_buff_hgap_4": 140,
-    "multi_buff_dy_4": 57,
+    "multi_buff_int_color_3": True,
+    "multi_buff_color_mode_3": "uniform",
+    "multi_buff_mono_span_3": 15,
+    "multi_buff_scale_4": 60,
+    "multi_buff_hgap_4": 98,
+    "multi_buff_dy_4": 26,
     "multi_buff_ext_color_4": True,
-    "multi_buff_int_color_4": False,
-    "multi_buff_color_mode_4": "monochrome",
-    "multi_buff_mono_span_4": -12,
-    "multi_buff_scale_5": 88,
-    "multi_buff_hgap_5": 103,
-    "multi_buff_dy_5": 62,
+    "multi_buff_int_color_4": True,
+    "multi_buff_color_mode_4": "uniform",
+    "multi_buff_mono_span_4": 15,
+    "multi_buff_scale_5": 52,
+    "multi_buff_hgap_5": 92,
+    "multi_buff_dy_5": 22,
     "multi_buff_ext_color_5": True,
-    "multi_buff_int_color_5": False,
-    "multi_buff_color_mode_5": "monochrome",
-    "multi_buff_mono_span_5": -7,
-    "show_buff_name": True,
-    "buff_name_font_size": 10,
+    "multi_buff_int_color_5": True,
+    "multi_buff_color_mode_5": "uniform",
+    "multi_buff_mono_span_5": 15,
+    "show_buff_name": False,
+    "buff_name_font_size": 8,
     "buff_name_offset_x": 0,
-    "buff_name_offset_y": 4,
+    "buff_name_offset_y": -4,
     "buff_name_bg_width": -4,
-    "buff_name_color": "#ffffff",
+    "buff_name_color": "#ff0000",
     "buff_name_color_opacity": 80,
     "show_core_module": True,
     "show_roll_module": True,
     "show_skill_cd_module": True,
-    "skill_cd_size": 30,
-    "skill_cd_spread": 41,
-    "skill_cd_color": "#ffe608",
+    "skill_cd_size": 24,
+    "skill_cd_spread": 90,
+    "skill_cd_color": "#55aaff",
     "skill_cd_capsule_bg": "#0a0e1a",
     "skill_cd_capsule_border": "#55aaff",
     "skill_cd_text_color": "#ffffff",
     "skill_cd_show_name": True,
-    "skill_cd_name_font_size": 9,
+    "skill_cd_name_font_size": 7,
     "skill_cd_name_offset_x": 0,
-    "skill_cd_name_offset_y": 14,
+    "skill_cd_name_offset_y": 0,
     "skill_cd_name_bg_width": 0,
-    "skill_cd_font_size": 13,
+    "skill_cd_font_size": 12,
     "skill_cd_capsule_width": 0,
     "skill_cd_timer_offset_x": 0,
     "skill_cd_timer_offset_y": 0,
-    "skill_cd_name_color": "#ffffff",
-    "skill_cd_bg_opacity": 10,
-    "skill_cd_sector_opacity": 100,
-    "skill_cd_border_opacity": 100,
-    "skill_cd_capsule_opacity": 90,
-    "skill_cd_border_scale": 2.0,
+    "skill_cd_name_color": "#aaccff",
+    "skill_cd_bg_opacity": 16,
+    "skill_cd_sector_opacity": 53,
+    "skill_cd_border_opacity": 71,
+    "skill_cd_capsule_opacity": 63,
+    "skill_cd_border_scale": 1.35,
     "skill_cd_breath_enabled": True,
-    "skill_cd_breath_color": "#ffffff",
-    "skill_cd_breath_color_opacity": 50,
-    "skill_cd_breath_freq": 1.5,
-    "skill_cd_breath_soft": 0.3,
-    "skill_cd_breath_scale": 0.9,
+    "skill_cd_breath_color": "#ffcc00",
+    "skill_cd_breath_color_opacity": 90,
+    "skill_cd_breath_freq": 0.5,
+    "skill_cd_breath_soft": 1.0,
+    "skill_cd_breath_scale": 1.0,
     "skill_cooldown_max": {"AB_PL0400_05": 19.999998092651367, "AB_PL0400_02": 19.999998092651367, "AB_PL0400_07": 150.0, "AB_PL0400_03": 134.88803100585938, "AB_PL0000_02": 34.20000076293945, "AB_PL0000_03": 64.79999542236328, "AB_PL0000_10": 11.399999618530273, "AB_PL0000_01": 34.16654586791992, "AB_PL0800_06": 34.79999923706055, "AB_PL0300_05": 56.999996185302734, "AB_PL0300_03": 72.0, "AB_PL0300_06": 67.99999237060547, "AB_PL0300_01": 18.999998092651367, "AB_PL2100_05": 79.99999237060547, "AB_PL2100_07": 119.99999237060547, "AB_PL1700_01": 15.999999046325684, "AB_PL1700_04": 182.39999389648438, "AB_PL0700_05": 21.566556930541992, "AB_PL0700_06": 64.79999542236328, "AB_PL1700_03": 31.999998092651367, "AB_PL1900_06": 88.19999694824219, "1061903518": 110.0, "410537208": 19.599998474121094, "AB_PL1900_04": 180.0, "AB_PL1900_05": 29.39999771118164, "AB_PL1900_07": 58.79999542236328, "8315566": 88.19999694824219, "4211050552": 34.20000076293945, "AB_PL0400_06": 75.99999237060547, "AB_PL2500_02": 79.99999237060547, "AB_PL2500_03": 81.0, "AB_PL2500_04": 75.99999237060547, "AB_PL0900_08": 146.97265625, "AB_PL0900_07": 58.79999542236328, "AB_PL0900_05": 29.383329391479492, "AB_PL0900_04": 29.374990463256836, "AB_PL0700_01": 50.99166488647461, "823262814": 35.0, "3372778876": 46.79999542236328, "AB_PL2400_06": 22.5, "AB_PL2300_08": 188.99998474121094, "AB_PL2300_02": 162.0, "AB_PL2200_08": 377.9999694824219, "AB_PL2200_02": 29.39999771118164, "AB_PL1700_06": 41.14895248413086, "3496260479": 34.991661071777344, "AB_PL2800_04": 14.69999885559082, "4011919540": 70.19999694824219, "AB_PL0700_07": 130.5, "AB_PL0900_03": 53.999996185302734, "AB_PL1100_05": 98.39999389648438, "AB_PL1100_06": 87.29999542236328, "AB_PL1100_03": 77.5999984741211, "AB_PL1100_01": 14.549999237060547, "AB_PL2100_02": 44.99153518676758, "AB_PL0200_06": 107.99999237060547, "AB_PL0600_02": 23.999998092651367, "AB_PL0600_06": 95.0, "AB_PL0600_05": 93.5, "AB_PL0600_04": 25.499998092651367, "AB_PL2600_08": 142.5, "AB_PL2600_03": 45.0, "AB_PL2600_05": 56.999996185302734, "1113019419": 11.399999618530273, "2861865630": 22.799999237060547, "AB_PL0800_02": 104.375, "AB_PL0800_08": 43.4832763671875, "AB_PL0800_01": 10.4399995803833, "AB_PL2600_06": 45.0, "AB_PL2600_01": 19.999998092651367, "AB_PL0300_08": 97.19999694824219, "AB_PL0300_04": 18.0, "AB_PL1600_08": 26.099998474121094, "AB_PL2800_01": 44.099998474121094, "AB_PL2800_05": 44.099998474121094, "AB_PL0700_04": 60.79999542236328, "AB_PL2600_02": 14.999999046325684, "AB_PL2300_07": 111.59999084472656, "AB_PL2300_01": 74.39999389648438},
-    "class_duration_max": 7.1750030517578125,
+    "class_duration_max": 0.0,
     "kronos_freeze_max": 10.0,
     "auto_check_update": True,
     "enable_sync_exe_list": True,
-    "skip_version": "6.80",
+    "skip_version": "",
     "update_check_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/version.json",
-    "update_download_url": "https://github.com/Dangoooooo613/GBFR_BuffTimerIndicator/releases/latest/download/GBFR_CooldownIndicator_V2001.exe",
+    "update_download_url": "",
     # V2039：颜色选择对话框的 16 格「自定义颜色」持久化（之前关闭软件即丢失）。
     # 每次 pick_color 入口前从 settings 还原、关闭后回写 save_settings。
     "custom_palette": [],
     "global_hotkey_show_enabled": True,
-    "global_hotkey_show": "17,219",
-    "global_hotkey_lock_enabled": True,
-    "global_hotkey_lock": "17,221",
-    "global_hotkey_settings_enabled": True,
-    "global_hotkey_settings": "17,186",
-    "global_hotkey_key": "79",
+    "global_hotkey_show": "17,75",
+    "global_hotkey_lock_enabled": False,
+    "global_hotkey_lock": "",
+    "global_hotkey_settings_enabled": False,
+    "global_hotkey_settings": "",
+    "global_hotkey_key": "k",
     "titlebar_icon_indent": 16,
     "global_hotkey_enabled": True,
     "grace_max": 20.0,
     "pos_res_normalized": True,
+    # ============ V2050：全 Buff 显示模块（第四模块）============
+    # 模块交集特质：独立显隐开关 / 独立屏幕位置 XY / 整体缩放 / 位置与缩放子页 / 元素级透明度
+    "show_allbuff_module": True,
+    "allbuff_window_x": 2,
+    "allbuff_window_y": 1024,
+    "allbuff_scale_percent": 100,
+    # 布局：每行数量 / 显示行数 / 行间距 / 卡片间距
+    # V2104：恢复「显示行数」可调——模块尺寸 = per_row × rows，Debuff 排在全部 Buff 之后（不分行）。
+    "allbuff_per_row": 10,  # V2104：默认每行 10 个（可调）
+    "allbuff_rows": 3,      # V2104：默认显示 3 行（可调）；容量 = per_row × rows，超出截断
+    "allbuff_row_spacing": 4,
+    "allbuff_card_spacing": 4,
+    # V2063：排序方式——「id_asc」按 sid 数值升序（默认，历史行为）；
+    # 「appearance」按首次出现的相对顺序，消失→重新出现不算新条目，buff 在原位。
+    "allbuff_sort_mode": "id_asc",
+    # V2093：「按出现时间」排序的「消失宽限秒数」——buff 从原始数据源里读不到后，
+    # 等待这么多秒才真正清除它的排序号。防内存读取偶发抖动（一帧读不到）导致
+    # 排序号被误清 → buff 重现时排到队尾 → 卡片位置跳变（玩家感觉「排序不对」）。
+    # 0 = 立即清除（V2092 及更早行为）。推荐 1.0 秒。
+    "allbuff_seq_gone_grace_sec": 1.0,
+    # 三处文字（名称 / 层数 / 时间）：各自字号 + 颜色
+    "allbuff_name_font_size": 11,
+    "allbuff_name_color": "#ffffff",
+    "allbuff_stacks_font_size": 10,
+    "allbuff_stacks_color": "#ffe608",
+    "allbuff_time_font_size": 10,
+    "allbuff_time_color": "#ffffff",
+    # 倒计时横条：宽 / 高 / 颜色 / 不透明度（独立可调）
+    "allbuff_bar_color": "#55ff00",
+    "allbuff_bar_color_opacity": 100,
+    "allbuff_bar_width": 60,
+    "allbuff_bar_height": 5,
+    # V2060：进度条外框粗细（0=不要外框；>0=画 bar 色 4 边线，标识 100% 上限）
+    "allbuff_bar_frame_thickness": 2,
+    # 文字衬底（三处文字共用一套衬底样式）：宽 / 高 / 颜色 / 不透明度
+    # V2062：bw/bh 含义改为「自适应 floor 上限」—— 自适应当前 font/elem_sp/bar/frame 设置
+    #        计算最小显示需求，取 max(自适应最小值, 用户设置)。永远不裁切 buff 内容。
+    "allbuff_backing_color": "#000000",
+    "allbuff_backing_color_opacity": 50,
+    "allbuff_backing_width": 80,                # V2061: 72→80 避免 "9999.0/9999.0" 贴边（V2062: 作为 floor；自适应 ≥72 时取自适应）
+    "allbuff_backing_height": 64,               # V2061: 52→64 留 4-6px 底部呼吸（V2062: 作为 floor；自适应 ≥62 时取自适应）
+    # V2064：画布级不透明背景填充（防止设置对话框等其他窗口的内容透过；0 = 透明背景）
+    "allbuff_canvas_bg_opacity": 0,
+    # V2060：卡片内 名称名称↔层数↔时间↔进度条 之间统一的垂直间距（单参通用）
+    "allbuff_element_spacing": 4,
+    # V2074：行高加成——在三行文字（name/stacks/time）的实测 QFontMetrics.height() 基础上
+    # 额外加的高度（px）。默认 0=自动够用（不切字）；调大=每行字与卡片上下边留更多 padding。
+    # 与「元素间距」的区别：元素间距是行与行之间的空隙；行高加成是每行自己的高度。
+    "allbuff_row_height_extra": 0,
+    # 过滤开关（默认全关 = 显示全部）
+    "allbuff_exclude_core": False,      # 不显示核心区已展示的
+    "allbuff_exclude_infinite": False,  # 不显示永续的
+    "allbuff_exclude_exclusive": False, # 不显示角色专属的
+    "allbuff_exclude_mastery": False,   # 不显示专精专属
+    "allbuff_exclude_single": False,    # 不显示单层
+    # V2066：门限（gate）——搬自 GBFR_BuffMonitor 的 monitor 风格数值废料过滤（全部可开关）
+    # 默认行为：所有数值门限启用，时长上限放宽到 10000s（避免误伤变身/长 buff）。
+    "allbuff_gate_filter_status_id_zero": False,   # status_id==0 过滤（默认关：攻击UP 的 id=0 要保留）
+    "allbuff_gate_enabled_status_id_max": True,    # status_id 上限开关
+    "allbuff_gate_status_id_max": 0xFFFF,          # status_id 上限 (超出当垃圾丢弃)
+    "allbuff_gate_enabled_sub_id_max": True,       # sub_id 上限开关
+    "allbuff_gate_sub_id_max": 0xFFFF,             # sub_id 上限 (超过当垃圾丢弃)
+    "allbuff_gate_enabled_stacks_max": True,       # 当前层数上限开关
+    "allbuff_gate_stacks_max": 100,                # 当前层数上限
+    "allbuff_gate_enabled_max_stacks_max": False,  # 上限层数上限开关（默认关）
+    "allbuff_gate_max_stacks_max": 100,            # 上限层数上限
+    "allbuff_gate_check_stack_conflict": True,     # 层数矛盾检查 (stacks>上限 丢弃)
+    "allbuff_gate_enabled_min_remaining_time": True,  # 最小剩余时间开关
+    "allbuff_gate_min_remaining_time": 0.05,      # 最小剩余时间(秒)
+    "allbuff_gate_enabled_min_initial_time": True,    # 最小持续时间开关
+    "allbuff_gate_min_initial_time": 0.05,         # 最小持续时间(秒)
+    "allbuff_gate_enabled_min_appearance_time": True,  # V2084 最小出现持续时间开关：buff 首次被观测到后需持续 ≥N 秒才算有效（防瞬时 buff 闪屏）
+    "allbuff_gate_min_appearance_time": 0.1,       # V2084 最小出现持续时间（秒）——默认 0.1s
+    "allbuff_gate_enabled_duration_max": True,     # 时长上限开关
+    "allbuff_gate_duration_max": 10000.0,          # 时长上限(秒)
+    "allbuff_gate_check_nan_inf": True,            # NaN/Inf 检查
+    # V2095：status_id==0 的条目不允许是「永续」——攻击UP（攻击力强化）不可能是永续 buff，
+    # 游戏里 sid=0 槽位残留的垃圾条目会把 infinite 标志位置 1，被误认成永续 → 丢弃。
+    "allbuff_gate_status_id_zero_not_infinite": True,
+    # V2060：倒计时尾声警告（remaining/.initial < 阈值% 时，时间文字 + 进度条切到警告色）
+    "allbuff_warn_enabled": False,
+    "allbuff_warn_threshold_pct": 20,
+    "allbuff_warn_color": "#FF3030",
+    "allbuff_warn_color_opacity": 100,
+    # V2060：Debuff 配色（编号 ≥ 1000 视为 debuff）—— 名称/层数/时间/进度条 四件套独立
+    "allbuff_debuff_name_color": "#FF80A0",
+    "allbuff_debuff_stacks_color": "#FFA0C0",
+    "allbuff_debuff_time_color": "#FFB0B0",
+    "allbuff_debuff_bar_color": "#FF4040",
+    # V2060：Debuff 警告色（默认开启，纯白更醒目）
+    "allbuff_debuff_warn_enabled": True,
+    "allbuff_debuff_warn_color": "#FFFFFF",
+    "allbuff_debuff_warn_color_opacity": 100,
 }
 
 def load_settings():
@@ -2101,7 +2391,9 @@ class SettingsDialog(QDialog):
             "QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox,QPlainTextEdit{background:#242c40;color:#dce8f8;border:1px solid #3a4860;padding:3px;border-radius:4px;}"
             "QPlainTextEdit{color:#dce8f8;}"
             "QComboBox QAbstractItemView{background:#242c40;color:#ffffff;selection-background-color:#3a4860;selection-color:#ffffff;border:1px solid #3a4860;outline:0;}"
-            "QComboBox::drop-down{border:none;}"
+            # V2077~V2079 尝试 QSS sub-control 画下拉箭头（utf8 SVG/base64 SVG/CSS border）均失败。
+            # V2080 改用独立 QLabel（cf.addRow 处）显示 ▼ 字符——QLabel 是普通 widget，100% 可靠。
+            # QSS 这里不再干预 QComboBox::drop-down，让原生外观走（排序方式那个 combo 由 V2080 单独接管右侧视觉）。
             "QPushButton{background:#2a3450;color:#fff;border:1px solid #3a4860;padding:5px 15px;border-radius:4px;}"
             "QPushButton:hover{background:#3a4860;}"
             "QCheckBox{color:#ffffff; spacing:8px;}"
@@ -2110,6 +2402,19 @@ class SettingsDialog(QDialog):
             "QCheckBox::indicator:checked{background:#8c00ff;border:2px solid #c8a6ff;}"
             "QCheckBox::indicator:unchecked{background:#1a2030;border:2px solid #60708c;}"
             "QSpinBox::up-button,QSpinBox::down-button{width:0px;border:none;}"
+            # V2091：用户要求滚动条加宽到默认的 2.4 倍（系统默认 16px → 38px）。
+            # QSS 写在主对话框 → 子 widget 的 QScrollBar 也会继承（Qt 样式继承机制），
+            # 因此设置对话框里所有滚动条（含子页/列表等）统一变宽。
+            "QScrollBar:vertical{width:38px;background:#1a2030;border:none;margin:0;}"
+            "QScrollBar:horizontal{height:38px;background:#1a2030;border:none;margin:0;}"
+            "QScrollBar::handle:vertical{background:#3a4860;border-radius:6px;min-height:40px;margin:2px 4px;border:none;}"
+            "QScrollBar::handle:horizontal{background:#3a4860;border-radius:6px;min-width:40px;margin:4px 2px;border:none;}"
+            "QScrollBar::handle:vertical:hover{background:#5a6a90;}"
+            "QScrollBar::handle:horizontal:hover{background:#5a6a90;}"
+            "QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{height:0px;background:none;border:none;}"
+            "QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal{width:0px;background:none;border:none;}"
+            "QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{background:transparent;}"
+            "QScrollBar::add-page:horizontal,QScrollBar::sub-page:horizontal{background:transparent;}"
         )
 
         layout = QVBoxLayout(self)
@@ -2245,7 +2550,8 @@ class SettingsDialog(QDialog):
         self.resolution_auto_scale = QCheckBox("按当前屏幕宽度自动放大")
         self.resolution_auto_scale.setChecked(bool(self.settings.get("resolution_auto_scale", DEFAULT_SETTINGS["resolution_auto_scale"])))
         cf.addRow("随分辨率放大:", self.resolution_auto_scale)
-        self.ooc_hide_chk = QCheckBox("未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）")
+        # V2084：文本修缮，列入"全 Buff 模块"（之前漏了），与 about 页文档保持一致
+        self.ooc_hide_chk = QCheckBox(_tr("非战斗时隐藏全部 UI（尖刺圆/全 Buff/核心/翻滚/技能 UI）"))
         self.ooc_hide_chk.setChecked(bool(self.settings.get("out_of_combat_hide", DEFAULT_SETTINGS["out_of_combat_hide"])))
         cf.addRow("非战斗隐藏:", self.ooc_hide_chk)
         self.ooc_op_spn = QSpinBox()
@@ -2270,6 +2576,9 @@ class SettingsDialog(QDialog):
         self.show_skill_module_chk = QCheckBox("能力冷却模块")
         self.show_skill_module_chk.setChecked(bool(self.settings.get("show_skill_cd_module", True)))
         cf.addRow(self.show_skill_module_chk)
+        self.show_allbuff_module_chk = QCheckBox(_tr("全Buff显示模块"))
+        self.show_allbuff_module_chk.setChecked(bool(self.settings.get("show_allbuff_module", True)))
+        cf.addRow(self.show_allbuff_module_chk)
         f.addRow(card)
         # 全局快捷键（移回全局-常规标签）
         card, cf = make_card(f, "── 全局快捷键 ──")
@@ -2709,6 +3018,210 @@ class SettingsDialog(QDialog):
         self.skill_scale_slider, self.skill_scale_spin = _mk_scale_row(cf, "skill", "模块缩放:")
         f.addRow(card)
 
+        # ============ 顶级标签 5: 全Buff显示模块（第四模块）============
+        a_sub = make_top_tab(_tr("全Buff模块"))
+        # 位置与缩放
+        f = make_sub_tab(a_sub, _tr("位置与缩放"))
+        card, cf = make_card(f, "── " + _tr("全Buff显示模块") + " ──")
+        self.allbuff_x_spn, self.allbuff_y_spn = _mk_pos_row(cf, "allbuff_window_x", "allbuff_window_y")
+        self.allbuff_scale_slider, self.allbuff_scale_spin = _mk_scale_row(cf, "allbuff", _tr("模块缩放:"))
+        f.addRow(card)
+        # 布局
+        f = make_sub_tab(a_sub, _tr("布局"))
+        card, cf = make_card(f, "── " + _tr("布局") + " ──")
+        # V2104：恢复「显示行数」控件（之前 V2062 删除，行数改为自动延伸；现改回固定网格可调）
+        self.allbuff_per_row_spn = QSpinBox(); self.allbuff_per_row_spn.setRange(1, 30); self.allbuff_per_row_spn.setValue(int(self.settings.get("allbuff_per_row", 10)))
+        cf.addRow(_tr("每行数量"), self.allbuff_per_row_spn)
+        self.allbuff_rows_spn = QSpinBox(); self.allbuff_rows_spn.setRange(1, 20); self.allbuff_rows_spn.setValue(int(self.settings.get("allbuff_rows", 3)))
+        cf.addRow(_tr("显示行数"), self.allbuff_rows_spn)
+        self.allbuff_row_spacing_spn = QSpinBox(); self.allbuff_row_spacing_spn.setRange(0, 100); self.allbuff_row_spacing_spn.setSuffix(" px"); self.allbuff_row_spacing_spn.setValue(int(self.settings.get("allbuff_row_spacing", 4)))
+        cf.addRow(_tr("行间距"), self.allbuff_row_spacing_spn)
+        self.allbuff_card_spacing_spn = QSpinBox(); self.allbuff_card_spacing_spn.setRange(0, 100); self.allbuff_card_spacing_spn.setSuffix(" px"); self.allbuff_card_spacing_spn.setValue(int(self.settings.get("allbuff_card_spacing", 4)))
+        cf.addRow(_tr("卡片间距"), self.allbuff_card_spacing_spn)
+        # V2063：排序方式
+        self.allbuff_sort_mode_combo = QComboBox()
+        self.allbuff_sort_mode_combo.addItem(_tr("按ID升序"), "id_asc")
+        self.allbuff_sort_mode_combo.addItem(_tr("按出现时间"), "appearance")
+        _cur_sort = self.settings.get("allbuff_sort_mode", DEFAULT_SETTINGS["allbuff_sort_mode"])
+        _idx_sort = self.allbuff_sort_mode_combo.findData(_cur_sort)
+        if _idx_sort < 0:
+            _idx_sort = 0
+        self.allbuff_sort_mode_combo.setCurrentIndex(_idx_sort)
+        self.allbuff_sort_mode_combo.setToolTip(_tr("决定 buff 卡片的排列方式。「按ID」按编号数值升序（稳定）；「按出现时间」按首次进入列表的相对顺序，新出现的Buff 排在末尾；V2076 修复：消失-再出现的Buff **重新**分配排序号（先出的在最前，消失后清空它自己的排序号，回归时按当前最大号+1 重新算）。例：ABC 依次出现 → ABC；B 消失 → AC；B 重现 → ACB。"))
+        # V2080：QSS sub-control 渲染 QComboBox::down-arrow 不可靠（V2077 utf8 SVG 不支持、V2078 base64 SVG 缺 QtSvg、
+        # V2079 CSS border 退化成方块），改用 QHBoxLayout 套独立 QLabel ▼ 字符——QLabel 是普通 widget 100% 可靠。
+        _sort_hbox = QHBoxLayout(); _sort_hbox.setContentsMargins(0, 0, 0, 0); _sort_hbox.setSpacing(0)
+        _sort_hbox.addWidget(self.allbuff_sort_mode_combo, 1)
+        _sort_arrow = QLabel("▼")
+        _sort_arrow.setFixedWidth(22)
+        _sort_arrow.setAlignment(Qt.AlignCenter)
+        _sort_arrow.setStyleSheet("color:#dce8f8;background:#2a3450;border:1px solid #3a4860;border-left:none;border-top-right-radius:4px;border-bottom-right-radius:4px;font-size:10px;")
+        _sort_hbox.addWidget(_sort_arrow)
+        _sort_widget = QWidget(); _sort_widget.setLayout(_sort_hbox)
+        # 把 combo 的边框去掉（QLabel 接管右侧视觉边框）
+        self.allbuff_sort_mode_combo.setStyleSheet("QComboBox{border-top-right-radius:0px;border-bottom-right-radius:0px;}")
+        cf.addRow(_tr("排序方式"), _sort_widget)
+        # V2093：「按出现时间」排序的消失宽限秒数——buff 读不到后等这么多秒才真清排序号，
+        # 防内存读取抖动（一帧读不到）导致排序号被误清 → buff 重现时排到队尾 → 位置跳变。
+        # 0 = 立即清除（V2092 及更早行为）。
+        self.allbuff_seq_gone_grace_dspn = QDoubleSpinBox()
+        self.allbuff_seq_gone_grace_dspn.setRange(0.0, 10.0)
+        self.allbuff_seq_gone_grace_dspn.setSingleStep(0.1)
+        self.allbuff_seq_gone_grace_dspn.setDecimals(1)
+        self.allbuff_seq_gone_grace_dspn.setSuffix(" s")
+        self.allbuff_seq_gone_grace_dspn.setValue(float(self.settings.get("allbuff_seq_gone_grace_sec", 1.0)))
+        self.allbuff_seq_gone_grace_dspn.setToolTip(_tr("仅对「按出现时间」排序生效。Buff 从游戏数据里读不到后，等待这么多秒才真正清除它的排序号。0 = 立即清除；调大可防止读取抖动导致卡片位置跳变，但真消失的 Buff 要等更久才会重新排到队尾。"))
+        cf.addRow(_tr("排序号消失宽限"), self.allbuff_seq_gone_grace_dspn)
+        # V2060：单参通用——卡片内 名称↔层数↔时间↔进度条 之间的统一垂直间距
+        # V2075：允许负值——负间距让行与行更紧凑（可重叠），用于压缩卡片高度
+        self.allbuff_element_spacing_spn = QSpinBox(); self.allbuff_element_spacing_spn.setRange(-20, 30); self.allbuff_element_spacing_spn.setSuffix(" px"); self.allbuff_element_spacing_spn.setValue(int(self.settings.get("allbuff_element_spacing", 4)))
+        cf.addRow(_tr("元素间距"), self.allbuff_element_spacing_spn)
+        # V2074：行高加成——每行文字自己的高度，在实测 QFontMetrics.height() 基础上额外加 px
+        # V2075：允许负值——负加成让行高比自动测量更紧（可能切字，玩家自行权衡）
+        self.allbuff_row_height_extra_spn = QSpinBox(); self.allbuff_row_height_extra_spn.setRange(-10, 20); self.allbuff_row_height_extra_spn.setSuffix(" px"); self.allbuff_row_height_extra_spn.setValue(int(self.settings.get("allbuff_row_height_extra", 0)))
+        self.allbuff_row_height_extra_spn.setToolTip(_tr("每行文字自己的高度加成。0=自动（按系统字体测量，保证不切字）；调大=每行字与卡片上下边留更多空隙。与「元素间距」不同——元素间距是行与行之间的空隙，行高加成是每行自己的高度。"))
+        cf.addRow(_tr("行高加成"), self.allbuff_row_height_extra_spn)
+        # V2060：进度条外框粗细（0=纯填充无外框；>0=画 4 边线作为 100% 上限标识）
+        self.allbuff_bar_frame_thickness_spn = QSpinBox(); self.allbuff_bar_frame_thickness_spn.setRange(0, 10); self.allbuff_bar_frame_thickness_spn.setSuffix(" px"); self.allbuff_bar_frame_thickness_spn.setValue(int(self.settings.get("allbuff_bar_frame_thickness", 2)))
+        cf.addRow(_tr("进度条边框粗细"), self.allbuff_bar_frame_thickness_spn)
+        f.addRow(card)
+        # V2066：「过滤」——显示层面开关（核心/永续/专属/专精/单层）（门限在下方独立 tab）
+        f = make_sub_tab(a_sub, _tr("过滤"))
+        card, cf = make_card(f, "── " + _tr("过滤") + " ──")
+        self.allbuff_exclude_core_chk = QCheckBox(_tr("不显示核心区已展示的"))
+        self.allbuff_exclude_core_chk.setChecked(bool(self.settings.get("allbuff_exclude_core", False)))
+        cf.addRow(self.allbuff_exclude_core_chk)
+        self.allbuff_exclude_infinite_chk = QCheckBox(_tr("不显示永续的"))
+        self.allbuff_exclude_infinite_chk.setChecked(bool(self.settings.get("allbuff_exclude_infinite", False)))
+        cf.addRow(self.allbuff_exclude_infinite_chk)
+        self.allbuff_exclude_exclusive_chk = QCheckBox(_tr("不显示角色专属的"))
+        self.allbuff_exclude_exclusive_chk.setChecked(bool(self.settings.get("allbuff_exclude_exclusive", False)))
+        cf.addRow(self.allbuff_exclude_exclusive_chk)
+        self.allbuff_exclude_mastery_chk = QCheckBox(_tr("不显示专精专属"))
+        self.allbuff_exclude_mastery_chk.setChecked(bool(self.settings.get("allbuff_exclude_mastery", False)))
+        cf.addRow(self.allbuff_exclude_mastery_chk)
+        self.allbuff_exclude_single_chk = QCheckBox(_tr("不显示单层"))
+        self.allbuff_exclude_single_chk.setChecked(bool(self.settings.get("allbuff_exclude_single", False)))
+        cf.addRow(self.allbuff_exclude_single_chk)
+        f.addRow(card)
+        # V2066：「门限」——搬自 GBFR_BuffMonitor 的 monitor 风格数值废料过滤（全部可开关，实时生效）
+        f = make_sub_tab(a_sub, _tr("门限"))
+        card, cf = make_card(f, "── " + _tr("门限 (实时生效)") + " ──")
+        # 每个数值门限 = 「启用勾选」+「数值」同行：勾选=启用该项检查，取消勾选=跳过（数值灰显）。
+        def _gate_int_row(en_key, key, label, val, vmin, vmax):
+            r = QWidget(); rl = QHBoxLayout(r); rl.setContentsMargins(0, 0, 0, 0)
+            chk = QCheckBox(label); chk.setChecked(bool(self.settings.get(en_key, True)))
+            spn = QSpinBox(); spn.setRange(vmin, vmax); spn.setValue(int(self.settings.get(key, val)))
+            spn.setEnabled(chk.isChecked())
+            chk.stateChanged.connect(lambda _s, c=chk, w=spn: w.setEnabled(c.isChecked()))
+            rl.addWidget(chk); rl.addStretch(1); rl.addWidget(spn)
+            cf.addRow(r)
+            return chk, spn
+        def _gate_float_row(en_key, key, label, val, vmax):
+            r = QWidget(); rl = QHBoxLayout(r); rl.setContentsMargins(0, 0, 0, 0)
+            chk = QCheckBox(label); chk.setChecked(bool(self.settings.get(en_key, True)))
+            spn = QDoubleSpinBox(); spn.setRange(0.0, vmax); spn.setDecimals(2); spn.setSingleStep(0.05)
+            spn.setValue(float(self.settings.get(key, val))); spn.setEnabled(chk.isChecked())
+            chk.stateChanged.connect(lambda _s, c=chk, w=spn: w.setEnabled(c.isChecked()))
+            rl.addWidget(chk); rl.addStretch(1); rl.addWidget(spn)
+            cf.addRow(r)
+            return chk, spn
+
+        # ── 基础 ID 门限 ──
+        self.allbuff_gate_filter_status_id_zero_chk = QCheckBox(_tr("过滤 status_id == 0 (攻击UP 等)"))
+        self.allbuff_gate_filter_status_id_zero_chk.setChecked(bool(self.settings.get("allbuff_gate_filter_status_id_zero", False)))
+        cf.addRow(self.allbuff_gate_filter_status_id_zero_chk)
+        self.gate_status_id_max_chk, self.gate_status_id_max_spn = _gate_int_row(
+            "allbuff_gate_enabled_status_id_max", "allbuff_gate_status_id_max", _tr("status_id 上限 (超出当垃圾)"), 0xFFFF, 0, 0xFFFFFF)
+        self.gate_sub_id_max_chk, self.gate_sub_id_max_spn = _gate_int_row(
+            "allbuff_gate_enabled_sub_id_max", "allbuff_gate_sub_id_max", _tr("sub_id 上限 (超出当垃圾)"), 0xFFFF, 0, 0xFFFFFF)
+        # ── 层数门限 ──
+        self.gate_stacks_max_chk, self.gate_stacks_max_spn = _gate_int_row(
+            "allbuff_gate_enabled_stacks_max", "allbuff_gate_stacks_max", _tr("当前层数上限 (超范围丢弃)"), 100, 0, 9999)
+        self.gate_max_stacks_max_chk, self.gate_max_stacks_max_spn = _gate_int_row(
+            "allbuff_gate_enabled_max_stacks_max", "allbuff_gate_max_stacks_max", _tr("上限层数上限 (超范围丢弃)"), 100, 0, 9999)
+        self.allbuff_gate_check_stack_conflict_chk = QCheckBox(_tr("层数矛盾检查 (stacks>上限 丢弃)"))
+        self.allbuff_gate_check_stack_conflict_chk.setChecked(bool(self.settings.get("allbuff_gate_check_stack_conflict", True)))
+        cf.addRow(self.allbuff_gate_check_stack_conflict_chk)
+        # ── 时长门限 ──
+        self.gate_duration_max_chk, self.gate_duration_max_spn = _gate_float_row(
+            "allbuff_gate_enabled_duration_max", "allbuff_gate_duration_max", _tr("时长上限 (秒, remaining/initial 任一超就丢)"), 10000.0, 100000.0)
+        self.gate_min_remaining_chk, self.gate_min_remaining_spn = _gate_float_row(
+            "allbuff_gate_enabled_min_remaining_time", "allbuff_gate_min_remaining_time", _tr("最小剩余时间 (秒, remaining 少于则丢)"), 0.05, 60.0)
+        self.gate_min_initial_chk, self.gate_min_initial_spn = _gate_float_row(
+            "allbuff_gate_enabled_min_initial_time", "allbuff_gate_min_initial_time", _tr("最小持续时间 (秒, initial 少于则丢)"), 0.05, 60.0)
+        # V2084：最小出现持续时间门限——buff 首次被观测到后需持续 ≥N 秒才算有效
+        self.gate_min_appearance_chk, self.gate_min_appearance_spn = _gate_float_row(
+            "allbuff_gate_enabled_min_appearance_time", "allbuff_gate_min_appearance_time", _tr("最小出现持续时间 (秒, 首次观测后不足则丢)"), 0.1, 60.0)
+        self.allbuff_gate_check_nan_inf_chk = QCheckBox(_tr("NaN / Inf 检查"))
+        self.allbuff_gate_check_nan_inf_chk.setChecked(bool(self.settings.get("allbuff_gate_check_nan_inf", True)))
+        cf.addRow(self.allbuff_gate_check_nan_inf_chk)
+        # V2095：sid=0 不允许永续（攻击UP 不可能是永续；垃圾条目会把 infinite 置 1）
+        self.allbuff_gate_zero_notinf_chk = QCheckBox(_tr("ID=0 排除永续（攻击UP 不可能永续）"))
+        self.allbuff_gate_zero_notinf_chk.setChecked(bool(self.settings.get("allbuff_gate_status_id_zero_not_infinite", True)))
+        self.allbuff_gate_zero_notinf_chk.setToolTip(_tr("status_id=0（攻击UP）在游戏里不可能是永续 buff。勾上时，若读到 sid=0 且被标记为永续，判定为残留的垃圾条目并丢弃。"))
+        cf.addRow(self.allbuff_gate_zero_notinf_chk)
+        f.addRow(card)
+        # 配色与文字
+        f = make_sub_tab(a_sub, _tr("配色与文字"))
+        card, cf = make_card(f, "── " + _tr("配色与文字") + " ──")
+        self.allbuff_name_font_size_spn = QSpinBox(); self.allbuff_name_font_size_spn.setRange(1, 48); self.allbuff_name_font_size_spn.setSuffix(" px"); self.allbuff_name_font_size_spn.setValue(int(self.settings.get("allbuff_name_font_size", 11)))
+        cf.addRow(_tr("名称字号"), self.allbuff_name_font_size_spn)
+        self._add_color_row(cf, "allbuff_name_color", _tr("名称颜色") + ":", with_opacity=False)
+        self.allbuff_stacks_font_size_spn = QSpinBox(); self.allbuff_stacks_font_size_spn.setRange(1, 48); self.allbuff_stacks_font_size_spn.setSuffix(" px"); self.allbuff_stacks_font_size_spn.setValue(int(self.settings.get("allbuff_stacks_font_size", 10)))
+        cf.addRow(_tr("层数字号"), self.allbuff_stacks_font_size_spn)
+        self._add_color_row(cf, "allbuff_stacks_color", _tr("层数颜色") + ":", with_opacity=False)
+        self.allbuff_time_font_size_spn = QSpinBox(); self.allbuff_time_font_size_spn.setRange(1, 48); self.allbuff_time_font_size_spn.setSuffix(" px"); self.allbuff_time_font_size_spn.setValue(int(self.settings.get("allbuff_time_font_size", 10)))
+        cf.addRow(_tr("时间字号"), self.allbuff_time_font_size_spn)
+        self._add_color_row(cf, "allbuff_time_color", _tr("时间颜色") + ":", with_opacity=False)
+        self.allbuff_bar_width_spn = QSpinBox(); self.allbuff_bar_width_spn.setRange(1, 400); self.allbuff_bar_width_spn.setSuffix(" px"); self.allbuff_bar_width_spn.setValue(int(self.settings.get("allbuff_bar_width", 60)))
+        cf.addRow(_tr("进度条宽度"), self.allbuff_bar_width_spn)
+        self.allbuff_bar_height_spn = QSpinBox(); self.allbuff_bar_height_spn.setRange(1, 100); self.allbuff_bar_height_spn.setSuffix(" px"); self.allbuff_bar_height_spn.setValue(int(self.settings.get("allbuff_bar_height", 5)))
+        cf.addRow(_tr("进度条高度"), self.allbuff_bar_height_spn)
+        self._add_color_row(cf, "allbuff_bar_color", _tr("进度条颜色") + ":", with_opacity=True)
+        self.allbuff_backing_width_spn = QSpinBox(); self.allbuff_backing_width_spn.setRange(1, 400); self.allbuff_backing_width_spn.setSuffix(" px"); self.allbuff_backing_width_spn.setValue(int(self.settings.get("allbuff_backing_width", 80)))
+        self.allbuff_backing_width_spn.setToolTip(_tr("V2062：作为「自适应 floor」——按当前进度条宽度+外框计算的最小可视宽度之上再叠加。比最小值更小会被自动向上取。"))
+        cf.addRow(_tr("衬底宽度"), self.allbuff_backing_width_spn)
+        self.allbuff_backing_height_spn = QSpinBox(); self.allbuff_backing_height_spn.setRange(1, 100); self.allbuff_backing_height_spn.setSuffix(" px"); self.allbuff_backing_height_spn.setValue(int(self.settings.get("allbuff_backing_height", 64)))
+        self.allbuff_backing_height_spn.setToolTip(_tr("V2062：作为「自适应 floor」——按当前字体+元素间距+进度条+外框计算的最小可视高度之上再叠加。比最小值更小会被自动向上取。"))
+        cf.addRow(_tr("衬底高度"), self.allbuff_backing_height_spn)
+        self._add_color_row(cf, "allbuff_backing_color", _tr("衬底颜色") + ":", with_opacity=True)
+        f.addRow(card)
+
+        # V2064：画布级不透明背景填充（遮罩设置对话框等背景窗口的内容透出）
+        card_cb, cf_cb = make_card(f, "── " + _tr("画布背景填充") + " ──")
+        self.allbuff_canvas_bg_opacity_spn = QSpinBox()
+        self.allbuff_canvas_bg_opacity_spn.setRange(0, 100)
+        self.allbuff_canvas_bg_opacity_spn.setSuffix(" %")
+        self.allbuff_canvas_bg_opacity_spn.setValue(int(self.settings.get("allbuff_canvas_bg_opacity", 0)))
+        self.allbuff_canvas_bg_opacity_spn.setToolTip(_tr("V2065：在 buff 卡片下面整张画布填充一层半透明黑色，防止背景窗口（如设置对话框的文件路径标签）的内容透到 overlay 上来。0 = 纯透明（默认，沿用旧观感）；30~70 = 显著遮罩；100 = 全不透明黑底。"))
+        cf_cb.addRow(_tr("画布背景不透明度"), self.allbuff_canvas_bg_opacity_spn)
+        f.addRow(card_cb)
+
+        # V2060 ── 倒计时尾声警告（buff） ──
+        card_w, cf_w = make_card(f, "── " + _tr("倒计时尾声警告") + " ──")
+        self.allbuff_warn_enabled_chk = QCheckBox(_tr("启用警告色"))
+        self.allbuff_warn_enabled_chk.setChecked(bool(self.settings.get("allbuff_warn_enabled", False)))
+        cf_w.addRow(self.allbuff_warn_enabled_chk)
+        self.allbuff_warn_threshold_spn = QSpinBox(); self.allbuff_warn_threshold_spn.setRange(1, 99); self.allbuff_warn_threshold_spn.setSuffix(" %"); self.allbuff_warn_threshold_spn.setValue(int(self.settings.get("allbuff_warn_threshold_pct", 20)))
+        cf_w.addRow(_tr("剩余百分比阈值"), self.allbuff_warn_threshold_spn)
+        self._add_color_row(cf_w, "allbuff_warn_color", _tr("警告颜色") + ":", with_opacity=True)
+        f.addRow(card_w)
+
+        # V2060 ── Debuff 配色（编号 ≥ 1000） ──
+        card_d, cf_d = make_card(f, "── " + _tr("Debuff 配色（编号 ≥ 1000）") + " ──")
+        self._add_color_row(cf_d, "allbuff_debuff_name_color", _tr("Debuff 名称颜色") + ":", with_opacity=False)
+        self._add_color_row(cf_d, "allbuff_debuff_stacks_color", _tr("Debuff 层数颜色") + ":", with_opacity=False)
+        self._add_color_row(cf_d, "allbuff_debuff_time_color", _tr("Debuff 时间颜色") + ":", with_opacity=False)
+        self._add_color_row(cf_d, "allbuff_debuff_bar_color", _tr("Debuff 进度条颜色") + ":", with_opacity=True)
+        # Debuff 警告色
+        self.allbuff_debuff_warn_enabled_chk = QCheckBox(_tr("Debuff 启用警告色"))
+        self.allbuff_debuff_warn_enabled_chk.setChecked(bool(self.settings.get("allbuff_debuff_warn_enabled", True)))
+        cf_d.addRow(self.allbuff_debuff_warn_enabled_chk)
+        self._add_color_row(cf_d, "allbuff_debuff_warn_color", _tr("Debuff 警告色") + ":", with_opacity=True)
+        # V2104：Debuff 不再单独分行（直接排在全部 Buff 之后），移除「Debuff 强制另起一行」开关。
+        f.addRow(card_d)
+
         # ============ 关于 / 更新 ============
         about_top = make_top_tab("关于/更新")
         about_form = make_sub_tab(about_top, "关于")
@@ -2750,6 +3263,26 @@ class SettingsDialog(QDialog):
         self.changelog_edit.setStyleSheet("background:rgba(20,26,40,0.6); color:#cdd6e0; border-radius:6px;")
         cf.addRow("更新日志：", self.changelog_edit)
         about_form.addRow(card)
+        # ============ V2084：内存地址与数据速查 ============
+        # 静态表（偏移含义 + 2.0.4 实测值）+ 实时区（pptr/base/角色属性，每 1 秒刷新）
+        card2, cf2 = make_card(about_form, "── 重要内存地址与数据 ──")
+        cf2.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        self.memref_edit = QPlainTextEdit()
+        self.memref_edit.setReadOnly(True)
+        self.memref_edit.setMinimumHeight(420)
+        self.memref_edit.setStyleSheet(
+            "background:rgba(20,26,40,0.6); color:#cdd6e0; border-radius:6px;"
+            "font-family:Consolas,'Courier New',monospace;font-size:11px;")
+        cf2.addRow(self.memref_edit)
+        about_form.addRow(card2)
+        # QTimer 每 1 秒刷新一次实时区
+        from PySide6.QtCore import QTimer as _QTimer
+        self._memref_timer = _QTimer(self)
+        self._memref_timer.setInterval(1000)
+        self._memref_timer.timeout.connect(self._refresh_memref)
+        self._memref_timer.start()
+        self._refresh_memref()       # 立即填一次
+
         about_form.addItem(QSpacerItem(20, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.skip_version = self.settings.get("skip_version", "") or ""
         if self.ctrl is not None and getattr(self.ctrl, "update_info", None) is not None:
@@ -2757,8 +3290,10 @@ class SettingsDialog(QDialog):
         else:
             self.update_status_label.setText("—")
             self.changelog_edit.setPlainText(_load_local_changelog(self.settings.get("language", "zh")))
-
-        # 信号 / 按钮
+        # V2084：让角色名/专精等显示跟当前语言刷新
+        if hasattr(self, "_refresh_memref"):
+            self._refresh_memref()
+        # ── 信号 / 按钮（必须留在 __init__ 函数体，不能被 _refresh_memref 的缩进吞掉）──
         self._connect_live_signals()
         self.lang.currentIndexChanged.connect(self.retranslate_ui)
         buttons = QHBoxLayout()
@@ -2770,6 +3305,94 @@ class SettingsDialog(QDialog):
         sig = QLabel(AUTHOR_TAG); sig.setStyleSheet("color:#445566; font-size:9px;"); sig.setAlignment(Qt.AlignCenter)
         layout.addWidget(sig)
         self.retranslate_ui()
+
+    def _refresh_memref(self):
+        """V2084：About 页「重要内存地址与数据」实时刷新——每 1 秒一次。
+        上半：静态偏移速查表（常量，模块内相对）。下半：实时值（从 self.ctrl 读运行期）。"""
+        # 静态：偏移速查（与 ~/.workbuddy/skills/gbfr-offset-drift-fix/SKILL.md 同步）
+        static_part = [
+            "【静态 · 偏移速查（2.0.4 实测 / 模块内相对，与 ASLR 无关）】",
+            "─" * 64,
+            "玩家全局指针变量地址 pptr   = (actor+0x5788 ptr)        模块内: 动态 AOB 定位",
+            "模块基址  base                = granblue_fantasy_relink.exe 基址",
+            "模块大小  size                = 0x8217000 (136.0 MB) 实测",
+            "quest_mgr 全局指针  (与 pptr 相对 QM_DELTA = 0xC1E030)",
+            "    mgr + 0x210   → flow 指针 (0=城镇/非任务, 非0=任务中)",
+            "    mgr + 0x2d8   → flow 状态枚举 (relink-logs v2.0.2+)",
+            "    mgr + 0xB20/0xB28  → 训练场计时器 (城镇=0, 训练场非0)",
+            "    mgr + 0xAC8   → 任务已用秒数 (城镇时为残留值, 不要严格校验)",
+            "    mgr + 0xDC8   → 任务 ID (含 0xf00000 掩码)",
+            "actor + 0x15030 → record (内嵌)            2.0.4 沿用",
+            "record + 0x5B10 → 当前 charid             2.0.4 沿用",
+            "record + 0x138  → 专精节点数组 (400 槽 × 0x38) 2.0.4 沿用",
+            "CharaPower RVA   = 0x7C22F38              2.0.4 实测 (2.0.3=0x7C21A38, 2.0.2=0x7C22CB8)",
+            "    mgr + 0x320/0x330/0x348  → node_instance_key → row (key→row map)",
+            "    mgr + 0x728/0x738/0x750  → charid → key_vector (charid→key map)",
+            "    row + 0x48 → node_id, row + 0x5C → unlock bit, row + 0x74 → effect_id",
+            "actor + 0x1FD   → 角色类型字节 (0x07=菲莉, 0x11=齐格飞, ...)",
+            "actor + 0x1AB40 → 角色 ID (PL0100/PL0000 etc.)",
+            "actor + 0x5788  → player 全局指针 (pptr)",
+            "field 0x64C/0xAC8/0x5788  → 奥义槽 / 任务计时 / 玩家",
+        ]
+        # 实时：运行期从 self.ctrl 读
+        live_lines = ["", "【实时 · 运行期值（每 1 秒刷新）】", "─" * 64]
+        c = getattr(self, "ctrl", None)
+        if c is None:
+            live_lines.append("（ctrl 尚未绑定——设置窗口打开时主程序未运行）")
+        else:
+            lang = self.settings.get("language", "zh") if hasattr(self, "settings") else "zh"
+            try:
+                pptr = getattr(c, "pptr", None)
+                base = getattr(c, "module_base", None)
+                size = getattr(c, "module_size", None) or 0
+                quest_mgr = getattr(c, "quest_mgr", None)
+                char_type = getattr(c, "char_type", 0) or 0
+                charid_hash = getattr(c, "charid_hash", 0) or 0
+                pl_id = getattr(c, "pl_id", None) or ""
+                # 角色名（用 _resolve_char；不可用时显示 charid_hash/char_type）
+                char_name = "—"
+                try:
+                    nm, _t, _full = _resolve_char(charid_hash, char_type, lang)
+                    if nm:
+                        char_name = nm
+                except Exception:
+                    pass
+                in_combat = getattr(c, "in_combat", None)
+                in_training = getattr(c, "in_training_area", None)
+                mastery = getattr(c, "current_mastery", None)
+                mastery_zh = {"awakening": "觉醒", "truth": "真谛", "secret": "秘义"}.get(mastery, mastery or "未识别")
+                dodge_count = getattr(c, "dodge_count", 0) or 0
+                status = getattr(c, "status", "init")
+                sk_n = len(getattr(c, "skill_cd_data", []) or [])
+                buf_n = len(getattr(c, "all_buffs_filtered", {}) or {})
+
+                live_lines.append(f"模块基址 base    = {base:#x}" if base else "模块基址 base    = (未读到)")
+                live_lines.append(f"模块大小 size    = {size:#x} ({size/1048576:.1f} MB)" if size else "模块大小 size    = (未读到)")
+                live_lines.append(f"玩家 pptr        = {pptr:#x}" if pptr else "玩家 pptr        = (未读到)")
+                live_lines.append(f"quest_mgr        = {quest_mgr:#x}" if quest_mgr else "quest_mgr        = (未读到)")
+                # 角色
+                live_lines.append(f"角色名 char_name = {char_name}")
+                live_lines.append(f"角色 ID  pl_id    = {pl_id if pl_id else '(未识别)'}")
+                live_lines.append(f"char_type 字节   = {char_type:#04x}   charid_hash = {charid_hash:#010x}")
+                # 状态
+                live_lines.append(f"运行状态 status  = {status}")
+                live_lines.append(f"战斗中 in_combat  = {in_combat}    训练场 in_training = {in_training}")
+                live_lines.append(f"专精 mastery     = {mastery_zh}")
+                live_lines.append(f"翻滚次数 dodge    = {dodge_count}")
+                live_lines.append(f"技能数 skills    = {sk_n}    全 Buff 候选 = {buf_n}")
+            except Exception as e:
+                live_lines.append(f"（读取运行期数据失败：{e}）")
+        # V2091 修「实时区每秒刷新把滚动条弹回顶」：setPlainText 触发 Qt 重置滚动条到 0，
+        # 玩家手动滚到中间看某行下一秒就被弹回去。修法：保存原位置/底部标志，刷新后恢复。
+        _vbar = self.memref_edit.verticalScrollBar()
+        _was_at_bottom = _vbar.value() >= _vbar.maximum() - 4
+        _old_pos = _vbar.value()
+        self.memref_edit.setPlainText("\n".join(static_part + live_lines))
+        if _was_at_bottom:
+            _vbar.setValue(_vbar.maximum())   # 在底部时保持底部（tail 行为）
+        else:
+            _vbar.setValue(min(_old_pos, _vbar.maximum()))  # 中间时保持原绝对位置
+
     def retranslate_ui(self, *_):
         """根据语言下拉框刷新设置弹窗文本。"""
         lang = self.lang.currentData() if hasattr(self, "lang") else self.settings.get("language", "zh")
@@ -3010,6 +3633,24 @@ class SettingsDialog(QDialog):
             self.buff_order_direction_combo,
             self.core_x_spn, self.core_y_spn, self.roll_x_spn, self.roll_y_spn,
             self.skill_x_spn, self.skill_y_spn,
+            self.allbuff_x_spn, self.allbuff_y_spn,
+            self.allbuff_scale_slider, self.allbuff_scale_spin,
+            self.allbuff_per_row_spn, self.allbuff_rows_spn,
+            self.allbuff_sort_mode_combo,
+            self.allbuff_row_spacing_spn, self.allbuff_card_spacing_spn,
+            # V2060：元素统一间距 + 进度条外框粗细
+            self.allbuff_element_spacing_spn, self.allbuff_bar_frame_thickness_spn,
+            # V2074：行高加成
+            self.allbuff_row_height_extra_spn,
+            # V2093：排序号消失宽限
+            self.allbuff_seq_gone_grace_dspn,
+            self.allbuff_warn_enabled_chk, self.allbuff_warn_threshold_spn,
+            # V2060：Debuff 警告开关
+            self.allbuff_debuff_warn_enabled_chk,
+            self.allbuff_name_font_size_spn, self.allbuff_stacks_font_size_spn,
+            self.allbuff_time_font_size_spn,
+            self.allbuff_bar_width_spn, self.allbuff_bar_height_spn,
+            self.allbuff_backing_width_spn, self.allbuff_backing_height_spn,
         ]
         for w in widgets:
             if isinstance(w, QComboBox):
@@ -3036,6 +3677,36 @@ class SettingsDialog(QDialog):
         self.show_core_module_chk.stateChanged.connect(self._emit_changed)
         self.show_roll_module_chk.stateChanged.connect(self._emit_changed)
         self.show_skill_module_chk.stateChanged.connect(self._emit_changed)
+        self.show_allbuff_module_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_exclude_core_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_exclude_infinite_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_exclude_exclusive_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_exclude_mastery_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_exclude_single_chk.stateChanged.connect(self._emit_changed)
+        # V2066：门限（monitor 风格数值废料过滤）实时生效
+        self.allbuff_gate_filter_status_id_zero_chk.stateChanged.connect(self._emit_changed)
+        self.gate_status_id_max_chk.stateChanged.connect(self._emit_changed)
+        self.gate_status_id_max_spn.valueChanged.connect(self._emit_changed)
+        self.gate_sub_id_max_chk.stateChanged.connect(self._emit_changed)
+        self.gate_sub_id_max_spn.valueChanged.connect(self._emit_changed)
+        self.gate_stacks_max_chk.stateChanged.connect(self._emit_changed)
+        self.gate_stacks_max_spn.valueChanged.connect(self._emit_changed)
+        self.gate_max_stacks_max_chk.stateChanged.connect(self._emit_changed)
+        self.gate_max_stacks_max_spn.valueChanged.connect(self._emit_changed)
+        self.allbuff_gate_check_stack_conflict_chk.stateChanged.connect(self._emit_changed)
+        self.gate_duration_max_chk.stateChanged.connect(self._emit_changed)
+        self.gate_duration_max_spn.valueChanged.connect(self._emit_changed)
+        self.gate_min_remaining_chk.stateChanged.connect(self._emit_changed)
+        self.gate_min_remaining_spn.valueChanged.connect(self._emit_changed)
+        self.gate_min_initial_chk.stateChanged.connect(self._emit_changed)
+        self.gate_min_initial_spn.valueChanged.connect(self._emit_changed)
+        # V2084
+        self.gate_min_appearance_chk.stateChanged.connect(self._emit_changed)
+        self.gate_min_appearance_spn.valueChanged.connect(self._emit_changed)
+        self.allbuff_gate_check_nan_inf_chk.stateChanged.connect(self._emit_changed)
+        self.allbuff_gate_zero_notinf_chk.stateChanged.connect(self._emit_changed)
+        # V2065：画布背景不透明度
+        self.allbuff_canvas_bg_opacity_spn.valueChanged.connect(self._emit_changed)
 
     def keyPressEvent(self, event):
         """禁止 Enter/Return 键关闭对话框，避免输入中途误退出。"""
@@ -3235,6 +3906,66 @@ class SettingsDialog(QDialog):
         self.show_core_module_chk.setChecked(DEFAULT_SETTINGS["show_core_module"])
         self.show_roll_module_chk.setChecked(DEFAULT_SETTINGS["show_roll_module"])
         self.show_skill_module_chk.setChecked(DEFAULT_SETTINGS["show_skill_cd_module"])
+        self.show_allbuff_module_chk.setChecked(DEFAULT_SETTINGS["show_allbuff_module"])
+        self.allbuff_x_spn.setValue(int(round(DEFAULT_SETTINGS["allbuff_window_x"] * rs)))
+        self.allbuff_y_spn.setValue(int(round(DEFAULT_SETTINGS["allbuff_window_y"] * rs)))
+        self.allbuff_scale_slider.setValue(DEFAULT_SETTINGS["allbuff_scale_percent"])
+        self.allbuff_scale_spin.setValue(DEFAULT_SETTINGS["allbuff_scale_percent"])
+        self.allbuff_per_row_spn.setValue(DEFAULT_SETTINGS["allbuff_per_row"])
+        self.allbuff_rows_spn.setValue(DEFAULT_SETTINGS["allbuff_rows"])
+        self.allbuff_row_spacing_spn.setValue(DEFAULT_SETTINGS["allbuff_row_spacing"])
+        self.allbuff_card_spacing_spn.setValue(DEFAULT_SETTINGS["allbuff_card_spacing"])
+        # V2063：排序方式
+        _sort_idx = self.allbuff_sort_mode_combo.findData(DEFAULT_SETTINGS["allbuff_sort_mode"])
+        if _sort_idx < 0:
+            _sort_idx = 0
+        self.allbuff_sort_mode_combo.setCurrentIndex(_sort_idx)
+        # V2060：元素间距 / 进度条外框粗细
+        self.allbuff_element_spacing_spn.setValue(DEFAULT_SETTINGS["allbuff_element_spacing"])
+        self.allbuff_row_height_extra_spn.setValue(DEFAULT_SETTINGS["allbuff_row_height_extra"])
+        self.allbuff_seq_gone_grace_dspn.setValue(DEFAULT_SETTINGS["allbuff_seq_gone_grace_sec"])
+        self.allbuff_bar_frame_thickness_spn.setValue(DEFAULT_SETTINGS["allbuff_bar_frame_thickness"])
+        # V2060：倒计时尾声警告（buff）
+        self.allbuff_warn_enabled_chk.setChecked(DEFAULT_SETTINGS["allbuff_warn_enabled"])
+        self.allbuff_warn_threshold_spn.setValue(DEFAULT_SETTINGS["allbuff_warn_threshold_pct"])
+        # V2060：Debuff 警告
+        self.allbuff_debuff_warn_enabled_chk.setChecked(DEFAULT_SETTINGS["allbuff_debuff_warn_enabled"])
+        self.allbuff_exclude_core_chk.setChecked(DEFAULT_SETTINGS["allbuff_exclude_core"])
+        self.allbuff_exclude_infinite_chk.setChecked(DEFAULT_SETTINGS["allbuff_exclude_infinite"])
+        self.allbuff_exclude_exclusive_chk.setChecked(DEFAULT_SETTINGS["allbuff_exclude_exclusive"])
+        self.allbuff_exclude_mastery_chk.setChecked(DEFAULT_SETTINGS["allbuff_exclude_mastery"])
+        self.allbuff_exclude_single_chk.setChecked(DEFAULT_SETTINGS["allbuff_exclude_single"])
+        # V2066：门限（monitor 风格数值废料过滤）重置
+        self.allbuff_gate_filter_status_id_zero_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_filter_status_id_zero"])
+        self.gate_status_id_max_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_status_id_max"])
+        self.gate_status_id_max_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_status_id_max"])
+        self.gate_sub_id_max_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_sub_id_max"])
+        self.gate_sub_id_max_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_sub_id_max"])
+        self.gate_stacks_max_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_stacks_max"])
+        self.gate_stacks_max_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_stacks_max"])
+        self.gate_max_stacks_max_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_max_stacks_max"])
+        self.gate_max_stacks_max_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_max_stacks_max"])
+        self.allbuff_gate_check_stack_conflict_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_check_stack_conflict"])
+        self.gate_duration_max_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_duration_max"])
+        self.gate_duration_max_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_duration_max"])
+        self.gate_min_remaining_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_min_remaining_time"])
+        self.gate_min_remaining_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_min_remaining_time"])
+        self.gate_min_initial_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_min_initial_time"])
+        self.gate_min_initial_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_min_initial_time"])
+        # V2084
+        self.gate_min_appearance_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_enabled_min_appearance_time"])
+        self.gate_min_appearance_spn.setValue(DEFAULT_SETTINGS["allbuff_gate_min_appearance_time"])
+        self.allbuff_gate_check_nan_inf_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_check_nan_inf"])
+        self.allbuff_gate_zero_notinf_chk.setChecked(DEFAULT_SETTINGS["allbuff_gate_status_id_zero_not_infinite"])
+        # V2065：画布背景不透明度
+        self.allbuff_canvas_bg_opacity_spn.setValue(DEFAULT_SETTINGS["allbuff_canvas_bg_opacity"])
+        self.allbuff_name_font_size_spn.setValue(DEFAULT_SETTINGS["allbuff_name_font_size"])
+        self.allbuff_stacks_font_size_spn.setValue(DEFAULT_SETTINGS["allbuff_stacks_font_size"])
+        self.allbuff_time_font_size_spn.setValue(DEFAULT_SETTINGS["allbuff_time_font_size"])
+        self.allbuff_bar_width_spn.setValue(DEFAULT_SETTINGS["allbuff_bar_width"])
+        self.allbuff_bar_height_spn.setValue(DEFAULT_SETTINGS["allbuff_bar_height"])
+        self.allbuff_backing_width_spn.setValue(DEFAULT_SETTINGS["allbuff_backing_width"])
+        self.allbuff_backing_height_spn.setValue(DEFAULT_SETTINGS["allbuff_backing_height"])
         self.skill_cd_breath_freq_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_freq"])
         self.skill_cd_breath_soft_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_soft"])
         self.skill_cd_breath_scale_dspn.setValue(DEFAULT_SETTINGS["skill_cd_breath_scale"])
@@ -3341,6 +4072,62 @@ class SettingsDialog(QDialog):
         self.settings["core_scale_percent"] = self.core_scale_spin.value()
         self.settings["roll_scale_percent"] = self.roll_scale_spin.value()
         self.settings["skill_scale_percent"] = self.skill_scale_spin.value()
+        # 全Buff显示模块（第四模块）
+        self.settings["show_allbuff_module"] = self.show_allbuff_module_chk.isChecked()
+        self.settings["allbuff_window_x"] = round(self.allbuff_x_spn.value() / rs)
+        self.settings["allbuff_window_y"] = round(self.allbuff_y_spn.value() / rs)
+        self.settings["allbuff_scale_percent"] = self.allbuff_scale_spin.value()
+        self.settings["allbuff_per_row"] = self.allbuff_per_row_spn.value()
+        self.settings["allbuff_rows"] = self.allbuff_rows_spn.value()
+        self.settings["allbuff_sort_mode"] = self.allbuff_sort_mode_combo.currentData() or "id_asc"
+        self.settings["allbuff_row_spacing"] = self.allbuff_row_spacing_spn.value()
+        self.settings["allbuff_card_spacing"] = self.allbuff_card_spacing_spn.value()
+        # V2060：元素统一间距 + 进度条外框粗细
+        self.settings["allbuff_element_spacing"] = self.allbuff_element_spacing_spn.value()
+        self.settings["allbuff_row_height_extra"] = self.allbuff_row_height_extra_spn.value()
+        self.settings["allbuff_seq_gone_grace_sec"] = float(self.allbuff_seq_gone_grace_dspn.value())
+        self.settings["allbuff_bar_frame_thickness"] = self.allbuff_bar_frame_thickness_spn.value()
+        # V2060：倒计时尾声警告（buff）
+        self.settings["allbuff_warn_enabled"] = self.allbuff_warn_enabled_chk.isChecked()
+        self.settings["allbuff_warn_threshold_pct"] = self.allbuff_warn_threshold_spn.value()
+        # V2060：Debuff 配色（4 色）+ debuff 警告三件套
+        self.settings["allbuff_debuff_warn_enabled"] = self.allbuff_debuff_warn_enabled_chk.isChecked()
+        self.settings["allbuff_exclude_core"] = self.allbuff_exclude_core_chk.isChecked()
+        self.settings["allbuff_exclude_infinite"] = self.allbuff_exclude_infinite_chk.isChecked()
+        self.settings["allbuff_exclude_exclusive"] = self.allbuff_exclude_exclusive_chk.isChecked()
+        self.settings["allbuff_exclude_mastery"] = self.allbuff_exclude_mastery_chk.isChecked()
+        self.settings["allbuff_exclude_single"] = self.allbuff_exclude_single_chk.isChecked()
+        # V2066：门限（monitor 风格数值废料过滤）保存
+        self.settings["allbuff_gate_filter_status_id_zero"] = self.allbuff_gate_filter_status_id_zero_chk.isChecked()
+        self.settings["allbuff_gate_enabled_status_id_max"] = self.gate_status_id_max_chk.isChecked()
+        self.settings["allbuff_gate_status_id_max"] = int(self.gate_status_id_max_spn.value())
+        self.settings["allbuff_gate_enabled_sub_id_max"] = self.gate_sub_id_max_chk.isChecked()
+        self.settings["allbuff_gate_sub_id_max"] = int(self.gate_sub_id_max_spn.value())
+        self.settings["allbuff_gate_enabled_stacks_max"] = self.gate_stacks_max_chk.isChecked()
+        self.settings["allbuff_gate_stacks_max"] = int(self.gate_stacks_max_spn.value())
+        self.settings["allbuff_gate_enabled_max_stacks_max"] = self.gate_max_stacks_max_chk.isChecked()
+        self.settings["allbuff_gate_max_stacks_max"] = int(self.gate_max_stacks_max_spn.value())
+        self.settings["allbuff_gate_check_stack_conflict"] = self.allbuff_gate_check_stack_conflict_chk.isChecked()
+        self.settings["allbuff_gate_enabled_duration_max"] = self.gate_duration_max_chk.isChecked()
+        self.settings["allbuff_gate_duration_max"] = float(self.gate_duration_max_spn.value())
+        self.settings["allbuff_gate_enabled_min_remaining_time"] = self.gate_min_remaining_chk.isChecked()
+        self.settings["allbuff_gate_min_remaining_time"] = float(self.gate_min_remaining_spn.value())
+        self.settings["allbuff_gate_enabled_min_initial_time"] = self.gate_min_initial_chk.isChecked()
+        self.settings["allbuff_gate_min_initial_time"] = float(self.gate_min_initial_spn.value())
+        # V2084
+        self.settings["allbuff_gate_enabled_min_appearance_time"] = self.gate_min_appearance_chk.isChecked()
+        self.settings["allbuff_gate_min_appearance_time"] = float(self.gate_min_appearance_spn.value())
+        self.settings["allbuff_gate_check_nan_inf"] = self.allbuff_gate_check_nan_inf_chk.isChecked()
+        self.settings["allbuff_gate_status_id_zero_not_infinite"] = self.allbuff_gate_zero_notinf_chk.isChecked()
+        # V2065：画布背景不透明度
+        self.settings["allbuff_canvas_bg_opacity"] = self.allbuff_canvas_bg_opacity_spn.value()
+        self.settings["allbuff_name_font_size"] = self.allbuff_name_font_size_spn.value()
+        self.settings["allbuff_stacks_font_size"] = self.allbuff_stacks_font_size_spn.value()
+        self.settings["allbuff_time_font_size"] = self.allbuff_time_font_size_spn.value()
+        self.settings["allbuff_bar_width"] = self.allbuff_bar_width_spn.value()
+        self.settings["allbuff_bar_height"] = self.allbuff_bar_height_spn.value()
+        self.settings["allbuff_backing_width"] = self.allbuff_backing_width_spn.value()
+        self.settings["allbuff_backing_height"] = self.allbuff_backing_height_spn.value()
         self.settings["scan_ms"] = self.scan.value()
         self.settings["settings_schema_version"] = SETTINGS_SCHEMA_VERSION
         self.settings["circle_radius"] = self.circle_radius.value()
@@ -3662,6 +4449,10 @@ class GBFROverlayQt(QObject):
         self.char_type = 0
         self.charid_hash = 0
         self.pl_id = None
+        # V2063：buff 排序用——记录每个 sid 首次出现的 seq（monotonic），
+        # 用于「按出现时间」排序；消失-再出现不重置 seq，原位补回。
+        self._buff_first_seen_seq = {}
+        self._buff_next_seq = 0
         # 前后台边沿检测：上一拍游戏是否在前台（None=未初始化）
         self._prev_is_game_foreground = None
         # 当前所有同名游戏进程 PID 集合（V2018 引入）：用于「游戏是否在前台」判断
@@ -3717,6 +4508,7 @@ class GBFROverlayQt(QObject):
         self.core_win = CoreWindow(self, "core", parent=self.taskbar_owner)
         self.roll_win = DodgeWindow(self, "roll", parent=self.taskbar_owner)
         self.skill_win = SkillWindow(self, "skill", parent=self.taskbar_owner)
+        self.allbuff_win = AllBuffWindow(self, "allbuff", parent=self.taskbar_owner)
         self.core_win.setWindowTitle(f"{_app_title(self.settings.get('language', 'zh'))} v{APP_VERSION}")
 
         _step(72, "已创建悬浮窗口")
@@ -3766,7 +4558,10 @@ class GBFROverlayQt(QObject):
 
         # 显示模块窗口
         _step(95, "正在显示悬浮窗口…")
-        for w in (self.core_win, self.roll_win, self.skill_win):
+        for w in (self.core_win, self.roll_win, self.skill_win, self.allbuff_win):
+            if w is self.allbuff_win and not bool(self.settings.get("show_allbuff_module", True)):
+                w.hide()
+                continue
             w.show()
         _step(100, "启动完成")
 
@@ -3791,7 +4586,7 @@ class GBFROverlayQt(QObject):
     #  窗口集合辅助
     # ----------------------------------------------------------------
     def _all_windows(self):
-        return [self.core_win, self.roll_win, self.skill_win]
+        return [self.core_win, self.roll_win, self.skill_win, self.allbuff_win]
 
     def _sync_exe_list_at_startup(self):
         """启动时共同启动 EXE 列表中的程序（未运行则启动，已运行则跳过；不监视、不杀进程）。
@@ -3919,6 +4714,10 @@ class GBFROverlayQt(QObject):
     def _show_all_windows(self):
         """整窗显示并置顶，与手动呼出完全同一动作；供 手动呼出 / 自动上升沿 共用。"""
         for w in self._all_windows():
+            # 全Buff模块受独立显隐开关控制：开关关闭时不随「显示所有窗口」弹出
+            if w.module_key == "allbuff" and not bool(self.settings.get("show_allbuff_module", True)):
+                w.hide()
+                continue
             if not w.isVisible():
                 w.show()
             w.raise_()
@@ -5723,11 +6522,695 @@ class GBFROverlayQt(QObject):
         if not self.shrimp.isNull():
             painter.drawPixmap(x, y, self.shrimp)
         else:
+            # V2063：兜底改为程序绘制「白对号 ✓ + 深透明圆角底」——任何 PNG 路径加载失败/缺失场景下
+            # 都不会退化为无意义的橙色色块，UI 风格保持统一：
+            #   · 半透明深底（不透明 160/255）+ 圆角矩形作为徽章基底；
+            #   · 白色对号（两段折线），RoundCap + RoundJoin 让笔触端点和拐角为圆滑造型。
+            cx = x + icon / 2.0
+            cy = y + icon / 2.0
+            sz = max(8, int(icon * 0.78))
+            painter.save()
+            painter.setRenderHint(QPainter.Antialiasing)
             painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor("#ff8a56"))
+            painter.setBrush(QColor(0, 0, 0, 160))
+            painter.drawRoundedRect(int(cx - sz / 2.0), int(cy - sz / 2.0), int(sz), int(sz), 4, 4)
+            pen = QPen(QColor(255, 255, 255), max(2, int(sz * 0.18)), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
             path = QPainterPath()
-            path.addRoundedRect(x + 2, y + max(2, icon // 6), icon - 4, max(8, icon * 2 // 3), 6, 6)
+            path.moveTo(cx - sz * 0.30, cy - sz * 0.02)
+            path.lineTo(cx - sz * 0.08, cy + sz * 0.22)
+            path.lineTo(cx + sz * 0.32, cy - sz * 0.24)
             painter.drawPath(path)
+            painter.restore()
+
+    # ================================================================
+    #  全 Buff 显示模块（第四模块）渲染
+    # ================================================================
+    def render_allbuff(self, painter):
+        """网格化列出当前主控角色可读到的全部 buff（已 gate 过滤），可叠加 5 个可选过滤开关。"""
+        # V2064：模块独立显隐开关：关闭时整窗隐藏由 _apply_live_settings / 启动逻辑处理，
+        # 这里仍兜底返回，确保任何残留绘制都不出现。
+        if not bool(self.settings.get("show_allbuff_module", True)):
+            return
+
+        # V2063：与 SkillWindow 一致——每次绘制前刷新「非战斗」内容乘数，
+        # 保证 allbuff_win 独立重绘时（core_win 未重绘）也使用最新的隐藏状态。
+        self._out_of_combat_mult = getattr(self, "_ooc_content_mult", 1.0)
+
+        # V2064：画布级不透明背景填充——防止背景窗口（如设置对话框）的内容透出来
+        # 在 settings 标签里玩家可调，默认 0 = 不画（保留 V2063 之前的纯透明外观）。
+        # 玩家遇到「buff 文字显示不全/有路径片段透过」时把这里调到 30~70 即可遮罩。
+        canvas_bg_op = max(0, min(100, int(self.settings.get("allbuff_canvas_bg_opacity", 0)))) / 100.0
+        if canvas_bg_op > 0.0:
+            cw_canvas = getattr(self, "allbuff_canvas_w", 0)
+            ch_canvas = getattr(self, "allbuff_canvas_h", 0)
+            if cw_canvas > 0 and ch_canvas > 0:
+                painter.save()
+                bg = QColor(0, 0, 0)
+                bg.setAlphaF(canvas_bg_op)
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(bg)
+                painter.drawRoundedRect(0, 0, cw_canvas, ch_canvas, 4, 4)
+                painter.restore()
+
+        # V2101：模块背景/线框——仅由「锁定」决定可见性，永不绑定战斗；
+        # 与核心/能力/翻滚模块的 _draw_module_backdrop 完全一致（未锁定时底框始终显示）。
+        # 此处先画底框，再让下方的「非战斗隐藏」只隐藏内容、不隐藏底框（与核心模块一致）。
+        self._draw_module_backdrop(painter, self.allbuff_canvas_w, self.allbuff_canvas_h, draw_border=True)
+
+        # V2084：非战斗隐藏——「非战斗隐藏」开启且非战斗时，仅隐藏内容区（底框保留），
+        # 与 render_core / render_roll / render_skill_cd 一致；之前误把整窗（含底框）一起隐藏。
+        if self._out_of_combat_mult <= 0.0:
+            return
+
+        lang = self.settings.get("language", "zh")
+        status = getattr(self, "status", "init")
+        has_char = bool(self.char_type or self.charid_hash or self.pl_id)
+        if status in ("no_game", "init") or not has_char:
+            self._draw_allbuff_placeholder(painter, _tr("全Buff模块（未检测到角色）"))
+            self._apply_allbuff_fixed_size()  # V2103：无角色也预留 3 行固定区域
+            return
+
+
+        buffs = getattr(self, "all_buffs_filtered", {}) or {}
+
+        if not buffs:
+            self._draw_allbuff_placeholder(painter, _tr("全Buff模块（无活动Buff）"))
+            self._apply_allbuff_fixed_size()  # V2103：无活动 Buff 也预留 3 行固定区域
+            return
+
+        # ── 读取布局 / 样式参数 ──
+        # V2062：取消「显示行数」硬上限 → 改为 ceil(n/per_row) 自动延伸
+        per_row = max(1, int(self.settings.get("allbuff_per_row", 10)))
+        row_sp = int(self.settings.get("allbuff_row_spacing", 4))
+        card_sp = int(self.settings.get("allbuff_card_spacing", 4))
+        bw_setting = max(1, int(self.settings.get("allbuff_backing_width", 80)))
+        bh_setting = max(1, int(self.settings.get("allbuff_backing_height", 64)))
+
+        name_fs = max(1, int(self.settings.get("allbuff_name_font_size", 11)))
+        stacks_fs = max(1, int(self.settings.get("allbuff_stacks_font_size", 10)))
+        time_fs = max(1, int(self.settings.get("allbuff_time_font_size", 10)))
+        bar_w = max(1, int(self.settings.get("allbuff_bar_width", 60)))
+        bar_h = max(1, int(self.settings.get("allbuff_bar_height", 5)))
+        # V2060：进度条外框粗细（0=不要外框）+ 卡片内统一垂直间距
+        bar_frame_t = max(0, min(10, int(self.settings.get("allbuff_bar_frame_thickness", 2))))
+        # V2075：允许负值——负间距让卡片内各行更紧凑（可重叠）
+        elem_sp = int(self.settings.get("allbuff_element_spacing", 4))
+        # V2074：行高加成——在三行文字实测 QFontMetrics.height()+2 基础上额外加的高度（默认 0）
+        # V2075：允许负值——负加成收紧行高（QRect 高度在 _draw_allbuff_card 内 clamp 到 >=1）
+        row_h_extra = int(self.settings.get("allbuff_row_height_extra", 0))
+
+        # V2062：自适应 floor——按当前字体/元素间距/进度条/外框厚度算出「最小可视高度/宽度」
+        # 取 max(自适应最小值, 用户设置) ⇒ 永远不裁切 buff 内容，玩家仍可在自适应基础上继续加 padding
+        # V2073：用 QFontMetrics 实际测量行高替代 `font_size + 2` 硬编码——
+        # 11pt Segoe UI Bold 的 fm.height()≈15-17px（视系统字体），font_size+2=13 不够，
+        # QRect 高度偏小→中文字符 ascender 顶部被卡片圆角裁切，表现为「減」「消」「霸」等
+        # 汉字上半部被遮挡、进度条上沿被切。auto_bh 与三行文字绘制均用 fm.height()+2 同步。
+        from PySide6.QtGui import QFont as _QF, QFontMetrics as _QFM
+        _afm_name   = _QFM(_QF("Segoe UI", name_fs,   _QF.Bold))
+        _afm_stacks = _QFM(_QF("Segoe UI", stacks_fs, _QF.Bold))
+        _afm_time   = _QFM(_QF("Segoe UI", time_fs,   _QF.Bold))
+        _name_h   = _afm_name.height()   + 2 + row_h_extra
+        _stacks_h = _afm_stacks.height() + 2 + row_h_extra
+        _time_h   = _afm_time.height()   + 2 + row_h_extra
+        pad = 2
+        auto_bh = (2 * pad
+                   + _name_h       # 名称行高（QFontMetrics 实测）
+                   + elem_sp
+                   + _stacks_h     # 层数行高（QFontMetrics 实测）
+                   + elem_sp
+                   + _time_h       # 时间行高（QFontMetrics 实测）
+                   + elem_sp
+                   + (bar_h + 2 * bar_frame_t))   # 进度条（含外框上下）
+        # V2075：负 elem_sp 可能让 auto_bh 变很小甚至为负 → clamp 到 >=1，
+        # 但 bh 最终还会取 max(auto_bh, bh_setting)，玩家设的衬底高度仍优先。
+        auto_bh = max(1, auto_bh)
+        auto_bw = bar_w + 2 * bar_frame_t + 8     # 4 px 左右 padding，避免贴边
+        # V2077 防御：force_bh_min = 内容总高 + 上下 pad，确保 _draw_allbuff_card
+        # 算出 _content_top 居中起点后，by + outer_h 永远在衬底内（不被切）。
+        # auto_bh 算式已含 2*pad + _content_h，所以 auto_bh 已经是这个值。
+        # 但 _draw_allbuff_card 内会用 cur_name_fs（阶梯缩字后）算 name_h，
+        # 与这里的 _name_h 可能略不同（实际更小，不会更糟），所以理论上安全。
+        bh = max(auto_bh, bh_setting)
+        bw = max(auto_bw, bw_setting)
+
+        name_col = QColor(self._get_color("allbuff_name_color"))
+        stacks_col = QColor(self._get_color("allbuff_stacks_color"))
+        time_col = QColor(self._get_color("allbuff_time_color"))
+        bar_col = QColor(self._get_color("allbuff_bar_color"))
+        bar_op = max(0, min(100, int(self.settings.get("allbuff_bar_color_opacity", 100)))) / 100.0
+        bar_col.setAlpha(int(255 * bar_op))
+        backing_col = QColor(self._get_color("allbuff_backing_color"))
+        backing_op = max(0, min(100, int(self.settings.get("allbuff_backing_color_opacity", 50)))) / 100.0
+        backing_col.setAlpha(int(255 * backing_op))
+
+        # ── V2060：倒计时尾声警告（buff） ──
+        warn_en = bool(self.settings.get("allbuff_warn_enabled", False))
+        warn_thr = max(1, min(99, int(self.settings.get("allbuff_warn_threshold_pct", 20)))) / 100.0
+        warn_col = QColor(self._get_color("allbuff_warn_color"))
+        warn_op = max(0, min(100, int(self.settings.get("allbuff_warn_color_opacity", 100)))) / 100.0
+        warn_col.setAlpha(int(255 * warn_op))
+
+        # ── V2060：Debuff 配色（编号 ≥ 1000） ──
+        debuff_name_col  = QColor(self._get_color("allbuff_debuff_name_color"))
+        debuff_stacks_col= QColor(self._get_color("allbuff_debuff_stacks_color"))
+        debuff_time_col  = QColor(self._get_color("allbuff_debuff_time_color"))
+        debuff_bar_col   = QColor(self._get_color("allbuff_debuff_bar_color"))
+        debuff_bar_op = max(0, min(100, int(self.settings.get("allbuff_debuff_bar_color_opacity", 100)))) / 100.0
+        debuff_bar_col.setAlpha(int(255 * debuff_bar_op))
+        # Debuff 警告
+        debuff_warn_en = bool(self.settings.get("allbuff_debuff_warn_enabled", True))
+        debuff_warn_col = QColor(self._get_color("allbuff_debuff_warn_color"))
+        debuff_warn_op = max(0, min(100, int(self.settings.get("allbuff_debuff_warn_color_opacity", 100)))) / 100.0
+        debuff_warn_col.setAlpha(int(255 * debuff_warn_op))
+
+        # ── 过滤开关（默认全关 = 显示全部）──
+        ex_core = bool(self.settings.get("allbuff_exclude_core", False))
+        ex_inf = bool(self.settings.get("allbuff_exclude_infinite", False))
+        ex_excl = bool(self.settings.get("allbuff_exclude_exclusive", False))
+        ex_mast = bool(self.settings.get("allbuff_exclude_mastery", False))
+        ex_single = bool(self.settings.get("allbuff_exclude_single", False))
+
+        core_sids = set()
+        if ex_core:
+            prof = BUFF_PROFILES.get(self.pl_id, {})
+            for b in prof.get("buffs", []):
+                sid = b.get("sid")
+                if isinstance(sid, int) and sid >= 0:
+                    core_sids.add(sid)
+
+        # ── V2066：门限（monitor 风格数值废料过滤）——在「过滤」开关之前先过滤 ──
+        g_zero = bool(self.settings.get("allbuff_gate_filter_status_id_zero", False))
+        g_e_sidmax = bool(self.settings.get("allbuff_gate_enabled_status_id_max", True))
+        g_sidmax = int(self.settings.get("allbuff_gate_status_id_max", 0xFFFF))
+        g_e_submax = bool(self.settings.get("allbuff_gate_enabled_sub_id_max", True))
+        g_submax = int(self.settings.get("allbuff_gate_sub_id_max", 0xFFFF))
+        g_e_stkmax = bool(self.settings.get("allbuff_gate_enabled_stacks_max", True))
+        g_stkmax = int(self.settings.get("allbuff_gate_stacks_max", 100))
+        g_e_mstkmax = bool(self.settings.get("allbuff_gate_enabled_max_stacks_max", False))
+        g_mstkmax = int(self.settings.get("allbuff_gate_max_stacks_max", 100))
+        g_conflict = bool(self.settings.get("allbuff_gate_check_stack_conflict", True))
+        g_e_durmax = bool(self.settings.get("allbuff_gate_enabled_duration_max", True))
+        g_durmax = float(self.settings.get("allbuff_gate_duration_max", 10000.0))
+        g_e_minrem = bool(self.settings.get("allbuff_gate_enabled_min_remaining_time", True))
+        g_minrem = float(self.settings.get("allbuff_gate_min_remaining_time", 0.05))
+        g_e_mininit = bool(self.settings.get("allbuff_gate_enabled_min_initial_time", True))
+        g_mininit = float(self.settings.get("allbuff_gate_min_initial_time", 0.05))
+        g_e_minappear = bool(self.settings.get("allbuff_gate_enabled_min_appearance_time", True))  # V2084
+        g_minappear = float(self.settings.get("allbuff_gate_min_appearance_time", 0.1))         # V2084
+        g_nan = bool(self.settings.get("allbuff_gate_check_nan_inf", True))
+        # V2095：sid==0 不允许永续（攻击UP 不可能是永续；垃圾条目会把 infinite 置 1）
+        g_zero_notinf = bool(self.settings.get("allbuff_gate_status_id_zero_not_infinite", True))
+
+        # ── V2095：构建 sid→pct_cap 映射（百分比型 buff 如龙人化，游戏存的是 0~100 读数）──
+        # 从 BUFF_PROFILES（i18n.json 的角色配表）合并，一次算好缓存到 self，避免每帧重建。
+        _pct = getattr(self, "_pct_cap_by_sid", None)
+        if _pct is None:
+            _pct = {}
+            try:
+                for _pl, _prof in (BUFF_PROFILES or {}).items():
+                    for _b in (_prof.get("buffs") or []):
+                        _sidv = _b.get("sid")
+                        _pc = _b.get("pct_cap")
+                        if isinstance(_sidv, int) and _sidv >= 0 and _pc:
+                            _pct[_sidv] = float(_pc)
+            except Exception:
+                _pct = {}
+            self._pct_cap_by_sid = _pct
+        # ── 收集 + 过滤 + 排序（按 sid 稳定排序）──
+        items = []
+        # V2084：维护「首次观测到的时间」dict，判定瞬时 buff（闪现即逝）是否够老
+        _now = time.time()
+        if not hasattr(self, "_buff_first_seen"):
+            self._buff_first_seen = {}
+        _seen = self._buff_first_seen
+        # V2096：与 _seen 配套，记录「已经出现过（哪怕只出现一帧）」的 sid，
+        # 用来消除「最小出现持续时间」门限造成的闪烁——见下方 g_e_minappear 处的说明。
+        if not hasattr(self, "_buff_ever_shown"):
+            self._buff_ever_shown = set()
+        _ever_shown = self._buff_ever_shown
+        for sid, info in buffs.items():
+            attr = BUFF_ATTRS.get(f"0x{sid:X}({sid})")
+            if attr is None:
+                continue
+            # V2084：首次观测到的 buff 记录时间，已观测的复用。消失的 sid 在循环外清理。
+            # V2087 BUGFIX①：原版 `_seen[sid] = _now` 后立刻判 `_now - _seen[sid] < 阈值`
+            #              → 首次观测必然 `_now - _now = 0 < 阈值` → 被丢（全 Buff 空白）。
+            # V2088 BUGFIX②：V2087 的修法仍有致命漏洞——`_seen[sid] = _now` 是**无条件刷新**，
+            #              每帧都把"首次时间"改写成当前时间 → 已知 buff 的差值永远≈0
+            #              → 帧1 显示 / 帧2 丢 / 帧3 显示... → **疯狂闪烁**。
+            #              正确写法：只在首次记录，之后**不再刷新**。
+            _was_new = sid not in _seen
+            if _was_new:
+                _seen[sid] = _now
+            # ── 门限：数值废料判定（不依赖 BUFF_ATTRS，纯数值阈值）──
+            sid_i = int(sid)
+            sub_id = int(info.get("sub_id", 0) or 0)
+            cur_stacks = int(info.get("stacks", 0) or 0)
+            max_stacks = int(info.get("max_stacks", 0) or 0)
+            initial = float(info.get("initial", 0.0) or 0.0)
+            remaining = float(info.get("remaining", 0.0) or 0.0)
+            infinite = bool(info.get("infinite"))
+            if g_zero and sid_i == 0: continue
+            # V2095：sid==0 且被标成永续 → 垃圾条目，丢弃（攻击UP 不可能是永续）
+            if g_zero_notinf and sid_i == 0 and infinite: continue
+            if g_e_sidmax and sid_i > g_sidmax: continue
+            if g_e_submax and sub_id > g_submax: continue
+            if g_e_stkmax and not (0 <= cur_stacks <= g_stkmax): continue
+            if g_e_mstkmax and not (0 <= max_stacks <= g_mstkmax): continue
+            # monitor 门限：层数矛盾仅在「上限本身有效(>0)」时才判——max_stacks=0 视为「无上限/未定义」，不触发丢弃
+            if g_conflict and max_stacks > 0 and cur_stacks > max_stacks: continue
+            if g_e_durmax and (initial > g_durmax or remaining > g_durmax): continue
+            if g_e_minrem and not infinite and remaining < g_minrem: continue
+            # V2068：min_initial_time 加 `not infinite` 守卫——永续 buff 即使是 initial>0 也无意义
+            # （在 visual 上无倒计时），不应该被「初始时间过短」误杀。与 g_e_minrem 守卫一致。
+            if g_e_mininit and not infinite and initial < g_mininit: continue
+            # V2096 BUGFIX：最小出现持续时间（防瞬时垃圾 buff）——旧逻辑 `if g_e_minappear and not _was_new`
+            #   会让「刚出现那 1 帧」因 _was_new 跳过检查 → 显示；下一帧 _was_new=False 且 elapsed<阈值
+            #   → 被门限排除 → 视觉上「闪一下」然后重新加入（用户实测新 buff 闪烁）。
+            #   修法：引入 _buff_ever_shown——只要这个 sid 本会话出现过（哪怕只一帧），就永久放行，
+            #   直到它真正从游戏数据里消失（下方 _raw_sids 清理）。这样：
+            #     · 新 buff 立即显示，中途不会被「最小出现时间」门限丢掉 → 不再闪烁；
+            #     · 真正「闪现即逝」的垃圾 buff 会显示到它自己消失为止（消失本身是正确的），不会被误留。
+            #   旧意图「过滤 <阈值秒瞬时 buff」仍保留：这种 buff 会因自身消失而被移除，并非靠时间门限预过滤。
+            if g_e_minappear:
+                if sid in _ever_shown:
+                    pass
+                elif _was_new:
+                    _ever_shown.add(sid)
+                elif (_now - _seen[sid]) < g_minappear:
+                    continue
+                else:
+                    _ever_shown.add(sid)
+            if g_nan:
+                # V2072: math.isnan/isinf 在运行期对已转 float 的值仍抛异常
+                # （疑似读线程并发改写 info 字典致值类型瞬变），被 except 吞成
+                # nan_exc 误杀全部 buff。改用纯 Python 比较——NaN 是唯一满足
+                # x != x 的 float 值，Inf 用 == float('inf') 检测。
+                # 对任何类型都不抛异常（!= / == 对任意对象返回 bool，不抛）。
+                _bad = False
+                try:
+                    _bad = (initial != initial) or (remaining != remaining)
+                    if not _bad:
+                        _bad = (initial == float("inf") or initial == float("-inf") or
+                                remaining == float("inf") or remaining == float("-inf"))
+                except Exception:
+                    _bad = False
+                if _bad: continue
+            # ── 原有「过滤」开关（核心/永续/专属/专精/单层）──
+            if ex_inf and infinite: continue
+            if ex_excl and attr.get("是否专属"): continue
+            if ex_mast and attr.get("是否专精buff"): continue
+            if ex_single and attr.get("单层"): continue
+            if ex_core and sid in core_sids: continue
+            # V2095：把「真实秒数」折算进 info 副本再交给卡片绘制——
+            # 百分比型 buff（如龙人化 sid=29，pct_cap=40）游戏存的是 0~100 的百分比读数，
+            # 不折算的话卡片上显示的是 76.7（%）而不是真实的 30.7 秒。
+            # 核心区（read_overlay_data）早已做这个折算，全 Buff 模块之前漏了。
+            _pc = _pct.get(sid_i)
+            if _pc and not infinite:
+                _info2 = dict(info)
+                try:
+                    _rem2 = float(info.get("remaining", 0.0) or 0.0)
+                except Exception:
+                    _rem2 = 0.0
+                _info2["remaining"] = min(_rem2 * _pc / 100.0, _pc)
+                _info2["initial"] = _pc
+            else:
+                _info2 = info
+            items.append((sid, _info2, attr))
+        # V2063：根据排序方式选 key
+        # 「按出现时间」= 首次出现得越早越靠前；新出现 buff 自动排到末尾。
+        # V2076 修复：消失-再出现的 buff **重新**分配 seq（清空原 seq_map 项），
+        # 实现"先进的 buff 就在最前面，消失后它自个儿的排序又要清空"——例：
+        #   ABC 依次出现 → A=0, B=1, C=2 → 显示 ABC
+        #   B 消失 → 清 B → A=0, C=2 → 显示 AC
+        #   B 重新出现 → 分配 seq=3（_buff_next_seq 递增）→ 显示 ACB
+        sort_mode = self.settings.get("allbuff_sort_mode", DEFAULT_SETTINGS["allbuff_sort_mode"])
+        if sort_mode == "appearance":
+            seq_map = getattr(self, "_buff_first_seen_seq", None)  # V2094: self==GBFROverlayQt, _buff_first_seen_seq 在 self 上
+            ctrl_self = self  # 共用 ctrl_self 名字，让下面代码无需大改
+            if seq_map is not None and hasattr(self, "_buff_next_seq"):
+                # 1) 清理消失的 buff：seq_map 里存在但本次 items 没有的 sid 全部删除
+                # V2088 BUGFIX：与 _seen 同理，必须用**原始数据源** buffs 的 sid 集合。
+                #   用 items 的后果：某 buff 因门限（minrem/mininit/nan/ex_*）被丢 → 不在 items
+                #   → 排序号被清 → 下一帧重新分配到队尾 → 卡片位置每帧跳变 → 视觉上疯狂闪烁。
+                #   正确语义：只有「游戏里这个 buff 真的没了」才清空排序号。
+                # V2093 BUGFIX（宽限期）：即使 buff 真的从游戏里消失，也**不立即**清排序号——
+                #   内存读取偶发抖动（一帧读不到 / 换场景瞬间）会让 seq 被误清，
+                #   buff 下一帧回来就被重新分配到队尾 → 位置跳变，玩家感觉「排序不对」。
+                #   加宽限：记录首次消失时间，超过 allbuff_seq_gone_grace_sec（默认 1.0s）才真清。
+                current_sids = set(buffs.keys())
+                _grace = float(self.settings.get("allbuff_seq_gone_grace_sec", 1.0) or 0.0)
+                _gone = getattr(ctrl_self, "_buff_gone_since", None)
+                if _gone is None:
+                    _gone = {}
+                    ctrl_self._buff_gone_since = _gone
+                for sid in list(seq_map.keys()):
+                    if sid in current_sids:
+                        # 回来了：取消消失计时
+                        _gone.pop(sid, None)
+                        continue
+                    # 不在本次数据源里 → 可能是真消失，也可能只是抖动
+                    if _grace <= 0.0:
+                        del seq_map[sid]
+                        _gone.pop(sid, None)
+                        continue
+                    _t0 = _gone.get(sid)
+                    if _t0 is None:
+                        _gone[sid] = _now           # 首次观测到消失，开始计时
+                    elif (_now - _t0) >= _grace:
+                        del seq_map[sid]            # 消失超过宽限 → 真清
+                        del _gone[sid]
+                # 2) 给新出现的 buff 分配 seq（_buff_next_seq 单调递增；已删的旧 seq 自然留下空洞但不影响排序）
+                for sid, _info, _attr in items:
+                    if sid not in seq_map:
+                        seq_map[sid] = self._buff_next_seq  # V2094: 同上 self
+                        self._buff_next_seq += 1
+                items.sort(key=lambda t: (seq_map.get(t[0], 0), t[0]))
+            else:
+                # 防御性回退：仍按 sid
+                items.sort(key=lambda t: t[0])
+        else:
+            items.sort(key=lambda t: t[0])
+
+        # V2084：清理本帧消失的 sid（重置首次观测时间，下次再出现时重新计时）
+        # V2088 BUGFIX：必须用**原始数据源** buffs 的 sid 集合，不能用过滤后的 items！
+        #   用 items 的后果：某 buff 因「其他门限」（minrem/mininit/nan/ex_*）被丢 → 不在 items
+        #   → 本帧把它从 _seen 删掉 → 下一帧变 _was_new=True → 又过 minappear → 又被其他门限丢
+        #   → 每帧都在「新 → 丢 → 新 → 丢」震荡 → 全 Buff 模块疯狂闪烁。
+        #   正确语义：只有「游戏里这个 buff 真的没了（原始 buffs 里读不到了）」才重置计时。
+        _raw_sids = set(buffs.keys())
+        for sid in list(_seen.keys()):
+            if sid not in _raw_sids:
+                del _seen[sid]
+        # V2096：buff 真正从游戏数据里消失时，一并清掉「出现过」记忆，
+        # 下次再出现会重新计时（重新出现即 _was_new → 再次立即放行）。
+        for sid in list(_ever_shown):
+            if sid not in _raw_sids:
+                _ever_shown.discard(sid)
+
+        # ── 固定布局：rows 行 × per_row 列（V2104）──
+        # 模块尺寸固定（rows × per_row），不再随 buff 数量伸缩。
+        # 排序规则（简化）：所有 Buff 在前（保持各自原有排序），所有 Debuff 接在 Buff 之后（不再单独分行）；
+        # 总容量 = per_row × rows，超出直接截断丢弃。
+        rows = max(1, int(self.settings.get("allbuff_rows", 3)))
+        normal_items = [t for t in items if not _is_debuff(int(t[0]))]
+        debuff_items = [t for t in items if _is_debuff(int(t[0]))]
+        combined = (normal_items + debuff_items)[: per_row * rows]
+        placed = [(idx, t) for idx, t in enumerate(combined)]
+
+        # 名称字段（按语言）
+        if lang == "en":
+            name_key = "英文名"
+        elif lang == "zh_tw":
+            name_key = "繁中名"
+        else:
+            name_key = "名称"
+
+        # ── 绘制固定网格 ──
+        for slot, (sid, info, attr) in placed:
+            row = slot // per_row
+            col = slot % per_row
+            x = col * (bw + card_sp)
+            y = row * (bh + row_sp)
+            is_debuff = _is_debuff(int(sid))
+            # 接近尾声判定（rem/init 低于阈值）
+            infinite = bool(info.get("infinite"))
+            if infinite:
+                is_low = False
+            else:
+                _rem = float(info.get("remaining", 0.0) or 0.0)
+                _init = float(info.get("initial", 0.0) or 0.0)
+                ratio = (_rem / _init) if _init > 0 else 0.0
+                is_low = ratio < warn_thr
+            self._draw_allbuff_card(
+                painter, x, y, bw, bh, info, attr, name_key,
+                name_fs, stacks_fs, time_fs, bar_w, bar_h,
+                name_col, stacks_col, time_col, bar_col, backing_col,
+                elem_sp, bar_frame_t,
+                is_debuff, is_low, warn_en, warn_col,
+                debuff_name_col, debuff_stacks_col, debuff_time_col, debuff_bar_col,
+                debuff_warn_en, debuff_warn_col,
+            )
+
+        # ── 固定窗口尺寸（3 行 × per_row 列，含行/列间隙）── V2103
+        self._apply_allbuff_fixed_size()
+
+    def _apply_allbuff_fixed_size(self):
+        """V2104：固定全 Buff 窗口尺寸（rows 行 × per_row 列，含行/列间隙），不随 buff 数量伸缩。
+        即使无角色/无活动 Buff 也预留 rows × per_row 的固定区域。rows 取自 allbuff_rows（可调）。"""
+        win = getattr(self, "allbuff_win", None)
+        if win is None:
+            return
+        per_row = max(1, int(self.settings.get("allbuff_per_row", 10)))
+        rows = max(1, int(self.settings.get("allbuff_rows", 3)))
+        row_sp = int(self.settings.get("allbuff_row_spacing", 4))
+        card_sp = int(self.settings.get("allbuff_card_spacing", 4))
+        bw_setting = max(1, int(self.settings.get("allbuff_backing_width", 80)))
+        bh_setting = max(1, int(self.settings.get("allbuff_backing_height", 64)))
+        name_fs = max(1, int(self.settings.get("allbuff_name_font_size", 11)))
+        stacks_fs = max(1, int(self.settings.get("allbuff_stacks_font_size", 10)))
+        time_fs = max(1, int(self.settings.get("allbuff_time_font_size", 10)))
+        bar_w = max(1, int(self.settings.get("allbuff_bar_width", 60)))
+        bar_h = max(1, int(self.settings.get("allbuff_bar_height", 5)))
+        bar_frame_t = max(0, min(10, int(self.settings.get("allbuff_bar_frame_thickness", 2))))
+        elem_sp = int(self.settings.get("allbuff_element_spacing", 4))
+        row_h_extra = int(self.settings.get("allbuff_row_height_extra", 0))
+        from PySide6.QtGui import QFont as _QF, QFontMetrics as _QFM
+        _afm_name = _QFM(_QF("Segoe UI", name_fs, _QF.Bold))
+        _afm_stacks = _QFM(_QF("Segoe UI", stacks_fs, _QF.Bold))
+        _afm_time = _QFM(_QF("Segoe UI", time_fs, _QF.Bold))
+        _name_h = _afm_name.height() + 2 + row_h_extra
+        _stacks_h = _afm_stacks.height() + 2 + row_h_extra
+        _time_h = _afm_time.height() + 2 + row_h_extra
+        pad = 2
+        auto_bh = (2 * pad + _name_h + elem_sp + _stacks_h + elem_sp + _time_h + elem_sp + (bar_h + 2 * bar_frame_t))
+        auto_bh = max(1, auto_bh)
+        auto_bw = bar_w + 2 * bar_frame_t + 8
+        bh = max(auto_bh, bh_setting)
+        bw = max(auto_bw, bw_setting)
+        actual_cw = per_row * bw + max(0, per_row - 1) * card_sp
+        actual_ch = rows * bh + max(0, rows - 1) * row_sp
+        self.allbuff_canvas_w = actual_cw
+        self.allbuff_canvas_h = actual_ch
+        new_w = max(1, int(actual_cw * win.disp_w))
+        new_h = max(1, int(actual_ch * win.disp_h))
+        if abs(new_w - win.width()) > 1.5 or abs(new_h - win.height()) > 1.5:
+            win.resize(new_w, new_h)
+
+    def _draw_allbuff_card(self, painter, x, y, bw, bh, info, attr, name_key,                           name_fs, stacks_fs, time_fs, bar_w, bar_h,
+                           name_col, stacks_col, time_col, bar_col, backing_col,
+                           elem_sp, bar_frame_t,
+                           is_debuff, is_low, warn_en, warn_col,
+                           debuff_name_col, debuff_stacks_col, debuff_time_col, debuff_bar_col,
+                           debuff_warn_en, debuff_warn_col):
+        """绘制单张轻量卡片：衬底 + 名称 + 层数/最大层 + 剩余/持续 + 倒计时横条（含 100% 外框）。"""
+        painter.save()
+        # 衬底（三处文字共用一套样式）
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(backing_col)
+        painter.drawRoundedRect(x, y, bw, bh, 3, 3)
+
+        pad = 2
+        cx = x + bw / 2.0
+
+        # ── 颜色：根据 is_debuff / is_low 切换 ──
+        if is_debuff:
+            cur_name_col   = debuff_name_col
+            cur_stacks_col = debuff_stacks_col
+            cur_time_col   = debuff_time_col
+            cur_bar_col    = debuff_bar_col
+            if is_low and debuff_warn_en:
+                cur_time_col = debuff_warn_col
+                cur_bar_col  = debuff_warn_col
+        else:
+            cur_name_col   = name_col
+            cur_stacks_col = stacks_col
+            cur_time_col   = time_col
+            cur_bar_col    = bar_col
+            if is_low and warn_en:
+                cur_time_col = warn_col
+                cur_bar_col  = warn_col
+
+        # 名称（顶部，V2064 自适应阶梯：name_fs → 10 → 9 → 8 → ElideRight）
+        name = (attr.get(name_key) or "").strip()
+        # V2095：永续 buff 在名称右侧加无限符号 ∞（让玩家一眼看出这个 buff 没有倒计时）
+        _inf_mark = bool(info.get("infinite"))
+        _name_disp = name + ("∞" if _inf_mark else "")
+        # V2064：阶梯缩字——优先用玩家设置的 name_fs；超出 bw-4 时降到 10pt 重测，再降到 9pt、8pt，
+        # 最后仍超才用 ElideRight(...)。这样长名（5+ 中文）能完整显示而不被省略号截断。
+        # V2076 修复：玩家设的 name_fs 优先。
+        # V2078 修复：阶梯改为"只缩不升"——玩家设 1pt 直接用 1pt（不再升到 8，玩家自负看不清楚）；
+        # 玩家设 11pt 装不下才降到 10/9/8 找最大能装下的（防溢出）。
+        # 之前的"只升不降"阶梯会让 render 端算的 _name_h 与 _draw_allbuff_card 实际 name_h 不一致——
+        # render 端用 name_fs=1 算小高度，_draw_allbuff_card 用阶梯升到 8 算大高度，
+        # 实际 _content_h > render 估算 → 外框底部超出 bh → 进度条被切。
+        cur_name_fs = max(1, int(name_fs))
+        cur_name = name
+        # 阶梯降字号（不升）——从玩家设的值开始试，装不下就降到下一档（仅往下）
+        _shrink_steps = sorted(set([cur_name_fs, 10, 9, 8]), reverse=True)
+        _found = False
+        for fs in _shrink_steps:
+            if fs > cur_name_fs:
+                continue  # V2078: 跳过比玩家设的还大的字号（不放大）
+            fs = max(1, fs)
+            _f = QFont("Segoe UI", fs, QFont.Bold)
+            _fm = QFontMetrics(_f)
+            _w = _fm.horizontalAdvance(_name_disp)  # V2095: 含 ∞ 一起测宽
+            if _w <= max(1, bw - 4):
+                cur_name_fs = fs
+                cur_name = _name_disp  # V2095: 含 ∞
+                _found = True
+                break
+        if not _found:
+            # 都装不下（玩家设的字号本来就大，且 buff 名特别长），用 8pt 兜底 + elide
+            cur_name_fs = min(8, max(1, int(name_fs)))
+            _f = QFont("Segoe UI", cur_name_fs, QFont.Bold)
+            _fm = QFontMetrics(_f)
+            cur_name = _fm.elidedText(_name_disp, Qt.ElideRight, max(1, bw - 4))  # V2095
+        f = QFont("Segoe UI", cur_name_fs, QFont.Bold)
+        painter.setFont(f)
+        painter.setPen(cur_name_col)
+        fm = QFontMetrics(f)
+        if fm.horizontalAdvance(cur_name) > max(1, bw - 4):
+            cur_name = fm.elidedText(cur_name, Qt.ElideRight, max(1, bw - 4))
+        # V2073: 用 fm.height()+2 替代 cur_name_fs+2，确保 QRect 容纳完整粗体字体
+        # V2074: 在 fm.height()+2 基础上再加 row_h_extra（用户可调，默认 0，V2075 起允许负值）
+        # V2075: QRect 高度 clamp >=1 防止负高度
+        # V2076: 元素在衬底内水平垂直居中——按内容总高算起始 y，让整组元素在衬底里居中
+        # 计算顺序：先算各行实际高度，再算内容总高与居中起点，最后用 AlignHCenter|AlignVCenter 绘制
+        _row_h_extra = int(self.settings.get("allbuff_row_height_extra", 0))
+        name_h   = max(1, fm.height()  + 2 + _row_h_extra)
+        stacks_h = max(1, QFontMetrics(QFont("Segoe UI", stacks_fs, QFont.Bold)).height() + 2 + _row_h_extra)
+        time_h   = max(1, QFontMetrics(QFont("Segoe UI", time_fs,   QFont.Bold)).height() + 2 + _row_h_extra)
+        _outer_h = bar_h + 2 * bar_frame_t
+        _content_h = name_h + elem_sp + stacks_h + elem_sp + time_h + elem_sp + _outer_h
+        _content_top = y + max(pad, (bh - _content_h) / 2)  # 上下 pad 自然对称；bh 不够时退化为 pad
+        # 名称
+        ny = _content_top
+        painter.drawText(QRect(x, ny, bw, name_h), Qt.AlignHCenter | Qt.AlignVCenter, cur_name)
+
+        # 层数 / 最大层（中部；单层显示 1/1）
+        if attr.get("单层"):
+            stacks_str = "1/1"
+        else:
+            st = int(info.get("stacks", 0) or 0)
+            mx = int(info.get("max_stacks", 0) or 1)
+            if mx <= 0:
+                mx = 1
+            stacks_str = f"{st}/{mx}"
+        sy = ny + name_h + elem_sp
+        f2 = QFont("Segoe UI", stacks_fs, QFont.Bold)
+        painter.setFont(f2)
+        painter.setPen(cur_stacks_col)
+        # V2073：用 fm2.height()+2 替代 stacks_fs+2，确保层数/时间文字不被卡片圆角裁切
+        # V2074：加 row_h_extra
+        # V2076：用 AlignVCenter 在自己 QRect 内垂直居中（配合 _content_top 整体居中）
+        fm2 = QFontMetrics(f2)
+        painter.drawText(QRect(x, sy, bw, stacks_h), Qt.AlignHCenter | Qt.AlignVCenter, stacks_str)
+
+        # 剩余 / 持续（时间区；警告色切换）
+        # V2098：时间区始终显示最真实读到的 remaining/initial，绝不用 ∞ 替代。
+        # 永续标志 ∞ 只出现在名称右侧（见上文 _name_disp），此处一律显示真实读值。
+        infinite = bool(info.get("infinite"))
+        rem = float(info.get("remaining", 0.0) or 0.0)
+        init = float(info.get("initial", 0.0) or 0.0)
+        time_str = f"{rem:.1f}/{init:.1f}"
+        ty = sy + stacks_h + elem_sp
+        f3 = QFont("Segoe UI", time_fs, QFont.Bold)
+        painter.setFont(f3)
+        painter.setPen(cur_time_col)
+        # V2073：同 stacks 用 fm3.height()+2
+        # V2074：加 row_h_extra
+        # V2076：AlignVCenter
+        fm3 = QFontMetrics(f3)
+        painter.drawText(QRect(x, ty, bw, time_h), Qt.AlignHCenter | Qt.AlignVCenter, time_str)
+
+        # 倒计时横条（底部：先画外框（若 frame_t>0），再画内 track+fill）
+        # V2076：by 跟随新的 ty（time 行底 + elem_sp）而非旧的 y+pad+... 累加
+        by = ty + time_h + elem_sp
+        # V2078 防御：当实际 _content_h（用 cur_name_fs 阶梯缩字后的实际行高算的）> bh（render 端用 name_fs 算的
+        # _name_h 偏小或玩家设的 bh_setting 太小），外框底部会超出衬底。clamp _outer_h 到 (bh - by) 让外框缩进衬底。
+        _actual_content_h = name_h + elem_sp + stacks_h + elem_sp + time_h + elem_sp + _outer_h
+        if _actual_content_h + 2 * pad > bh:
+            _avail_for_outer = max(1, (bh - 2 * pad) - (name_h + elem_sp + stacks_h + elem_sp + time_h + elem_sp))
+            if _avail_for_outer < _outer_h:
+                _outer_h = max(1, _avail_for_outer)  # 进度条外框高度 clamp 到剩余可用空间
+        if infinite:
+            ratio = 1.0
+        else:
+            init = float(info.get("initial", 0.0) or 0.0)
+            rem = float(info.get("remaining", 0.0) or 0.0)
+            ratio = (rem / init) if init > 0 else 0.0
+            ratio = max(0.0, min(1.0, ratio))
+        full_w = min(bar_w, bw - 4)
+        bar_x = int(round(cx - full_w / 2.0))
+        # V2078: outer_h 用 _outer_h（被前面的防御 clamp 过），不再用 bar_h+2*bar_frame_t 重新算
+        outer_h = _outer_h
+        # 外框：4 条 bar_col 描边
+        if bar_frame_t > 0:
+            pen = QPen(cur_bar_col)
+            pen.setWidth(max(1, bar_frame_t))
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            # 上下两边
+            painter.drawLine(bar_x, by, bar_x + full_w, by)
+            painter.drawLine(bar_x, by + outer_h, bar_x + full_w, by + outer_h)
+            # 左右两边
+            painter.drawLine(bar_x, by, bar_x, by + outer_h)
+            painter.drawLine(bar_x + full_w, by, bar_x + full_w, by + outer_h)
+        # 内：track + fill
+        inner_x = bar_x + bar_frame_t
+        inner_y = by + bar_frame_t
+        inner_w = max(0, full_w - 2 * bar_frame_t)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(0, 0, 0, 90))          # 轨道底
+        if inner_w > 0 and bar_h > 0:
+            painter.drawRect(inner_x, inner_y, inner_w, bar_h)
+            painter.setBrush(cur_bar_col)               # 填充
+            painter.drawRect(inner_x, inner_y, int(round(inner_w * ratio)), bar_h)
+        painter.restore()
+
+    def _draw_allbuff_placeholder(self, painter, text):
+        """未检测到角色 / 无活动 Buff 时的占位提示。
+        V2084：对齐 _draw_module_backdrop 的风格——
+        锁定时（self.locked=True）不画背景板/边框/文字（与其它模块"全透明"一致）；
+        未锁定时画 8% 黑色背景板 + 15% 白色细边 + 居中文字（与其它模块一致）。
+        背景板不透明度对齐其它模块（不用 50% backing_col，因为该值是为每张 buff 卡片衬底设计的，
+        全窗 50% 黑色太重；占位提示用统一 8% 黑 + 15% 白边）。
+        """
+        # 锁定时：完全不画（包括文字），与 _draw_module_backdrop 的 locked 行为对齐。
+        # 玩家按住 alt 后再视觉隐藏，窗户仍在那里但内容全透明。
+        if self.locked:
+            return
+        cw = getattr(self, "allbuff_canvas_w", 200)
+        ch = getattr(self, "allbuff_canvas_h", 60)
+        painter.save()
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, cw, ch, 4, 4)
+        # 背景填充：8% 黑色（与 _draw_module_backdrop 一致）
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(qcolor("#000000"))
+        painter.setOpacity(0.08)
+        painter.drawPath(path)
+        # 白色细边：15% 不透明度（与 _draw_module_backdrop 一致）
+        border_color = qcolor("#FFFFFF")
+        border_color.setAlphaF(0.15)
+        pen = QPen(border_color)
+        pen.setWidthF(max(1.0, 1.5))
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.setOpacity(1.0)
+        painter.drawPath(path)
+        # 居中文字：name_color（默认白色）—— 8% 黑底上能看清
+        f = QFont("Segoe UI", 12, QFont.Bold)
+        painter.setFont(f)
+        painter.setOpacity(1.0)
+        painter.setPen(QColor(self._get_color("allbuff_name_color")))
+        painter.drawText(QRect(0, 0, cw, ch), Qt.AlignHCenter | Qt.AlignVCenter, text)
+        painter.restore()
 
     def render_roll(self, painter):
         """翻滚模块渲染：图标整体居中于本窗口画布（roll_cx/cy），支持横/竖排与闪光。"""
@@ -5977,9 +7460,15 @@ class GBFROverlayQt(QObject):
         save_settings(self.settings)
         # 实时同步到三个子窗口：它们的 self.settings 是构造时的拷贝，
         # 否则设置面板拖动滑块时窗口内部仍读旧值。
-        for win in (self.core_win, self.roll_win, self.skill_win):
+        for win in (self.core_win, self.roll_win, self.skill_win, self.allbuff_win):
             if win is not None:
                 win.settings = dict(new_settings)
+        # 全Buff模块独立显隐开关：实时跟随（关闭则整窗隐藏，避免透明大窗挡住游戏点击）
+        if getattr(self, "allbuff_win", None) is not None:
+            if bool(self.settings.get("show_allbuff_module", True)):
+                self.allbuff_win.show()
+            else:
+                self.allbuff_win.hide()
         self._after_settings_changed()
 
     # ================================================================
@@ -6131,7 +7620,8 @@ class GBFROverlayQt(QObject):
         仅内容区（buff/技能/翻滚）受隐藏设置影响：
         - 战斗中/训练场/手动常显/有木桩 → 内容区正常（乘数=1），窗口恢复完整高度。
         - 非战斗且（勾选隐藏 或 开启训练场自动）并位于非训练场：
-          * 隐藏不透明度=0% → 内容区不绘制，窗口缩到仅标题栏高度（不拦截游戏鼠标）。
+          * 隐藏不透明度=0% → 内容区不绘制，窗口缩到仅标题栏高度（不拦截游戏鼠标）；
+            全 Buff 独立窗口整窗 hide()，与 Skill/Roll 共享一个「OOC 全隐」语义；
           * 隐藏不透明度>0% → 内容区半透明，窗口保持完整高度。
         """
         in_combat = getattr(self, "in_combat", True)
@@ -6156,6 +7646,19 @@ class GBFROverlayQt(QObject):
             else:
                 self.core_win.resize(self.core_win.window_w, full_h)
             self.core_win.update()
+            # V2101：全 Buff 模块的底框（backdrop）仅由「锁定」决定可见性，与核心/能力模块一致——
+            # 非战斗隐藏只隐藏「内容」（render_allbuff 内 early-return 跳过内容），不再整窗 hide，
+            # 因此底框在未锁定时始终显示（含非战斗状态）。这里只在「模块开关」维度控制整窗显隐，
+            # 模块关闭时整窗隐藏，模块开启时整窗显示（底框随之可见）。
+            allbuff = getattr(self, "allbuff_win", None)
+            if allbuff is not None:
+                if bool(self.settings.get("show_allbuff_module", True)):
+                    if not allbuff.isVisible():
+                        allbuff.show()
+                else:
+                    if allbuff.isVisible():
+                        allbuff.hide()
+
 
     def _game_is_foreground(self):
         """综合判定游戏是否处于『用户正在看的前台』状态。
@@ -6425,6 +7928,7 @@ class GBFROverlayQt(QObject):
         self.char_type = snap.get("char_type", 0)
         self.charid_hash = snap.get("charid_hash", 0)
         self.pl_id = snap.get("pl_id") or _pl_hash_map.get(self.charid_hash)
+        self.all_buffs_filtered = snap.get("all_buffs", {})  # V2050：全 Buff 模块数据源（gate 过滤后）
 
         # 按专精门控过滤 + 按顺位（buff_order）升序排列
         # 三框全选=常显；全不选=常关；单选/多选=仅当 current_mastery 命中选中项才显示
@@ -7157,6 +8661,59 @@ class SkillWindow(ModuleWindow):
 
     def render(self, painter):
         self.ctrl.render_skill(painter)
+
+
+class AllBuffWindow(ModuleWindow):
+    """全 Buff 显示模块（第四模块）：网格化轻量卡片，列出当前主控角色可读到的全部 buff。
+
+    复用三大模块的交集特质：独立显隐开关 / 独立屏幕位置 XY / 整体缩放 / 位置与缩放子页 /
+    元素级透明度（名称·层数·时间各字号+颜色；进度条与衬底各带独立不透明度）。
+    """
+
+    # V2104：恢复 allbuff_rows 设置项后，recalc_layout 直接用 allbuff_rows 预留精确行数，
+    # 与运行时 render_allbuff 的固定网格（rows × per_row）完全一致；不再用估算值。
+
+    def recalc_layout(self):
+        super().recalc_layout()
+        bw_setting = max(1, int(self.ctrl.settings.get("allbuff_backing_width", 80)))
+        bh_setting = max(1, int(self.ctrl.settings.get("allbuff_backing_height", 64)))
+        per_row = max(1, int(self.ctrl.settings.get("allbuff_per_row", 10)))
+        rows = max(1, int(self.ctrl.settings.get("allbuff_rows", 3)))
+        row_sp = int(self.ctrl.settings.get("allbuff_row_spacing", 4))
+        card_sp = int(self.ctrl.settings.get("allbuff_card_spacing", 4))
+
+        # V2062：自适应 floor——取 max(按当前 font/elem_sp/bar/frame 计算的最小可视尺寸, 用户设置)
+        # 玩家调小 bw/bh 也不会让卡片裁切
+        pad = 2
+        name_fs = max(1, int(self.ctrl.settings.get("allbuff_name_font_size", 11)))
+        stacks_fs = max(1, int(self.ctrl.settings.get("allbuff_stacks_font_size", 10)))
+        time_fs = max(1, int(self.ctrl.settings.get("allbuff_time_font_size", 10)))
+        bar_w = max(1, int(self.ctrl.settings.get("allbuff_bar_width", 60)))
+        bar_h = max(1, int(self.ctrl.settings.get("allbuff_bar_height", 5)))
+        bar_frame_t = max(0, min(10, int(self.ctrl.settings.get("allbuff_bar_frame_thickness", 2))))
+        # V2075：允许负值，与 render_allbuff 一致（负间距让估算的卡片高度更紧凑）
+        elem_sp = int(self.ctrl.settings.get("allbuff_element_spacing", 4))
+        row_h_extra = int(self.ctrl.settings.get("allbuff_row_height_extra", 0))
+        auto_bh = (2 * pad
+                   + (name_fs + 2 + row_h_extra) + elem_sp
+                   + (stacks_fs + 2 + row_h_extra) + elem_sp
+                   + (time_fs + 2 + row_h_extra) + elem_sp
+                   + (bar_h + 2 * bar_frame_t))
+        auto_bh = max(1, auto_bh)
+        auto_bw = bar_w + 2 * bar_frame_t + 8
+        bw = max(auto_bw, bw_setting)
+        bh = max(auto_bh, bh_setting)
+
+        # 画布尺寸（未经 res_scale 缩放，window_w/h 由 disp_w 处理）
+        cw = per_row * bw + max(0, per_row - 1) * card_sp
+        ch = rows * bh + max(0, rows - 1) * row_sp
+        self.ctrl.allbuff_canvas_w = cw
+        self.ctrl.allbuff_canvas_h = ch
+        self.window_w = max(1, int(cw * self.disp_w))
+        self.window_h = max(1, int(ch * self.disp_h))
+
+    def render(self, painter):
+        self.ctrl.render_allbuff(painter)
 
 # V2024 修复：Windows 区域=香港（繁体）/台湾 等非简体中文 Windows 下，
 # 整个 overlay 的中文（包括设置对话框的所有 tab/label/button）渲染成 □□ 方框。
