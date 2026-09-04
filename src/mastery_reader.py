@@ -33,8 +33,16 @@ SB_NODE_ARRAY_STRIDE = 0x38
 EMPTY_SIGIL_HASH     = 0x887AE0B0
 SB_CHARID_OFF        = 0x5B10
 
-# CharaPower 全局 RVA 候选（随补丁漂移；2.0.3 优先，2.0.2 次之）
-CHARA_POWER_RVA_CANDIDATES = [0x7c21a38, 0x7c22cb8]
+# CharaPower 全局 RVA 候选（随补丁漂移；2.0.4 优先，2.0.3 次之，2.0.2 末位）
+# V2082：2.0.4 下旧候选 0x7c21a38 / 0x7c22cb8 全部失效（BuffMonitor 的 numpy 全模块扫描也找不到，
+#   一度怀疑 2.0.4 重构了 CharaPower 结构本身）。
+# V2083：研读 relink-logs `src-hook/src/hooks/player.rs` 源码后确认——
+#   源码里 `const CHARA_POWER_RVA: usize = 0x7c22f38; // 2.0.4: 0x7c22cb8`
+#   即 2.0.4 的真实 RVA 是 **0x7c22f38**（比 2.0.2 的 0x7c22cb8 只漂移 0x80，结构完全没变）。
+#   旧候选之所以"找不到"，纯粹是列表里没有这个新值，不是结构变了。
+#   附注：2.0.4 的 map 偏移（0x728/0x738/0x750、0x320/0x330/0x348）、节点数组 0x138、
+#   charid 0x5B10、actor record 0x15030 全部沿用旧值，无需改动。
+CHARA_POWER_RVA_CANDIDATES = [0x7C22F38, 0x7C21A38, 0x7C22CB8]
 # 巴恩 charid，功能指纹用
 SB_TARGET_CHARID = 0x2EBE91D5
 
@@ -262,7 +270,6 @@ class MasteryReader:
             if meta and meta["ok"]:
                 self._adopt(rva, mgr, meta)
                 return True
-        # 2) 全段扫描（需 numpy），无 numpy 直接降级
         try:
             import numpy as _np
         except Exception:

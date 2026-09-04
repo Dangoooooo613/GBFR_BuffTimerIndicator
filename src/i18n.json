@@ -1,153 +1,182 @@
 {
   "meta": {
-    "schema": 89,
-    "note": "GBFR CooldownIndicator 三语单一真源；zh=简中, zh_tw=繁中, en=英文"
+    "schema": 96,
+    "note": "GBFR CooldownIndicator 四语单一真源；zh=简中, zh_tw=繁中, en=英文, ja=日本語"
   },
   "chars": {
     "PL0000": {
       "zh": "古兰",
       "zh_tw": "葛蘭",
-      "en": "Gran"
+      "en": "Gran",
+      "ja": "グラン"
     },
     "PL0100": {
       "zh": "姬塔",
       "zh_tw": "吉塔",
-      "en": "Djeeta"
+      "en": "Djeeta",
+      "ja": "ジータ"
     },
     "PL0200": {
       "zh": "卡塔莉娜",
       "zh_tw": "卡塔莉娜",
-      "en": "Katalina"
+      "en": "Katalina",
+      "ja": "カタリナ"
     },
     "PL0300": {
       "zh": "拉卡姆",
       "zh_tw": "拉卡姆",
-      "en": "Rackam"
+      "en": "Rackam",
+      "ja": "ラカム"
     },
     "PL0400": {
       "zh": "伊欧",
       "zh_tw": "伊歐",
-      "en": "Io"
+      "en": "Io",
+      "ja": "イオ"
     },
     "PL0500": {
       "zh": "欧根",
       "zh_tw": "尤金",
-      "en": "Eugen"
+      "en": "Eugen",
+      "ja": "オイゲン"
     },
     "PL0600": {
       "zh": "萝赛塔",
       "zh_tw": "蘿賽塔",
-      "en": "Rosetta"
+      "en": "Rosetta",
+      "ja": "ロゼッタ"
     },
     "PL0700": {
       "zh": "菲莉",
       "zh_tw": "菲莉",
-      "en": "Ferry"
+      "en": "Ferry",
+      "ja": "フェリ"
     },
     "PL0800": {
       "zh": "兰斯洛特",
       "zh_tw": "蘭斯洛特",
-      "en": "Lancelot"
+      "en": "Lancelot",
+      "ja": "ランスロット"
     },
     "PL0900": {
       "zh": "巴恩",
       "zh_tw": "范恩",
-      "en": "Vane"
+      "en": "Vane",
+      "ja": "ヴェイン"
     },
     "PL1000": {
       "zh": "珀西瓦尔",
       "zh_tw": "帕西瓦爾",
-      "en": "Percival"
+      "en": "Percival",
+      "ja": "パーシヴァル"
     },
     "PL1100": {
       "zh": "齐格飞",
       "zh_tw": "齊格菲",
-      "en": "Siegfried"
+      "en": "Siegfried",
+      "ja": "ジークフリート"
     },
     "PL1200": {
       "zh": "夏洛特",
       "zh_tw": "夏綠蒂",
-      "en": "Charlotta"
+      "en": "Charlotta",
+      "ja": "シャルロッテ"
     },
     "PL1300": {
       "zh": "尤达拉哈",
       "zh_tw": "尤達爾拉哈",
-      "en": "Yodarha"
+      "en": "Yodarha",
+      "ja": "ヨダルラーハ"
     },
     "PL1400": {
       "zh": "娜露梅",
       "zh_tw": "娜魯梅亞",
-      "en": "Narmaya"
+      "en": "Narmaya",
+      "ja": "ナルメア"
     },
     "PL1500": {
       "zh": "冈达葛萨",
       "zh_tw": "剛特克澤",
-      "en": "Ghandagoza"
+      "en": "Ghandagoza",
+      "ja": "ガンダゴウザ"
     },
     "PL1600": {
       "zh": "塞达",
       "zh_tw": "瑟塔",
-      "en": "Zeta"
+      "en": "Zeta",
+      "ja": "ゼタ"
     },
     "PL1700": {
       "zh": "巴萨拉卡",
       "zh_tw": "巴薩拉加",
-      "en": "Vaseraga"
+      "en": "Vaseraga",
+      "ja": "バザラガ"
     },
     "PL1800": {
       "zh": "卡莉奥丝特罗",
       "zh_tw": "卡莉歐斯托蘿",
-      "en": "Cagliostro"
+      "en": "Cagliostro",
+      "ja": "カリオストロ"
     },
     "PL1900": {
       "zh": "伊德",
       "zh_tw": "伊度",
-      "en": "Id"
+      "en": "Id",
+      "ja": "イド"
     },
     "PL2100": {
       "zh": "圣德芬",
       "zh_tw": "聖德芬",
-      "en": "Sandalphon"
+      "en": "Sandalphon",
+      "ja": "サンダルフォン"
     },
     "PL2200": {
       "zh": "希耶提",
       "zh_tw": "席耶提",
-      "en": "Seofon"
+      "en": "Seofon",
+      "ja": "シエテ"
     },
     "PL2300": {
       "zh": "索恩",
       "zh_tw": "蘇恩",
-      "en": "Tweyen"
+      "en": "Tweyen",
+      "ja": "ソーン"
     },
     "PL2400": {
       "zh": "伽兰查",
       "zh_tw": "伽藍薩",
-      "en": "Gallanza"
+      "en": "Gallanza",
+      "ja": "ガランツァ"
     },
     "PL2500": {
       "zh": "玛琪拉菲菈",
       "zh_tw": "瑪姬拉芙莉爾",
-      "en": "Maglielle"
+      "en": "Maglielle",
+      "ja": "マギラフリラ"
     },
     "PL2600": {
       "zh": "贝阿朵丽丝",
       "zh_tw": "貝雅特麗絲",
-      "en": "Beatrix"
+      "en": "Beatrix",
+      "ja": "ベアトリクス"
     },
     "PL2700": {
       "zh": "尤斯提斯",
       "zh_tw": "尤斯堤斯",
-      "en": "Eustace"
+      "en": "Eustace",
+      "ja": "ユーステス"
     },
     "PL2800": {
       "zh": "芙劳",
       "zh_tw": "芙拉烏",
-      "en": "Fraux"
+      "en": "Fraux",
+      "ja": "フラウ"
     },
     "PL2900": {
       "zh": "菲迪埃尔",
       "zh_tw": "菲迪耶爾",
-      "en": "Fediel"
+      "en": "Fediel",
+      "ja": "フェディエル"
     }
   },
   "buffs": {
@@ -160,7 +189,8 @@
         "secret": false,
         "zh": "不屈攻刃",
         "zh_tw": "不屈攻刃",
-        "en": "Combat Healer"
+        "en": "Combat Healer",
+        "ja": "不屈の攻刃"
       },
       {
         "sid": 135,
@@ -170,7 +200,8 @@
         "secret": true,
         "zh": "领袖庇佑",
         "zh_tw": "領袖風範",
-        "en": "Charisma"
+        "en": "Charisma",
+        "ja": "カリスマ"
       },
       {
         "sid": -1,
@@ -181,7 +212,8 @@
         "secret": true,
         "zh": "Class等级",
         "zh_tw": "Class Lv",
-        "en": "Adept Arts Level"
+        "en": "Adept Arts Level",
+        "ja": "Class Lv"
       },
       {
         "sid": 42,
@@ -191,7 +223,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0200": [
@@ -203,7 +236,8 @@
         "secret": false,
         "zh": "阿瑞斯强袭",
         "zh_tw": "艾瑞斯強襲",
-        "en": "Ares Surge"
+        "en": "Ares Surge",
+        "ja": "アレス強襲"
       },
       {
         "sid": 69,
@@ -213,7 +247,8 @@
         "secret": true,
         "zh": "苍刃",
         "zh_tw": "蒼刃",
-        "en": "Blade Blue"
+        "en": "Blade Blue",
+        "ja": "蒼刃"
       },
       {
         "sid": 139,
@@ -223,7 +258,8 @@
         "secret": false,
         "zh": "双壁突击",
         "zh_tw": "雙重強襲",
-        "en": "Dual Raid"
+        "en": "Dual Raid",
+        "ja": "デュアルレイド"
       },
       {
         "sid": 42,
@@ -233,7 +269,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0300": [
@@ -245,7 +282,8 @@
         "secret": false,
         "zh": "靶心狙击强化",
         "zh_tw": "靶心狙擊強化",
-        "en": "Super Bull's Eye Blast"
+        "en": "Super Bull's Eye Blast",
+        "ja": "ブルスナイプ強化"
       },
       {
         "sid": 38,
@@ -255,7 +293,8 @@
         "secret": true,
         "zh": "双发子弹",
         "zh_tw": "雙連擊",
-        "en": "Double Tap"
+        "en": "Double Tap",
+        "ja": "ダブルタップ"
       },
       {
         "sid": 42,
@@ -265,7 +304,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0400": [
@@ -277,7 +317,8 @@
         "secret": true,
         "zh": "魔力漩涡",
         "zh_tw": "魔力漩渦",
-        "en": "Mystic Vortex"
+        "en": "Mystic Vortex",
+        "ja": "魔力の渦"
       },
       {
         "sid": 27,
@@ -287,7 +328,8 @@
         "secret": false,
         "zh": "专注",
         "zh_tw": "全神貫注",
-        "en": "Focused"
+        "en": "Focused",
+        "ja": "コンセントレーション"
       },
       {
         "sid": 71,
@@ -297,7 +339,8 @@
         "secret": false,
         "zh": "星梦V强化",
         "zh_tw": "星夢之術V強化",
-        "en": "Superstar"
+        "en": "Superstar",
+        "ja": "スターゲイズV強化"
       },
       {
         "sid": 42,
@@ -307,7 +350,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0500": [
@@ -319,7 +363,8 @@
         "secret": false,
         "zh": "瞄准模式强化",
         "zh_tw": "瞄準模式強化",
-        "en": "Sniper Elite"
+        "en": "Sniper Elite",
+        "ja": "エイムモード強化"
       },
       {
         "sid": 42,
@@ -329,7 +374,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0600": [
@@ -341,7 +387,8 @@
         "secret": true,
         "zh": "铁娘子",
         "zh_tw": "鐵處女",
-        "en": "Iron Maiden"
+        "en": "Iron Maiden",
+        "ja": "アイアン・メイデン"
       },
       {
         "sid": 98,
@@ -351,7 +398,8 @@
         "secret": false,
         "zh": "落花无情强化",
         "zh_tw": "花散強化",
-        "en": "Lost Love Bloomed"
+        "en": "Lost Love Bloomed",
+        "ja": "ロストラヴ強化"
       },
       {
         "sid": 97,
@@ -361,7 +409,8 @@
         "secret": false,
         "zh": "螺旋玫瑰强化",
         "zh_tw": "螺旋玫瑰強化",
-        "en": "Spiral Rose Bloomed"
+        "en": "Spiral Rose Bloomed",
+        "ja": "スパイラル・ローズ強化"
       },
       {
         "sid": 42,
@@ -371,7 +420,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0700": [
@@ -383,7 +433,8 @@
         "secret": false,
         "zh": "托愿",
         "zh_tw": "被託付的願望",
-        "en": "Loving Trust"
+        "en": "Loving Trust",
+        "ja": "託された想い"
       },
       {
         "sid": 79,
@@ -393,7 +444,8 @@
         "secret": true,
         "zh": "幽缘",
         "zh_tw": "幽緣",
-        "en": "Spiritbond"
+        "en": "Spiritbond",
+        "ja": "幽縁"
       },
       {
         "sid": 42,
@@ -403,7 +455,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0800": [
@@ -415,7 +468,8 @@
         "secret": true,
         "zh": "连击",
         "zh_tw": "連擊",
-        "en": "Avalanche"
+        "en": "Avalanche",
+        "ja": "連撃"
       },
       {
         "sid": 103,
@@ -425,7 +479,8 @@
         "secret": false,
         "zh": "攻击类能力强化",
         "zh_tw": "傷害技能強化",
-        "en": "Enhanced Damage Skills"
+        "en": "Enhanced Damage Skills",
+        "ja": "ダメージアビリティ強化"
       },
       {
         "sid": 104,
@@ -435,7 +490,8 @@
         "secret": false,
         "zh": "连击收招强化",
         "zh_tw": "連技終擊強化",
-        "en": "Enhanced Combo Finishers"
+        "en": "Enhanced Combo Finishers",
+        "ja": "コンボフィニッシュ強化"
       },
       {
         "sid": 42,
@@ -445,7 +501,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0900": [
@@ -457,7 +514,8 @@
         "secret": true,
         "zh": "巨斧连击强化",
         "zh_tw": "衝擊連技強化",
-        "en": "Booming Beatdown"
+        "en": "Booming Beatdown",
+        "ja": "ビートコンボ強化"
       },
       {
         "sid": 91,
@@ -467,7 +525,8 @@
         "secret": false,
         "zh": "勇士奋起",
         "zh_tw": "勇士的奮起",
-        "en": "Heroic Vigor"
+        "en": "Heroic Vigor",
+        "ja": "勇士の奮起"
       },
       {
         "sid": 93,
@@ -477,7 +536,8 @@
         "secret": false,
         "zh": "强化回馈",
         "zh_tw": "協同增幅",
-        "en": "Synergy Boost"
+        "en": "Synergy Boost",
+        "ja": "シナジーブースト"
       },
       {
         "sid": 42,
@@ -487,7 +547,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1000": [
@@ -499,7 +560,8 @@
         "secret": false,
         "zh": "征战之剑++强化",
         "zh_tw": "征戰＋＋強化",
-        "en": "Stoked Charge"
+        "en": "Stoked Charge",
+        "ja": "シュラハト＋＋強化"
       },
       {
         "sid": 85,
@@ -509,7 +571,8 @@
         "secret": false,
         "zh": "红莲之刃",
         "zh_tw": "紅蓮之刃",
-        "en": "Molten Edge"
+        "en": "Molten Edge",
+        "ja": "紅蓮の刃"
       },
       {
         "sid": 137,
@@ -519,7 +582,8 @@
         "secret": true,
         "zh": "炎狼",
         "zh_tw": "炎狼",
-        "en": "Flame Wolf"
+        "en": "Flame Wolf",
+        "ja": "炎狼"
       },
       {
         "sid": 42,
@@ -529,7 +593,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1100": [
@@ -541,7 +606,8 @@
         "secret": true,
         "zh": "拂晓",
         "zh_tw": "拂曉",
-        "en": "Daybreak"
+        "en": "Daybreak",
+        "ja": "払暁"
       },
       {
         "sid": 64,
@@ -551,7 +617,8 @@
         "secret": false,
         "zh": "屠龙之心",
         "zh_tw": "滅龍的鼓動",
-        "en": "Dragonsbane Pulse"
+        "en": "Dragonsbane Pulse",
+        "ja": "竜滅の鼓動"
       },
       {
         "sid": 65,
@@ -561,7 +628,8 @@
         "secret": false,
         "zh": "漆黑血涌",
         "zh_tw": "黑色血潮",
-        "en": "Dark Zeal"
+        "en": "Dark Zeal",
+        "ja": "黒き血潮"
       },
       {
         "sid": 42,
@@ -571,7 +639,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1200": [
@@ -583,7 +652,8 @@
         "secret": false,
         "zh": "崇高指令",
         "zh_tw": "高潔秩序",
-        "en": "Noble Order"
+        "en": "Noble Order",
+        "ja": "ノーブルオーダー"
       },
       {
         "sid": 75,
@@ -593,7 +663,8 @@
         "secret": false,
         "zh": "钻石之心",
         "zh_tw": "鑽石之心",
-        "en": "Diamond Cutter"
+        "en": "Diamond Cutter",
+        "ja": "ダイヤモンドハート"
       },
       {
         "sid": 76,
@@ -603,7 +674,8 @@
         "secret": true,
         "zh": "神圣追击",
         "zh_tw": "神聖追擊",
-        "en": "Divine Justice"
+        "en": "Divine Justice",
+        "ja": "聖なる追撃"
       },
       {
         "sid": 42,
@@ -613,7 +685,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1300": [
@@ -625,7 +698,8 @@
         "secret": false,
         "zh": "读秒之刃",
         "zh_tw": "奪秒之刃",
-        "en": "Flash Cut"
+        "en": "Flash Cut",
+        "ja": "秒読みの刃"
       },
       {
         "sid": 90,
@@ -635,7 +709,8 @@
         "secret": true,
         "zh": "攻守易形",
         "zh_tw": "固守反攻",
-        "en": "Payback"
+        "en": "Payback",
+        "ja": "受け潰し"
       },
       {
         "sid": 42,
@@ -645,7 +720,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1400": [
@@ -657,7 +733,8 @@
         "secret": false,
         "zh": "源氏起手式强化",
         "zh_tw": "源氏之架式強化",
-        "en": "Enhanced Dawnfly"
+        "en": "Enhanced Dawnfly",
+        "ja": "源氏の構え強化"
       },
       {
         "sid": 61,
@@ -667,7 +744,8 @@
         "secret": false,
         "zh": "神乐起手式强化",
         "zh_tw": "神樂之架式強化",
-        "en": "Enhanced Freeflutter"
+        "en": "Enhanced Freeflutter",
+        "ja": "神楽の構え強化"
       },
       {
         "sid": 63,
@@ -677,7 +755,8 @@
         "secret": false,
         "zh": "无限蝶",
         "zh_tw": "無限蝶",
-        "en": "Kaleidoscope"
+        "en": "Kaleidoscope",
+        "ja": "無限蝶"
       },
       {
         "sid": 42,
@@ -687,7 +766,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1500": [
@@ -699,7 +779,8 @@
         "secret": false,
         "zh": "残拳",
         "zh_tw": "無影拳",
-        "en": "Ultrafist"
+        "en": "Ultrafist",
+        "ja": "残拳"
       },
       {
         "sid": 42,
@@ -709,7 +790,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1600": [
@@ -721,7 +803,8 @@
         "secret": false,
         "zh": "跃空强化",
         "zh_tw": "浮空強化",
-        "en": "Loop Master"
+        "en": "Loop Master",
+        "ja": "エリアル強化"
       },
       {
         "sid": 95,
@@ -731,7 +814,8 @@
         "secret": false,
         "zh": "阿尔贝斯之力",
         "zh_tw": "亞爾貝斯解放",
-        "en": "Arvess Unleashed"
+        "en": "Arvess Unleashed",
+        "ja": "アルベス・フェルマーレ"
       },
       {
         "sid": 96,
@@ -741,7 +825,8 @@
         "secret": true,
         "zh": "阿尔贝斯螺旋枪强化",
         "zh_tw": "亞爾貝斯揮擊強化",
-        "en": "Heavy Hammer"
+        "en": "Heavy Hammer",
+        "ja": "アルベス・スウィング強化"
       },
       {
         "sid": 42,
@@ -751,7 +836,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1700": [
@@ -763,7 +849,8 @@
         "secret": true,
         "zh": "不死之身",
         "zh_tw": "不死之身",
-        "en": "Undying"
+        "en": "Undying",
+        "ja": "不死身"
       },
       {
         "sid": 88,
@@ -773,7 +860,8 @@
         "secret": false,
         "zh": "古洛诺斯之力",
         "zh_tw": "格羅諾斯解放",
-        "en": "Grynoth Unleashed"
+        "en": "Grynoth Unleashed",
+        "ja": "グロウノス解放"
       },
       {
         "sid": 82,
@@ -783,7 +871,8 @@
         "secret": false,
         "zh": "冥刃",
         "zh_tw": "冥刃",
-        "en": "Ebony Glint"
+        "en": "Ebony Glint",
+        "ja": "冥刃"
       },
       {
         "sid": 138,
@@ -793,7 +882,8 @@
         "secret": true,
         "zh": "蚀魂魔刃",
         "zh_tw": "蝕魂之刃",
-        "en": "Blood-Drinking Blade"
+        "en": "Blood-Drinking Blade",
+        "ja": "魂を蝕む刃"
       },
       {
         "sid": -3,
@@ -804,7 +894,8 @@
         "secret": true,
         "zh": "古洛诺斯槽保持",
         "zh_tw": "古洛諾斯槽保持",
-        "en": "Grynoth Gauge Hold"
+        "en": "Grynoth Gauge Hold",
+        "ja": "グロウノスゲージ保持"
       },
       {
         "sid": 42,
@@ -814,7 +905,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1800": [
@@ -826,7 +918,8 @@
         "secret": false,
         "zh": "岩塌强化",
         "zh_tw": "大崩壞強化",
-        "en": "Super Collapse"
+        "en": "Super Collapse",
+        "ja": "コラプス強化"
       },
       {
         "sid": 33,
@@ -836,7 +929,8 @@
         "secret": true,
         "zh": "幻术光影",
         "zh_tw": "夢幻景象",
-        "en": "Phantasmagoria"
+        "en": "Phantasmagoria",
+        "ja": "ファンタズマゴリア"
       },
       {
         "sid": 92,
@@ -846,7 +940,8 @@
         "secret": false,
         "zh": "真理",
         "zh_tw": "真理",
-        "en": "Truth"
+        "en": "Truth",
+        "ja": "真理"
       },
       {
         "sid": 42,
@@ -856,7 +951,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL1900": [
@@ -868,7 +964,8 @@
         "secret": false,
         "zh": "紫银之力",
         "zh_tw": "紫銀之力",
-        "en": "Heliotrope Aura"
+        "en": "Heliotrope Aura",
+        "ja": "紫銀の力"
       },
       {
         "sid": 30,
@@ -879,7 +976,8 @@
         "secret": true,
         "zh": "神威一体",
         "zh_tw": "神威一體",
-        "en": "Godmight"
+        "en": "Godmight",
+        "ja": "神威一体"
       },
       {
         "sid": -2,
@@ -891,7 +989,8 @@
         "secret": true,
         "zh": "隐藏槽",
         "zh_tw": "隱藏槽",
-        "en": "Hidden Gauge"
+        "en": "Hidden Gauge",
+        "ja": "隠しゲージ"
       },
       {
         "sid": 29,
@@ -903,7 +1002,8 @@
         "secret": true,
         "zh": "龙人化",
         "zh_tw": "龍人化",
-        "en": "Dragonform"
+        "en": "Dragonform",
+        "ja": "竜人化"
       },
       {
         "sid": 42,
@@ -913,7 +1013,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2100": [
@@ -925,7 +1026,8 @@
         "secret": false,
         "zh": "无限之辉",
         "zh_tw": "無限光",
-        "en": "Limitless Light"
+        "en": "Limitless Light",
+        "ja": "無限光"
       },
       {
         "sid": 107,
@@ -935,7 +1037,8 @@
         "secret": false,
         "zh": "白辉祝福",
         "zh_tw": "白輝之加護",
-        "en": "Lucent Refuge"
+        "en": "Lucent Refuge",
+        "ja": "白輝の加護"
       },
       {
         "sid": 42,
@@ -945,7 +1048,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2200": [
@@ -957,7 +1061,8 @@
         "secret": false,
         "zh": "集谛",
         "zh_tw": "集諦",
-        "en": "Samudaya"
+        "en": "Samudaya",
+        "ja": "集諦"
       },
       {
         "sid": 116,
@@ -967,7 +1072,8 @@
         "secret": true,
         "zh": "剑王",
         "zh_tw": "劍王",
-        "en": "Sovereign"
+        "en": "Sovereign",
+        "ja": "剣王"
       },
       {
         "sid": 117,
@@ -977,7 +1083,8 @@
         "secret": true,
         "zh": "星海",
         "zh_tw": "星海",
-        "en": "Star Sea"
+        "en": "Star Sea",
+        "ja": "星海"
       },
       {
         "sid": 42,
@@ -987,7 +1094,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2300": [
@@ -999,7 +1107,8 @@
         "secret": false,
         "zh": "煌矢",
         "zh_tw": "煌矢",
-        "en": "Piercing Gleam"
+        "en": "Piercing Gleam",
+        "ja": "煌矢"
       },
       {
         "sid": 43,
@@ -1009,7 +1118,8 @@
         "secret": true,
         "zh": "狙击",
         "zh_tw": "狙擊",
-        "en": "Deadshot"
+        "en": "Deadshot",
+        "ja": "狙撃"
       },
       {
         "sid": 127,
@@ -1019,7 +1129,8 @@
         "secret": false,
         "zh": "致命一击强化",
         "zh_tw": "致命一擊強化",
-        "en": "Enhanced Clincher"
+        "en": "Enhanced Clincher",
+        "ja": "クリンチャー強化"
       },
       {
         "sid": 110,
@@ -1029,7 +1140,8 @@
         "secret": true,
         "zh": "晓光一箭",
         "zh_tw": "曉光一箭",
-        "en": "Dawnray"
+        "en": "Dawnray",
+        "ja": "暁光の一矢"
       },
       {
         "sid": 111,
@@ -1039,7 +1151,8 @@
         "secret": true,
         "zh": "封缚钝簇",
         "zh_tw": "封縛鈍箭",
-        "en": "Dull Point"
+        "en": "Dull Point",
+        "ja": "封縛鈍簇"
       },
       {
         "sid": 42,
@@ -1049,7 +1162,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2400": [
@@ -1061,7 +1175,8 @@
         "secret": true,
         "zh": "铁衣玉碎",
         "zh_tw": "鎧散牙",
-        "en": "Deathmatch Finale"
+        "en": "Deathmatch Finale",
+        "ja": "鎧散牙"
       },
       {
         "sid": 114,
@@ -1071,7 +1186,8 @@
         "secret": true,
         "zh": "武夫",
         "zh_tw": "荒事",
-        "en": "Wild Showman"
+        "en": "Wild Showman",
+        "ja": "荒事"
       },
       {
         "sid": 112,
@@ -1081,7 +1197,8 @@
         "secret": false,
         "zh": "回旋王",
         "zh_tw": "絕好勢",
-        "en": "Ultimatum"
+        "en": "Ultimatum",
+        "ja": "大風車"
       },
       {
         "sid": 113,
@@ -1091,7 +1208,8 @@
         "secret": false,
         "zh": "晕转向",
         "zh_tw": "魅世終威",
-        "en": "Fall Flat"
+        "en": "Fall Flat",
+        "ja": "目眩転倒"
       },
       {
         "sid": 115,
@@ -1101,7 +1219,8 @@
         "secret": false,
         "zh": "莽夫",
         "zh_tw": "武者無畏",
-        "en": "Daredevil"
+        "en": "Daredevil",
+        "ja": "我武者羅"
       },
       {
         "sid": 42,
@@ -1111,7 +1230,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2500": [
@@ -1123,7 +1243,8 @@
         "secret": false,
         "zh": "超凡艺术",
         "zh_tw": "極致戰藝",
-        "en": "Arts Superiór"
+        "en": "Arts Superiór",
+        "ja": "超絶芸術"
       },
       {
         "sid": 52,
@@ -1133,7 +1254,8 @@
         "secret": true,
         "zh": "英勇颂歌",
         "zh_tw": "英勇聖歌",
-        "en": "Battle Hymn"
+        "en": "Battle Hymn",
+        "ja": "ブレイブキャロル"
       },
       {
         "sid": 42,
@@ -1143,7 +1265,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2600": [
@@ -1155,7 +1278,8 @@
         "secret": true,
         "zh": "针指零时",
         "zh_tw": "午時之刻",
-        "en": "Näed Nulli"
+        "en": "Näed Nulli",
+        "ja": "ネード・ヌル"
       },
       {
         "sid": 49,
@@ -1165,7 +1289,8 @@
         "secret": true,
         "zh": "针指四时",
         "zh_tw": "四時之刻",
-        "en": "Näed Nelja"
+        "en": "Näed Nelja",
+        "ja": "ネード・ネルヤ"
       },
       {
         "sid": 48,
@@ -1175,7 +1300,8 @@
         "secret": true,
         "zh": "针指七时",
         "zh_tw": "八時之刻",
-        "en": "Näed Seitset"
+        "en": "Näed Seitset",
+        "ja": "ネード・セイツェト"
       },
       {
         "sid": 50,
@@ -1185,7 +1311,8 @@
         "secret": true,
         "zh": "新星跃升",
         "zh_tw": "驟昇新星",
-        "en": "Rising Nova"
+        "en": "Rising Nova",
+        "ja": "ライジング・ノヴァ"
       },
       {
         "sid": 99,
@@ -1195,7 +1322,8 @@
         "secret": false,
         "zh": "针指零时强化",
         "zh_tw": "午時之刻強化",
-        "en": "Näed Nulli Excel"
+        "en": "Näed Nulli Excel",
+        "ja": "ネード・ヌル強化"
       },
       {
         "sid": 101,
@@ -1205,7 +1333,8 @@
         "secret": false,
         "zh": "针指四时强化",
         "zh_tw": "四時之刻強化",
-        "en": "Näed Nelja Excel"
+        "en": "Näed Nelja Excel",
+        "ja": "ネード・ネルヤ強化"
       },
       {
         "sid": 100,
@@ -1215,7 +1344,8 @@
         "secret": false,
         "zh": "针指七时强化",
         "zh_tw": "八時之刻強化",
-        "en": "Näed Seitset Excel"
+        "en": "Näed Seitset Excel",
+        "ja": "ネード・セイツェト強化"
       },
       {
         "sid": 102,
@@ -1225,7 +1355,8 @@
         "secret": false,
         "zh": "恩布拉斯克之力",
         "zh_tw": "艾姆布拉斯解放",
-        "en": "Embrasque Unleashed"
+        "en": "Embrasque Unleashed",
+        "ja": "エムブラスク解放"
       },
       {
         "sid": 42,
@@ -1235,7 +1366,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2700": [
@@ -1247,7 +1379,8 @@
         "secret": true,
         "zh": "弗拉梅克之力",
         "zh_tw": "弗拉梅格解放",
-        "en": "Flamek Unleashed"
+        "en": "Flamek Unleashed",
+        "ja": "フラメク解放"
       },
       {
         "sid": 53,
@@ -1257,7 +1390,8 @@
         "secret": true,
         "zh": "戏火",
         "zh_tw": "浴火之戲",
-        "en": "Play with Fire"
+        "en": "Play with Fire",
+        "ja": "プレイウィズファイア"
       },
       {
         "sid": 42,
@@ -1267,7 +1401,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2800": [
@@ -1279,7 +1414,8 @@
         "secret": false,
         "zh": "正位强化",
         "zh_tw": "正位強化",
-        "en": "Enhanced Upright"
+        "en": "Enhanced Upright",
+        "ja": "アップライト強化"
       },
       {
         "sid": 121,
@@ -1289,7 +1425,8 @@
         "secret": false,
         "zh": "正位强化+",
         "zh_tw": "正位強化＋",
-        "en": "Enhanced Upright+"
+        "en": "Enhanced Upright+",
+        "ja": "アップライト強化+"
       },
       {
         "sid": 122,
@@ -1299,7 +1436,8 @@
         "secret": false,
         "zh": "逆位强化+",
         "zh_tw": "逆位強化＋",
-        "en": "Enhanced Reversed+"
+        "en": "Enhanced Reversed+",
+        "ja": "リバース強化+"
       },
       {
         "sid": 120,
@@ -1309,7 +1447,8 @@
         "secret": false,
         "zh": "逆位强化",
         "zh_tw": "逆位強化",
-        "en": "Enhanced Reversed"
+        "en": "Enhanced Reversed",
+        "ja": "リバース強化"
       },
       {
         "sid": -1,
@@ -1322,7 +1461,8 @@
         "single_layer": true,
         "awakening": true,
         "truth": true,
-        "secret": true
+        "secret": true,
+        "ja": "転世の恩寵"
       },
       {
         "sid": 42,
@@ -1332,7 +1472,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL2900": [
@@ -1344,7 +1485,8 @@
         "secret": false,
         "zh": "连击收招强化",
         "zh_tw": "連技終擊強化",
-        "en": "Enhanced Combo Finishers"
+        "en": "Enhanced Combo Finishers",
+        "ja": "コンボフィニッシュ強化"
       },
       {
         "sid": 124,
@@ -1354,7 +1496,8 @@
         "secret": true,
         "zh": "暗灾",
         "zh_tw": "闇禍",
-        "en": "Malice"
+        "en": "Malice",
+        "ja": "闇禍"
       },
       {
         "sid": 42,
@@ -1364,7 +1507,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ],
     "PL0100": [
@@ -1376,7 +1520,8 @@
         "secret": false,
         "zh": "不屈攻刃",
         "zh_tw": "不屈攻刃",
-        "en": "Combat Healer"
+        "en": "Combat Healer",
+        "ja": "不屈の攻刃"
       },
       {
         "sid": 135,
@@ -1386,7 +1531,8 @@
         "secret": true,
         "zh": "领袖庇佑",
         "zh_tw": "領袖風範",
-        "en": "Charisma"
+        "en": "Charisma",
+        "ja": "カリスマ"
       },
       {
         "sid": -1,
@@ -1397,7 +1543,8 @@
         "secret": true,
         "zh": "Class等级",
         "zh_tw": "Class Lv",
-        "en": "Adept Arts Level"
+        "en": "Adept Arts Level",
+        "ja": "Class Lv"
       },
       {
         "sid": 42,
@@ -1407,7 +1554,8 @@
         "secret": false,
         "zh": "造成伤害UP",
         "zh_tw": "造成傷害UP",
-        "en": "Damage Dealt Up"
+        "en": "Damage Dealt Up",
+        "ja": "与ダメージUP"
       }
     ]
   },
@@ -1416,2025 +1564,3018 @@
       "awakening": {
         "zh": "觉醒：Class Lv强化",
         "zh_tw": "覺醒：Class Lv強化",
-        "en": "Insight: Artfully Adept"
+        "en": "Insight: Artfully Adept",
+        "ja": "覚醒：Class Lv強化"
       },
       "truth": {
         "zh": "真谛：回复类能力强化",
         "zh_tw": "精髓：回復技能強化",
-        "en": "Essence: Combat Healer"
+        "en": "Essence: Combat Healer",
+        "ja": "真髄：回復アビリティ強化"
       },
       "secret": {
         "zh": "秘义：挺身而出特化",
         "zh_tw": "奧祕：挺身掩護專精",
-        "en": "Crux: The Substitute"
+        "en": "Crux: The Substitute",
+        "ja": "極意：かばう特化"
       }
     },
     "PL0100": {
       "awakening": {
         "zh": "觉醒：Class Lv强化",
         "zh_tw": "覺醒：Class Lv強化",
-        "en": "Insight: Artfully Adept"
+        "en": "Insight: Artfully Adept",
+        "ja": "覚醒：Class Lv強化"
       },
       "truth": {
         "zh": "真谛：回复类能力强化",
         "zh_tw": "精髓：回復技能強化",
-        "en": "Essence: Combat Healer"
+        "en": "Essence: Combat Healer",
+        "ja": "真髄：回復アビリティ強化"
       },
       "secret": {
         "zh": "秘义：挺身而出特化",
         "zh_tw": "奧祕：挺身掩護專精",
-        "en": "Crux: The Substitute"
+        "en": "Crux: The Substitute",
+        "ja": "極意：かばう特化"
       }
     },
     "PL0200": {
       "awakening": {
         "zh": "觉醒：阿瑞斯在场特化",
         "zh_tw": "覺醒：艾瑞斯持續時間專精",
-        "en": "Insight: Forever Ares"
+        "en": "Insight: Forever Ares",
+        "ja": "覚醒：アレス持続特化"
       },
       "truth": {
         "zh": "真谛：阿瑞斯强袭特化",
         "zh_tw": "精隨：艾瑞斯強襲專精",
-        "en": "Essence: Army of Two"
+        "en": "Essence: Army of Two",
+        "ja": "真髄：アレス強襲特化"
       },
       "secret": {
         "zh": "秘义：苍刃",
         "zh_tw": "奧祕：蒼刃",
-        "en": "Crux: Blade Blue"
+        "en": "Crux: Blade Blue",
+        "ja": "極意：蒼刃"
       }
     },
     "PL0300": {
       "awakening": {
         "zh": "觉醒：靶心狙击强化",
         "zh_tw": "覺醒：靶心狙擊強化",
-        "en": "Insight: Precision Blasting"
+        "en": "Insight: Precision Blasting",
+        "ja": "覚醒：ブルスナイプ強化"
       },
       "truth": {
         "zh": "真谛：送葬火舌强化",
         "zh_tw": "精髓：造棺者強化",
-        "en": "Essence: Expert Coffinmaker"
+        "en": "Essence: Expert Coffinmaker",
+        "ja": "真髄：コフィンメーカー強化"
       },
       "secret": {
         "zh": "秘义：战地余波特化",
         "zh_tw": "奧祕：間接傷害專精",
-        "en": "Crux: Collateral Risk"
+        "en": "Crux: Collateral Risk",
+        "ja": "極意：コラテラルダメージ特化"
       }
     },
     "PL0400": {
       "awakening": {
         "zh": "觉醒：专注强化",
         "zh_tw": "覺醒：全神貫注強化",
-        "en": "Insight: Pure Concentration"
+        "en": "Insight: Pure Concentration",
+        "ja": "覚醒：コンセントレーション強化"
       },
       "truth": {
         "zh": "真谛：魔法连锁",
         "zh_tw": "精髓：魔法連擊",
-        "en": "Essence: Magic Chain"
+        "en": "Essence: Magic Chain",
+        "ja": "真髄：魔法チェイン"
       },
       "secret": {
         "zh": "秘义：花耀七闪特化",
         "zh_tw": "奧祕：繁花七綻專精",
-        "en": "Crux: Flowery Seven Overload"
+        "en": "Crux: Flowery Seven Overload",
+        "ja": "極意：フラワリーセヴン特化"
       }
     },
     "PL0500": {
       "awakening": {
         "zh": "觉醒：瞄准模式强化",
         "zh_tw": "覺醒：瞄準模式強化",
-        "en": "Insight: Flawless Vision"
+        "en": "Insight: Flawless Vision",
+        "ja": "覚醒：エイムモード強化"
       },
       "truth": {
         "zh": "真谛：榴弹拳法",
         "zh_tw": "精髓：榴彈拳",
-        "en": "Essence: Grenade Punch"
+        "en": "Essence: Grenade Punch",
+        "ja": "真髄：グレネードパンチ"
       },
       "secret": {
         "zh": "秘义：剧毒榴弹强化",
         "zh_tw": "奧祕：毒榴彈強化",
-        "en": "Crux: Spitting Venom"
+        "en": "Crux: Spitting Venom",
+        "ja": "極意：ベノムグレネード強化"
       }
     },
     "PL0600": {
       "awakening": {
         "zh": "觉醒：玫瑰镇魂曲",
         "zh_tw": "覺醒：玫瑰鎮魂曲",
-        "en": "Insight: Rose Requiem"
+        "en": "Insight: Rose Requiem",
+        "ja": "覚醒：ローズ・レクイエム"
       },
       "truth": {
         "zh": "真谛：强化&弱化效果特化",
         "zh_tw": "精髓：強化＆弱化專精",
-        "en": "Essence: Battlefield Cultivator"
+        "en": "Essence: Battlefield Cultivator",
+        "ja": "真髄：強化＆弱体特化"
       },
       "secret": {
         "zh": "秘义：玫瑰强化",
         "zh_tw": "奧祕：薔薇強化",
-        "en": "Crux: Fortified Roses"
+        "en": "Crux: Fortified Roses",
+        "ja": "極意：薔薇強化"
       }
     },
     "PL0700": {
       "awakening": {
         "zh": "觉醒：宠物强化",
         "zh_tw": "覺醒：寵物強化",
-        "en": "Insight: Phantastic Pets"
+        "en": "Insight: Phantastic Pets",
+        "ja": "覚醒：ペット強化"
       },
       "truth": {
         "zh": "真谛：孤高幽灵",
         "zh_tw": "精髓：孤高的幽靈",
-        "en": "Essence: Self-Reliant Ghost"
+        "en": "Essence: Self-Reliant Ghost",
+        "ja": "真髄：孤高の幽霊"
       },
       "secret": {
         "zh": "秘义：辅助特化",
         "zh_tw": "奧祕：支援專精",
-        "en": "Crux: Spirited Support"
+        "en": "Crux: Spirited Support",
+        "ja": "極意：支援特化"
       }
     },
     "PL0800": {
       "awakening": {
         "zh": "觉醒：精准收招特化",
         "zh_tw": "覺醒：精準終擊專精",
-        "en": "Insight: Finish with Perfection"
+        "en": "Insight: Finish with Perfection",
+        "ja": "覚醒：ジャストフィニッシュ特化"
       },
       "truth": {
         "zh": "真谛：躲避强化",
         "zh_tw": "精髓：閃避強化",
-        "en": "Essence: Artful Dodger"
+        "en": "Essence: Artful Dodger",
+        "ja": "真髄：回避強化"
       },
       "secret": {
         "zh": "秘义：攻击类能力高速化",
         "zh_tw": "奧祕：傷害技能高速化",
-        "en": "Crux: Skill Acceleration"
+        "en": "Crux: Skill Acceleration",
+        "ja": "極意：ダメージアビリティ高速化"
       }
     },
     "PL0900": {
       "awakening": {
         "zh": "觉醒：挑衅＋",
         "zh_tw": "覺醒：敵對心＋",
-        "en": "Insight: Growing Hostility"
+        "en": "Insight: Growing Hostility",
+        "ja": "覚醒：敵対心＋"
       },
       "truth": {
         "zh": "真谛：我助人人",
         "zh_tw": "精髓：為眾人而戰",
-        "en": "Essence: Team Player"
+        "en": "Essence: Team Player",
+        "ja": "真髄：ライズ・フォー・オール"
       },
       "secret": {
         "zh": "秘义：勇往直前",
         "zh_tw": "奧祕：剛毅不屈",
-        "en": "Crux: Resolve"
+        "en": "Crux: Resolve",
+        "ja": "極意：不退転"
       }
     },
     "PL1000": {
       "awakening": {
         "zh": "觉醒：蓄力攻击强化",
         "zh_tw": "覺醒：蓄力攻擊強化",
-        "en": "Insight: Charge Forth"
+        "en": "Insight: Charge Forth",
+        "ja": "覚醒：チャージ攻撃強化"
       },
       "truth": {
         "zh": "真谛：红莲之刃",
         "zh_tw": "精髓：紅蓮之刃",
-        "en": "Essence: Molten Edge"
+        "en": "Essence: Molten Edge",
+        "ja": "真髄：紅蓮の刃"
       },
       "secret": {
         "zh": "秘义：蓄力反击特化",
         "zh_tw": "奧祕：蓄力反制專精",
-        "en": "Crux: Parry Me This"
+        "en": "Crux: Parry Me This",
+        "ja": "極意：チャージパリィ特化"
       }
     },
     "PL1100": {
       "awakening": {
         "zh": "觉醒：精准攻击特化",
         "zh_tw": "覺醒：精準攻擊專精",
-        "en": "Insight: Perfect Striker"
+        "en": "Insight: Perfect Striker",
+        "ja": "覚醒：ジャスト攻撃特化"
       },
       "truth": {
         "zh": "真谛：攻击类能力强化",
         "zh_tw": "精髓：傷害技能強化",
-        "en": "Essence: Skilled Slayer"
+        "en": "Essence: Skilled Slayer",
+        "ja": "真髄：ダメージアビリティ強化"
       },
       "secret": {
         "zh": "秘义：死境之剑",
         "zh_tw": "奧祕：險境之刃",
-        "en": "Crux: Fueled by Pain"
+        "en": "Crux: Fueled by Pain",
+        "ja": "極意：死線の刃"
       }
     },
     "PL1200": {
       "awakening": {
         "zh": "觉醒：崇高之姿强化",
         "zh_tw": "覺醒：高潔戰勢強化",
-        "en": "Insight: Noblest Stance"
+        "en": "Insight: Noblest Stance",
+        "ja": "覚醒：ノーブル・スタンス強化"
       },
       "truth": {
         "zh": "真谛：正面对决",
         "zh_tw": "精髓：正面對決",
-        "en": "Essence: Charge!"
+        "en": "Essence: Charge!",
+        "ja": "真髄：真っ向勝負"
       },
       "secret": {
         "zh": "秘义：所向披靡特化",
         "zh_tw": "奧祕：所向披靡專精",
-        "en": "Crux: I Am Invincible"
+        "en": "Crux: I Am Invincible",
+        "ja": "極意：インビンシブル特化"
       }
     },
     "PL1300": {
       "awakening": {
         "zh": "觉醒：三幕心得",
         "zh_tw": "覺醒：三幕的領悟",
-        "en": "Insight: Triple Shroud Savvy"
+        "en": "Insight: Triple Shroud Savvy",
+        "ja": "覚醒：三幕の心得"
       },
       "truth": {
         "zh": "真谛：疾攻",
         "zh_tw": "精髓：迅疾",
-        "en": "Essence: Speed Runner"
+        "en": "Essence: Speed Runner",
+        "ja": "真髄：早駆け"
       },
       "secret": {
         "zh": "秘义：霞返",
         "zh_tw": "奧祕：霞返",
-        "en": "Crux: Deft Deflection"
+        "en": "Crux: Deft Deflection",
+        "ja": "極意：霞返し"
       }
     },
     "PL1400": {
       "awakening": {
         "zh": "觉醒：起手式切换强化",
         "zh_tw": "覺醒：架式切換強化",
-        "en": "Insight: Paradigm Shift"
+        "en": "Insight: Paradigm Shift",
+        "ja": "覚醒：構え切替強化"
       },
       "truth": {
         "zh": "真谛：一击必杀",
         "zh_tw": "精髓：一擊必殺",
-        "en": "Essence: One Cut, One Kill"
+        "en": "Essence: One Cut, One Kill",
+        "ja": "真髄：一撃必殺"
       },
       "secret": {
         "zh": "秘义：无二无三特化",
         "zh_tw": "奧祕：無二無三專精",
-        "en": "Crux: Devoted to Devotion"
+        "en": "Crux: Devoted to Devotion",
+        "ja": "極意：無二無三特化"
       }
     },
     "PL1500": {
       "awakening": {
         "zh": "觉醒：直冲重拳",
         "zh_tw": "覺醒：超正拳擊",
-        "en": "Insight: Super Raging Fist"
+        "en": "Insight: Super Raging Fist",
+        "ja": "覚醒：超正拳突き"
       },
       "truth": {
         "zh": "真谛：威武雄姿特化",
         "zh_tw": "精髓：雄武見得專精",
-        "en": "Essence: Roaring Lion"
+        "en": "Essence: Roaring Lion",
+        "ja": "真髄：雄々見得特化"
       },
       "secret": {
         "zh": "秘义：直冲绝技拳",
         "zh_tw": "奧祕：正拳絕技",
-        "en": "Crux: Raging Technique"
+        "en": "Crux: Raging Technique",
+        "ja": "極意：正拳絶技"
       }
     },
     "PL1600": {
       "awakening": {
         "zh": "觉醒：跃空连击强化",
         "zh_tw": "覺醒：浮空連技強化",
-        "en": "Insight: Intense Loops"
+        "en": "Insight: Intense Loops",
+        "ja": "覚醒：エリアルコンボ強化"
       },
       "truth": {
         "zh": "真谛：攻击类能力强化",
         "zh_tw": "精髓：傷害技能強化",
-        "en": "Essence: One with Skills"
+        "en": "Essence: One with Skills",
+        "ja": "真髄：ダメージアビリティ強化"
       },
       "secret": {
         "zh": "秘义：反击特化",
         "zh_tw": "奧祕：反擊專精",
-        "en": "Crux: Out for Revenge"
+        "en": "Crux: Out for Revenge",
+        "ja": "極意：カウンター特化"
       }
     },
     "PL1700": {
       "awakening": {
         "zh": "觉醒：普攻连击特化",
         "zh_tw": "覺醒：連技專精",
-        "en": "Insight: Hooked on Combos"
+        "en": "Insight: Hooked on Combos",
+        "ja": "覚醒：フルコンボ特化"
       },
       "truth": {
         "zh": "真谛：蓄力攻击特化",
         "zh_tw": "精髓：蓄力攻擊專精",
-        "en": "Essence: Large and In Charge"
+        "en": "Essence: Large and In Charge",
+        "ja": "真髄：チャージ攻撃特化"
       },
       "secret": {
         "zh": "秘义：蓄力反击特化",
         "zh_tw": "奧祕：蓄力反制專精",
-        "en": "Crux: Punishing Parries"
+        "en": "Crux: Punishing Parries",
+        "ja": "極意：チャージパリィ特化"
       }
     },
     "PL1800": {
       "awakening": {
         "zh": "觉醒：弱化连击爆发",
         "zh_tw": "覺醒：弱化連技增幅",
-        "en": "Insight: Crippling Combos"
+        "en": "Insight: Crippling Combos",
+        "ja": "覚醒：弱体コンボブースト"
       },
       "truth": {
         "zh": "真谛：岩塌强化",
         "zh_tw": "精髓：大崩壞強化",
-        "en": "Essence: Super Collapse"
+        "en": "Essence: Super Collapse",
+        "ja": "真髄：コラプス強化"
       },
       "secret": {
         "zh": "秘义：回复&辅助强化",
         "zh_tw": "奧祕：回復支援強化",
-        "en": "Crux: Alchemedic"
+        "en": "Crux: Alchemedic",
+        "ja": "極意：回復支援強化"
       }
     },
     "PL1900": {
       "awakening": {
         "zh": "觉醒：神威一体强化",
         "zh_tw": "覺醒：神威一體強化",
-        "en": "Insight: Faith in Godmight"
+        "en": "Insight: Faith in Godmight",
+        "ja": "覚醒：神威一体強化"
       },
       "truth": {
         "zh": "真谛：龙人化强化",
         "zh_tw": "精髓：龍人化強化",
-        "en": "Essence: Faith in Dragonform"
+        "en": "Essence: Faith in Dragonform",
+        "ja": "真髄：竜人化強化"
       },
       "secret": {
         "zh": "秘义：神愿之力特化",
         "zh_tw": "奧祕：神能解放專精",
-        "en": "Crux: Path of Vengeance"
+        "en": "Crux: Path of Vengeance",
+        "ja": "極意：ディア・ゴッド特化"
       }
     },
     "PL2100": {
       "awakening": {
         "zh": "觉醒：誓约十二羽翼",
         "zh_tw": "覺醒：約定之十二羽翼",
-        "en": "Insight: Promising Wings"
+        "en": "Insight: Promising Wings",
+        "ja": "覚醒：約束の十二枚羽"
       },
       "truth": {
         "zh": "真谛：白辉祝福",
         "zh_tw": "精髓：白輝之加護",
-        "en": "Essence: Finding Refuge"
+        "en": "Essence: Finding Refuge",
+        "ja": "真髄：白輝の加護"
       },
       "secret": {
         "zh": "秘义：审判之钟",
         "zh_tw": "奧祕：審判之鐘",
-        "en": "Crux: Bell Tolls for Thee"
+        "en": "Crux: Bell Tolls for Thee",
+        "ja": "極意：審判の鐘"
       }
     },
     "PL2200": {
       "awakening": {
         "zh": "觉醒：剑神召唤强化",
         "zh_tw": "覺醒：劍神量條強化",
-        "en": "Insight: Fueling the Avatar"
+        "en": "Insight: Fueling the Avatar",
+        "ja": "覚醒：剣神ゲージ強化"
       },
       "truth": {
         "zh": "真谛：剑雨",
         "zh_tw": "精髓：劍之雨",
-        "en": "Essence: Sword Tempest"
+        "en": "Essence: Sword Tempest",
+        "ja": "真髄：剣の雨"
       },
       "secret": {
         "zh": "秘义：剑神切换特化",
         "zh_tw": "奧祕：劍神切換專精",
-        "en": "Crux: Tag Team"
+        "en": "Crux: Tag Team",
+        "ja": "極意：剣神切替特化"
       }
     },
     "PL2300": {
       "awakening": {
         "zh": "觉醒：多重瞄准射击特化",
         "zh_tw": "覺醒：多重鎖定射擊專精",
-        "en": "Insight: Hail to Multilock"
+        "en": "Insight: Hail to Multilock",
+        "ja": "覚醒：マルチロックショット特化"
       },
       "truth": {
         "zh": "真谛：致命一击强化",
         "zh_tw": "精髓：致命一擊強化",
-        "en": "Essence: Clinching Victory"
+        "en": "Essence: Clinching Victory",
+        "ja": "真髄：クリンチャー強化"
       },
       "secret": {
         "zh": "秘义：二王之诤特化",
         "zh_tw": "奧祕：二王的鬥諍專精",
-        "en": "Crux: Two-Crown's Master"
+        "en": "Crux: Two-Crown's Master",
+        "ja": "極意：二王の諍い特化"
       }
     },
     "PL2400": {
       "awakening": {
         "zh": "觉醒：铁衣玉碎强化",
         "zh_tw": "覺醒：鎧散牙強化",
-        "en": "Insight: Extreme Deathmatch"
+        "en": "Insight: Extreme Deathmatch",
+        "ja": "覚醒：鎧散牙強化"
       },
       "truth": {
         "zh": "真谛：回旋枪强化",
         "zh_tw": "精髓：大風車強化",
-        "en": "Essence: Turbo Turbine"
+        "en": "Essence: Turbo Turbine",
+        "ja": "真髄：大風車強化"
       },
       "secret": {
         "zh": "秘义：武夫",
         "zh_tw": "奧祕：荒事",
-        "en": "Crux: Put On a Show"
+        "en": "Crux: Put On a Show",
+        "ja": "極意：荒事"
       }
     },
     "PL2500": {
       "awakening": {
         "zh": "觉醒：魔剑之舞强化",
         "zh_tw": "覺醒：魔劍操舞強化",
-        "en": "Insight: Ardent Dancer"
+        "en": "Insight: Ardent Dancer",
+        "ja": "覚醒：魔剣操舞強化"
       },
       "truth": {
         "zh": "真谛：超凡系列强化",
         "zh_tw": "精髓：極致系列強化",
-        "en": "Essence: Superlative Sorcery"
+        "en": "Essence: Superlative Sorcery",
+        "ja": "真髄：スペリオルシリーズ強化"
       },
       "secret": {
         "zh": "秘义：刃重结界",
         "zh_tw": "奧祕：刃重結界",
-        "en": "Crux: Sword Veil Guardianship"
+        "en": "Crux: Sword Veil Guardianship",
+        "ja": "極意：刃重結界"
       }
     },
     "PL2600": {
       "awakening": {
         "zh": "觉醒：啖因果特化",
         "zh_tw": "覺醒：吞噬因果專精",
-        "en": "Insight: Hungry for Causality"
+        "en": "Insight: Hungry for Causality",
+        "ja": "覚醒：因果喰い特化"
       },
       "truth": {
         "zh": "真谛：三相时钟强化",
         "zh_tw": "精髓：三角時計強化",
-        "en": "Essence: On the Clock"
+        "en": "Essence: On the Clock",
+        "ja": "真髄：クロック・オー・デルタ強化"
       },
       "secret": {
         "zh": "秘义：能力连锁",
         "zh_tw": "奧祕：技能連擊",
-        "en": "Crux: Skill Chain"
+        "en": "Crux: Skill Chain",
+        "ja": "極意：アビリティチェイン"
       }
     },
     "PL2700": {
       "awakening": {
         "zh": "觉醒：近距离射击特化",
         "zh_tw": "覺醒：近身射擊專精",
-        "en": "Insight: Keep Your Foes Closer"
+        "en": "Insight: Keep Your Foes Closer",
+        "ja": "覚醒：近接射撃特化"
       },
       "truth": {
         "zh": "真谛：奔雷",
         "zh_tw": "精髓：雷轟",
-        "en": "Essence: Lightning Soldier"
+        "en": "Essence: Lightning Soldier",
+        "ja": "真髄：雷轟"
       },
       "secret": {
         "zh": "秘义：完美射击",
         "zh_tw": "奧祕：完美射擊",
-        "en": "Crux: Perfectionist"
+        "en": "Crux: Perfectionist",
+        "ja": "極意：パーフェクトシュート"
       }
     },
     "PL2800": {
       "awakening": {
         "zh": "觉醒：正逆位强化",
         "zh_tw": "覺醒：戰勢強化",
-        "en": "Insight: Flip the Tides"
+        "en": "Insight: Flip the Tides",
+        "ja": "覚醒：スタンス強化"
       },
       "truth": {
         "zh": "真谛：煌煌之力",
         "zh_tw": "精髓：鮮烈之力",
-        "en": "Essence: Allure of Strength"
+        "en": "Essence: Allure of Strength",
+        "ja": "真髄：鮮烈なる力"
       },
       "secret": {
         "zh": "秘义：恶魔的低语",
         "zh_tw": "奧祕：惡魔的甜言蜜語",
-        "en": "Crux: A Deal with The Devil"
+        "en": "Crux: A Deal with The Devil",
+        "ja": "極意：悪魔の甘言"
       }
     },
     "PL2900": {
       "awakening": {
         "zh": "觉醒：连击收招强化",
         "zh_tw": "覺醒：連技終擊強化",
-        "en": "Insight: Finishing Touch"
+        "en": "Insight: Finishing Touch",
+        "ja": "覚醒：コンボフィニッシュ強化"
       },
       "truth": {
         "zh": "真谛：“黑”之侵蚀",
         "zh_tw": "精髓：「黑」之侵蝕",
-        "en": "Essence: Corrosive Black"
+        "en": "Essence: Corrosive Black",
+        "ja": "真髄：『黒』の侵蝕"
       },
       "secret": {
         "zh": "秘义：理外暗灾",
         "zh_tw": "奧祕：理外之闇禍",
-        "en": "Crux: Hands of Malice"
+        "en": "Crux: Hands of Malice",
+        "ja": "極意：理外の闇禍"
       }
     }
   },
   "ui": {
     "── EXE 同步 ──": {
       "zh_tw": "── EXE 同步 ──",
-      "en": "── EXE Sync ──"
-    },
-    "EXE 同步列表 (分号分隔):": {
-      "zh_tw": "EXE 同步清單 (分號分隔):",
-      "en": "EXE sync list (semicolon-separated):"
+      "en": "── EXE Sync ──",
+      "ja": "── EXE 同期 ──"
     },
     "标题栏对齐:": {
       "zh_tw": "標題欄對齊:",
-      "en": "Title bar alignment:"
+      "en": "Title bar alignment:",
+      "ja": "タイトルバーの配置:"
     },
     "靠左": {
       "zh_tw": "靠左",
-      "en": "Left"
+      "en": "Left",
+      "ja": "左寄せ"
     },
     "居中": {
       "zh_tw": "居中",
-      "en": "Center"
+      "en": "Center",
+      "ja": "中央"
     },
     "靠右": {
       "zh_tw": "靠右",
-      "en": "Right"
-    },
-    "多个 exe 的绝对路径，用分号分隔。程序启动时逐个检测：未运行则启动，已运行则关闭。": {
-      "zh_tw": "多個 exe 的絕對路徑，用分號分隔。程式啟動時逐個檢測：未執行則啟動，已執行則關閉。",
-      "en": "Absolute paths of multiple EXEs, separated by semicolons. At startup each is checked: launched if not running, terminated if already running."
-    },
-    "多个 exe 绝对路径，分号分隔": {
-      "zh_tw": "多個 exe 絕對路徑，分號分隔",
-      "en": "Multiple exe absolute paths, separated by semicolons"
+      "en": "Right",
+      "ja": "右寄せ"
     },
     "── 隐藏 ──": {
       "zh_tw": "── 隱藏 ──",
-      "en": "── Hide ──"
+      "en": "── Hide ──",
+      "ja": "── 非表示 ──"
     },
     "越上越靠右": {
       "zh_tw": "越上越靠右",
-      "en": "Top → Right"
+      "en": "Top → Right",
+      "ja": "上ほど右へ"
     },
     "尖刺根部距圆心:": {
       "zh_tw": "尖刺根部距圓心:",
-      "en": "Spike root distance:"
+      "en": "Spike root distance:",
+      "ja": "スパイク根部の中心からの距離:"
     },
     "状态：": {
       "zh_tw": "狀態：",
-      "en": "Status:"
+      "en": "Status:",
+      "ja": "状態："
     },
     "动画时长ms:": {
       "zh_tw": "動畫時長ms:",
-      "en": "Animation Duration ms:"
+      "en": "Animation Duration ms:",
+      "ja": "アニメーション時間 (ms):"
     },
     "核心检测模块": {
       "zh_tw": "核心檢測模組",
-      "en": "Core Detection"
+      "en": "Core Detection",
+      "ja": "コア検知モジュール"
     },
     "── 层数数字(无计时) ──": {
       "zh_tw": "── 層數數字(無計時) ──",
-      "en": "── Stack Number (No Timer) ──"
+      "en": "── Stack Number (No Timer) ──",
+      "ja": "── スタック数 (タイマーなし) ──"
     },
     "自动检查更新": {
       "zh_tw": "自動檢查更新",
-      "en": "Auto check for updates"
+      "en": "Auto check for updates",
+      "ja": "自動更新チェック"
     },
     "热键冲突": {
       "zh_tw": "熱鍵衝突",
-      "en": "Hotkey Conflict"
+      "en": "Hotkey Conflict",
+      "ja": "ホットキーの競合"
     },
     "翻滚图标": {
       "zh_tw": "翻滾圖標",
-      "en": "Dodge Icon"
+      "en": "Dodge Icon",
+      "ja": "回避アイコン"
     },
     "层数数字勾边粗细 — (计时版):": {
       "zh_tw": "層數數字勾邊粗細 — (計時版):",
-      "en": "Stack outline width — (Timer):"
+      "en": "Stack outline width — (Timer):",
+      "ja": "スタック数の縁取りの太さ — (タイマー版):"
     },
     "层数数字X偏移 — (计时版):": {
       "zh_tw": "層數數字X偏移 — (計時版):",
-      "en": "Stack number X offset — (Timer):"
+      "en": "Stack number X offset — (Timer):",
+      "ja": "スタック数のXオフセット — (タイマー版):"
     },
     "扫描周期 (ms):": {
       "zh_tw": "掃描週期 (ms):",
-      "en": "Scan interval (ms):"
-    },
-    "翻滚UI不透明度:": {
-      "zh_tw": "翻滾UI不透明度:",
-      "en": "Dodge UI opacity:"
+      "en": "Scan interval (ms):",
+      "ja": "スキャン間隔 (ms):"
     },
     "闪光": {
       "zh_tw": "閃光",
-      "en": "Flash"
+      "en": "Flash",
+      "ja": "フラッシュ"
     },
     "尖刺长度:": {
       "zh_tw": "尖刺長度:",
-      "en": "Spike length:"
+      "en": "Spike length:",
+      "ja": "スパイクの長さ:"
     },
     "衬色块宽微调:": {
       "zh_tw": "襯色塊寬微調:",
-      "en": "BG Width Adjust:"
+      "en": "BG Width Adjust:",
+      "ja": "背景ブロック幅の微調整:"
     },
     "依次按下要绑定的组合键（最多 3 个）\n支持 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向键 等\nCtrl 不再强制，仅作为默认选项": {
       "zh_tw": "依序按下要綁定的組合鍵（最多 3 個）\n支援 Ctrl / Alt / Shift / Win + 字母 / F1-F12 / 方向鍵 等\nCtrl 不再強制，僅作為預設選項",
-      "en": "Press the key combo to bind (up to 3 keys)\nSupports Ctrl / Alt / Shift / Win + Letter / F1-F12 / Arrow keys etc.\nCtrl no longer required; it is only the default option"
+      "en": "Press the key combo to bind (up to 3 keys)\nSupports Ctrl / Alt / Shift / Win + Letter / F1-F12 / Arrow keys etc.\nCtrl no longer required; it is only the default option",
+      "ja": "割り当てるキーの組み合わせを順に押してください（最大3つ）\n対応: Ctrl / Alt / Shift / Win + "
     },
     "── 倒计时胶囊 ──": {
       "zh_tw": "── 倒計時膠囊 ──",
-      "en": "── Timer Capsule ──"
+      "en": "── Timer Capsule ──",
+      "ja": "── カウントダウンカプセル ──"
     },
     "翻滚图标缩放:": {
       "zh_tw": "翻滾圖標縮放:",
-      "en": "Dodge icon scale:"
+      "en": "Dodge icon scale:",
+      "ja": "回避アイコンの拡大縮小:"
     },
     "跳过此版本": {
       "zh_tw": "跳過此版本",
-      "en": "Skip this version"
-    },
-    "不再提示此版本": {
-      "zh_tw": "不再提示此版本",
-      "en": "Don't remind me of this version"
+      "en": "Skip this version",
+      "ja": "このバージョンをスキップ"
     },
     "── 模块显示 ──": {
       "zh_tw": "── 模組顯示 ──",
-      "en": "── Module Display ──"
+      "en": "── Module Display ──",
+      "ja": "── モジュール表示 ──"
     },
     "── 尖刺(含顶端圆点) ──": {
       "zh_tw": "── 尖刺(含頂端圓點) ──",
-      "en": "── Spikes (incl. tip bead) ──"
+      "en": "── Spikes (incl. tip bead) ──",
+      "ja": "── スパイク (先端ドット含む) ──"
     },
     "外描边粗细:": {
       "zh_tw": "外描邊粗細:",
-      "en": "Outer outline width:"
+      "en": "Outer outline width:",
+      "ja": "外枠の太さ:"
     },
     "整体外描边:": {
       "zh_tw": "整體外描邊:",
-      "en": "Outer outline:"
+      "en": "Outer outline:",
+      "ja": "全体の外枠:"
     },
     "层数数字色:": {
       "zh_tw": "層數數字色:",
-      "en": "Stack number color:"
+      "en": "Stack number color:",
+      "ja": "スタック数の色:"
     },
     "启用就绪呼吸光": {
       "zh_tw": "啟用就緒呼吸光",
-      "en": "Enable Ready Breathing Glow"
+      "en": "Enable Ready Breathing Glow",
+      "ja": "準備完了ブレス発光を有効化"
     },
     "── 全局快捷键 ──": {
       "zh_tw": "── 全域快速鍵 ──",
-      "en": "── Global Hotkeys ──"
+      "en": "── Global Hotkeys ──",
+      "ja": "── グローバルホットキー ──"
     },
     "按当前屏幕宽度自动放大": {
       "zh_tw": "按當前螢幕寬度自動放大",
-      "en": "Auto scale by current screen width"
+      "en": "Auto scale by current screen width",
+      "ja": "現在の画面幅に合わせて自動拡大"
     },
     "能力名色:": {
       "zh_tw": "能力名色:",
-      "en": "Ability Name Color:"
+      "en": "Ability Name Color:",
+      "ja": "アビリティ名の色:"
     },
     "尖刺色(满层):": {
       "zh_tw": "尖刺色(滿層):",
-      "en": "Spike color (full stack):"
+      "en": "Spike color (full stack):",
+      "ja": "スパイクの色 (最大スタック):"
     },
     "外描边色:": {
       "zh_tw": "外描邊色:",
-      "en": "Outline color:"
+      "en": "Outline color:",
+      "ja": "外枠の色:"
     },
     "顶端圆点距圆心:": {
       "zh_tw": "頂端圓點距圓心:",
-      "en": "Bead distance from center:"
+      "en": "Bead distance from center:",
+      "ja": "先端ドットの中心からの距離:"
     },
     "无buff时隐藏尖刺圆模块（翻滚/技能UI不受影响）": {
       "zh_tw": "無buff時隱藏尖刺圓模組（翻滾/技能UI不受影響）",
-      "en": "Hide spike module when no buff (dodge/skill UI unaffected)"
+      "en": "Hide spike module when no buff (dodge/skill UI unaffected)",
+      "ja": "バフなし時にスパイク円モジュールを非表示（回避/アビリティUIは影響なし）"
     },
     "Buff启用/禁用": {
       "zh_tw": "Buff啟用/禁用",
-      "en": "Buff Enable/Disable"
+      "en": "Buff Enable/Disable",
+      "ja": "バフの有効/無効"
     },
     "倒计时字体大小:": {
       "zh_tw": "倒計時字體大小:",
-      "en": "Timer font size:"
+      "en": "Timer font size:",
+      "ja": "カウントダウンのフォントサイズ:"
     },
     "闪光颜色:": {
       "zh_tw": "閃光顏色:",
-      "en": "Flash color:"
+      "en": "Flash color:",
+      "ja": "フラッシュの色:"
     },
     "同色系 / 相近": {
       "zh_tw": "同色系／相近",
-      "en": "Similar hue / close"
+      "en": "Similar hue / close",
+      "ja": "同系色 / 近い色"
     },
     "在标题栏显示角色名和buff状态文字": {
       "zh_tw": "在標題列顯示角色名和buff狀態文字",
-      "en": "Show character name and buff status text in title bar"
-    },
-    "不显示": {
-      "zh_tw": "不顯示",
-      "en": "Hidden"
-    },
-    "锁定 / 解锁窗口：": {
-      "zh_tw": "鎖定 / 解鎖視窗：",
-      "en": "Lock / Unlock Window:"
+      "en": "Show character name and buff status text in title bar",
+      "ja": "タイトルバーにキャラ名とバフ状態を表示"
     },
     "── 层数数字(有计时) ──": {
       "zh_tw": "── 層數數字(有計時) ──",
-      "en": "── Stack Number (With Timer) ──"
+      "en": "── Stack Number (With Timer) ──",
+      "ja": "── スタック数 (タイマーあり) ──"
     },
     "检查中…": {
       "zh_tw": "檢查中…",
-      "en": "Checking…"
-    },
-    "标题栏不透明度:": {
-      "zh_tw": "標題列不透明度:",
-      "en": "Title bar opacity:"
+      "en": "Checking…",
+      "ja": "確認中…"
     },
     "色环均匀 / 大反差": {
       "zh_tw": "色環均勻／大反差",
-      "en": "Even hue ring / high contrast"
+      "en": "Even hue ring / high contrast",
+      "ja": "色環を均等に / 高コントラスト"
     },
     "翻滚图标不透明度:": {
       "zh_tw": "翻滾圖標不透明度:",
-      "en": "Dodge icon opacity:"
+      "en": "Dodge icon opacity:",
+      "ja": "回避アイコンの不透明度:"
     },
     "设置打开失败": {
       "zh_tw": "設定開啟失敗",
-      "en": "Failed to open settings"
-    },
-    "外部差异化:": {
-      "zh_tw": "外部差異化:",
-      "en": "External diff:"
+      "en": "Failed to open settings",
+      "ja": "設定を開けませんでした"
     },
     "── 在线更新 ──": {
       "zh_tw": "── 線上更新 ──",
-      "en": "── Online Update ──"
+      "en": "── Online Update ──",
+      "ja": "── オンライン更新 ──"
     },
     "标题栏": {
       "zh_tw": "標題列",
-      "en": "Title Bar"
-    },
-    "GBFR 指示器": {
-      "zh_tw": "GBFR 指示器",
-      "en": "GBFR Indicator"
+      "en": "Title Bar",
+      "ja": "タイトルバー"
     },
     "常规": {
       "zh_tw": "常規",
-      "en": "General"
+      "en": "General",
+      "ja": "一般"
     },
     "更新检测版本地址：": {
       "zh_tw": "更新偵測版本位址：",
-      "en": "Update version-check URL:"
+      "en": "Update version-check URL:",
+      "ja": "更新確認用バージョンURL:"
     },
     "竖放": {
       "zh_tw": "豎放",
-      "en": "Vertical"
+      "en": "Vertical",
+      "ja": "縦置き"
     },
     "Buff名显示:": {
       "zh_tw": "Buff名顯示:",
-      "en": "Buff name display:"
+      "en": "Buff name display:",
+      "ja": "バフ名の表示:"
     },
     "── 扫描 / 内存 ──": {
       "zh_tw": "── 掃描／記憶體 ──",
-      "en": "── Scan / Memory ──"
+      "en": "── Scan / Memory ──",
+      "ja": "── スキャン / メモリ ──"
     },
     "能力名Y偏移:": {
       "zh_tw": "能力名Y偏移:",
-      "en": "Ability Name Y Offset:"
+      "en": "Ability Name Y Offset:",
+      "ja": "アビリティ名のYオフセット:"
     },
     "使用内置默认图标": {
       "zh_tw": "使用內建預設圖標",
-      "en": "Use embedded default icon"
-    },
-    "背景色:": {
-      "zh_tw": "背景色:",
-      "en": "Background color:"
+      "en": "Use embedded default icon",
+      "ja": "内蔵の既定アイコンを使用"
     },
     "层数数字勾边色 — (计时版):": {
       "zh_tw": "層數數字勾邊色 — (計時版):",
-      "en": "Stack outline color — (Timer):"
+      "en": "Stack outline color — (Timer):",
+      "ja": "スタック数の縁取りの色 — (タイマー版):"
     },
     "── 核心模块位置与缩放 ──": {
       "zh_tw": "── 核心模組位置與縮放 ──",
-      "en": "── Core Position & Scale ──"
+      "en": "── Core Position & Scale ──",
+      "ja": "── コアモジュールの位置と拡大縮小 ──"
     },
     "圆环色(正常):": {
       "zh_tw": "圓環色(正常):",
-      "en": "Circle color (normal):"
+      "en": "Circle color (normal):",
+      "ja": "円環の色 (通常):"
     },
     "等待按键…": {
       "zh_tw": "等待按鍵…",
-      "en": "Waiting for key…"
-    },
-    "分割线不透明度:": {
-      "zh_tw": "分割線不透明度:",
-      "en": "Divider opacity:"
+      "en": "Waiting for key…",
+      "ja": "キー入力待ち…"
     },
     "能力冷却完成闪光": {
       "zh_tw": "能力冷卻完成閃光",
-      "en": "Skill ready flash"
-    },
-    "分割线:": {
-      "zh_tw": "分割線:",
-      "en": "Divider:"
+      "en": "Skill ready flash",
+      "ja": "アビリティのクールダウン完了フラッシュ"
     },
     "检查更新后自动填入，或手动填写 exe 下载直链": {
       "zh_tw": "檢查更新後自動填入，或手動填寫 exe 下載直鏈",
-      "en": "Auto-filled after update check, or enter exe direct link manually"
-    },
-    "── 计时文字 ──": {
-      "zh_tw": "── 計時文字 ──",
-      "en": "── Timer Text ──"
+      "en": "Auto-filled after update check, or enter exe direct link manually",
+      "ja": "更新確認後に自動入力、または EXE の直リンクを手動入力"
     },
     "层数数字Y偏移 — (计时版):": {
       "zh_tw": "層數數字Y偏移 — (計時版):",
-      "en": "Stack number Y offset — (Timer):"
+      "en": "Stack number Y offset — (Timer):",
+      "ja": "スタック数のYオフセット — (タイマー版):"
     },
     "Buff名色:": {
       "zh_tw": "Buff名色:",
-      "en": "Buff name color:"
+      "en": "Buff name color:",
+      "ja": "バフ名の色:"
     },
     "已是最新版本": {
       "zh_tw": "已是最新版本",
-      "en": "Already up to date"
+      "en": "Already up to date",
+      "ja": "最新バージョンです"
     },
     "取消": {
       "zh_tw": "取消",
-      "en": "Cancel"
-    },
-    "多buff差异化": {
-      "zh_tw": "多buff差異化",
-      "en": "Multi-buff"
+      "en": "Cancel",
+      "ja": "キャンセル"
     },
     "在画布上显示Buff名称": {
       "zh_tw": "在畫布上顯示Buff名稱",
-      "en": "Show buff name on canvas"
+      "en": "Show buff name on canvas",
+      "ja": "キャンバスにバフ名を表示"
     },
     "能力名X偏移:": {
       "zh_tw": "能力名X偏移:",
-      "en": "Ability Name X Offset:"
+      "en": "Ability Name X Offset:",
+      "ja": "アビリティ名のXオフセット:"
     },
     "Overlay 设置": {
       "zh_tw": "Overlay 設定",
-      "en": "Overlay Settings"
+      "en": "Overlay Settings",
+      "ja": "オーバーレイ設定"
     },
     "── 翻滚模块位置与缩放 ──": {
       "zh_tw": "── 翻滾模組位置與縮放 ──",
-      "en": "── Dodge Position & Scale ──"
-    },
-    "显示层数/翻滚分割线": {
-      "zh_tw": "顯示層數/翻滾分割線",
-      "en": "Show stack/roll divider"
+      "en": "── Dodge Position & Scale ──",
+      "ja": "── 回避モジュールの位置と拡大縮小 ──"
     },
     "关于": {
       "zh_tw": "關於",
-      "en": "About"
-    },
-    "显示": {
-      "zh_tw": "顯示",
-      "en": "Show"
+      "en": "About",
+      "ja": "情報"
     },
     "── 就绪呼吸光（冷却完毕提示）──": {
       "zh_tw": "── 就緒呼吸光（冷卻完畢提示）──",
-      "en": "── Ready Breathing Glow (cooldown done) ──"
+      "en": "── Ready Breathing Glow (cooldown done) ──",
+      "ja": "── 準備完了ブレス発光 (クールダウン完了) ──"
     },
     "── 能力模块位置与缩放 ──": {
       "zh_tw": "── 能力模組位置與縮放 ──",
-      "en": "── Skill Position & Scale ──"
-    },
-    "尖刺圆隐藏:": {
-      "zh_tw": "尖刺圓隱藏:",
-      "en": "Spike hide:"
+      "en": "── Skill Position & Scale ──",
+      "ja": "── アビリティモジュールの位置と拡大縮小 ──"
     },
     "── 翻滚图标 ──": {
       "zh_tw": "── 翻滾圖標 ──",
-      "en": "── Dodge Icon ──"
+      "en": "── Dodge Icon ──",
+      "ja": "── 回避アイコン ──"
     },
     "排序方向:": {
       "zh_tw": "排序方向:",
-      "en": "Order direction:"
+      "en": "Order direction:",
+      "ja": "並び順:"
     },
     "恢复默认": {
       "zh_tw": "恢復預設",
-      "en": "Reset"
-    },
-    "宽度拉伸:": {
-      "zh_tw": "寬度拉伸:",
-      "en": "Width stretch:"
+      "en": "Reset",
+      "ja": "既定値に戻す"
     },
     "Buff名字体大小:": {
       "zh_tw": "Buff名字體大小:",
-      "en": "Buff name font size:"
-    },
-    "内部差异化颜色（弧线/数字/计时文字）": {
-      "zh_tw": "內部差異化顏色（弧線/數字/計時文字）",
-      "en": "Internal color diff (arc/text/timer)"
-    },
-    "圆→翻滚UI间距:": {
-      "zh_tw": "圓→翻滾UI間距:",
-      "en": "Circle to dodge UI gap:"
+      "en": "Buff name font size:",
+      "ja": "バフ名のフォントサイズ:"
     },
     "尖刺顶端圆点半径:": {
       "zh_tw": "尖刺頂端圓點半徑:",
-      "en": "Spike tip bead radius:"
+      "en": "Spike tip bead radius:",
+      "ja": "スパイク先端ドットの半径:"
     },
     "翻滚图标闪光": {
       "zh_tw": "翻滾圖標閃光",
-      "en": "Dodge icon flash"
+      "en": "Dodge icon flash",
+      "ja": "回避アイコンのフラッシュ"
     },
     "就绪呼吸光": {
       "zh_tw": "就緒呼吸光",
-      "en": "Ready Breathing Glow"
+      "en": "Ready Breathing Glow",
+      "ja": "準備完了ブレス発光"
     },
     "圆环": {
       "zh_tw": "圓環",
-      "en": "Ring"
+      "en": "Ring",
+      "ja": "円環"
     },
     "翻滚模块": {
       "zh_tw": "翻滾模組",
-      "en": "Dodge Module"
+      "en": "Dodge Module",
+      "ja": "回避モジュール"
     },
     "不透明度": {
       "zh_tw": "不透明度",
-      "en": "Opacity"
-    },
-    "快捷键": {
-      "zh_tw": "快速鍵",
-      "en": "Hotkeys"
+      "en": "Opacity",
+      "ja": "不透明度"
     },
     "胶囊不透明度:": {
       "zh_tw": "膠囊不透明度:",
-      "en": "Capsule opacity:"
+      "en": "Capsule opacity:",
+      "ja": "カプセルの不透明度:"
     },
     "层数数字大小:": {
       "zh_tw": "層數數字大小:",
-      "en": "Stack number size:"
+      "en": "Stack number size:",
+      "ja": "スタック数のサイズ:"
     },
     "── 能力名称 ──": {
       "zh_tw": "── 能力名稱 ──",
-      "en": "── Ability Name ──"
-    },
-    "更新地址：": {
-      "zh_tw": "更新地址：",
-      "en": "Update URL:"
+      "en": "── Ability Name ──",
+      "ja": "── アビリティ名 ──"
     },
     "随游戏前后台:": {
       "zh_tw": "隨遊戲前後台:",
-      "en": "Game focus:"
-    },
-    "内部差异化:": {
-      "zh_tw": "內部差異化:",
-      "en": "Internal diff:"
+      "en": "Game focus:",
+      "ja": "ゲームの前面/背面に追従:"
     },
     "边框粗细倍数:": {
       "zh_tw": "邊框粗細倍數：",
-      "en": "Border thickness factor:"
+      "en": "Border thickness factor:",
+      "ja": "枠の太さの倍率:"
     },
     "背景不透明度:": {
       "zh_tw": "背景不透明度:",
-      "en": "Background opacity:"
+      "en": "Background opacity:",
+      "ja": "背景の不透明度:"
     },
     "层数数字": {
       "zh_tw": "層數數字",
-      "en": "Stack Number"
-    },
-    "技能CD不透明度:": {
-      "zh_tw": "技能CD不透明度:",
-      "en": "Skill CD opacity:"
-    },
-    "高度拉伸:": {
-      "zh_tw": "高度拉伸:",
-      "en": "Height stretch:"
+      "en": "Stack Number",
+      "ja": "スタック数"
     },
     "── 圆环 ──": {
       "zh_tw": "── 圓環 ──",
-      "en": "── Ring ──"
-    },
-    "呼出/隐藏所有窗口：": {
-      "zh_tw": "呼出/隱藏所有視窗：",
-      "en": "Show/Hide All Windows:"
-    },
-    "背景": {
-      "zh_tw": "背景",
-      "en": "Background"
+      "en": "── Ring ──",
+      "ja": "── 円環 ──"
     },
     "全取消": {
       "zh_tw": "全取消",
-      "en": "Uncheck All"
+      "en": "Uncheck All",
+      "ja": "すべて解除"
     },
     "方形大小:": {
       "zh_tw": "方形大小:",
-      "en": "Square Size:"
+      "en": "Square Size:",
+      "ja": "四角のサイズ:"
     },
     "能力名称": {
       "zh_tw": "能力名稱",
-      "en": "Ability Name"
+      "en": "Ability Name",
+      "ja": "アビリティ名"
     },
     "── 标题栏 ──": {
       "zh_tw": "── 標題列 ──",
-      "en": "── Title Bar ──"
-    },
-    "多buff缩放:": {
-      "zh_tw": "多buff縮放:",
-      "en": "Multi-buff scale:"
+      "en": "── Title Bar ──",
+      "ja": "── タイトルバー ──"
     },
     "非战斗隐藏:": {
       "zh_tw": "非戰鬥隱藏：",
-      "en": "Hide when not in combat:"
+      "en": "Hide when not in combat:",
+      "ja": "非戦闘時に非表示:"
     },
     "层数数字X偏移:": {
       "zh_tw": "層數數字X偏移:",
-      "en": "Stack number X offset:"
-    },
-    "ExStatus偏移:": {
-      "zh_tw": "ExStatus偏移:",
-      "en": "ExStatus offset:"
+      "en": "Stack number X offset:",
+      "ja": "スタック数のXオフセット:"
     },
     "检查失败：": {
       "zh_tw": "檢查失敗：",
-      "en": "Check failed:"
+      "en": "Check failed:",
+      "ja": "確認失敗:"
     },
     "── 能力冷却 ──": {
       "zh_tw": "── 能力冷卻 ──",
-      "en": "── Ability Cooldown ──"
+      "en": "── Ability Cooldown ──",
+      "ja": "── アビリティクールダウン ──"
     },
     "标题栏字体大小:": {
       "zh_tw": "標題列字型大小：",
-      "en": "Title bar font size:"
-    },
-    "启动位置:": {
-      "zh_tw": "啟動位置:",
-      "en": "Start position:"
+      "en": "Title bar font size:",
+      "ja": "タイトルバーのフォントサイズ:"
     },
     "放大比例%:": {
       "zh_tw": "放大比例%:",
-      "en": "Scale Up %:"
+      "en": "Scale Up %:",
+      "ja": "拡大率%:"
     },
     "关于/更新": {
       "zh_tw": "關於/更新",
-      "en": "About / Update"
+      "en": "About / Update",
+      "ja": "情報 / 更新"
     },
     "位置与缩放": {
       "zh_tw": "位置與縮放",
-      "en": "Position & Scale"
+      "en": "Position & Scale",
+      "ja": "位置と拡大縮小"
     },
     "能力冷却": {
       "zh_tw": "能力冷卻",
-      "en": "Ability Cooldown"
+      "en": "Ability Cooldown",
+      "ja": "アビリティクールダウン"
     },
     "尖刺腰位置:": {
       "zh_tw": "尖刺腰位置:",
-      "en": "Spike waist position:"
+      "en": "Spike waist position:",
+      "ja": "スパイクのくびれ位置:"
     },
     "扇形": {
       "zh_tw": "扇形",
-      "en": "Sector"
+      "en": "Sector",
+      "ja": "セクター"
     },
     "前往下载": {
       "zh_tw": "前往下載",
-      "en": "Go to Download"
+      "en": "Go to Download",
+      "ja": "ダウンロードへ"
     },
     "确定": {
       "zh_tw": "確定",
-      "en": "OK"
+      "en": "OK",
+      "ja": "OK"
     },
     "多buff布局": {
       "zh_tw": "多buff佈局",
-      "en": "Multi-buff Layout"
+      "en": "Multi-buff Layout",
+      "ja": "複数バフのレイアウト"
     },
     "层数数字勾边色:": {
       "zh_tw": "層數數字勾邊色:",
-      "en": "Stack outline color:"
+      "en": "Stack outline color:",
+      "ja": "スタック数の縁取りの色:"
     },
     "标题栏色:": {
       "zh_tw": "標題列色:",
-      "en": "Title bar color:"
+      "en": "Title bar color:",
+      "ja": "タイトルバーの色:"
     },
     "发现新版本": {
       "zh_tw": "發現新版本",
-      "en": "New version found"
-    },
-    "── 倒计时布局 ──": {
-      "zh_tw": "── 倒計時佈局 ──",
-      "en": "── Timer Layout ──"
+      "en": "New version found",
+      "ja": "新しいバージョンが見つかりました"
     },
     "倒计时样式:": {
       "zh_tw": "倒計時樣式:",
-      "en": "Timer style:"
-    },
-    "多buff偏移量:": {
-      "zh_tw": "多buff偏移量:",
-      "en": "Multi-buff offset:"
+      "en": "Timer style:",
+      "ja": "カウントダウンのスタイル:"
     },
     "翻滚朝向:": {
       "zh_tw": "翻滾朝向:",
-      "en": "Dodge orientation:"
-    },
-    "── 透明度 ──": {
-      "zh_tw": "── 透明度 ──",
-      "en": "── Opacity ──"
+      "en": "Dodge orientation:",
+      "ja": "回避アイコンの向き:"
     },
     "标题UI色:": {
       "zh_tw": "標題UI色:",
-      "en": "Title UI color:"
+      "en": "Title UI color:",
+      "ja": "タイトルUIの色:"
     },
     "── 翻滚警告牌（第6/7次）──": {
       "zh_tw": "── 翻滾警告牌（第6/7次）──",
-      "en": "── Roll Warning Sign (6th/7th) ──"
-    },
-    "Buff 启用/禁用:": {
-      "zh_tw": "Buff 啟用/禁用:",
-      "en": "Buff Enable/Disable:"
+      "en": "── Roll Warning Sign (6th/7th) ──",
+      "ja": "── 回避警告サイン (6/7回目) ──"
     },
     "尖刺闪光（核心检测模块）": {
       "zh_tw": "尖刺閃光（核心檢測模組）",
-      "en": "Spike flash (core)"
+      "en": "Spike flash (core)",
+      "ja": "スパイクのフラッシュ（コア検知モジュール）"
     },
     "扇形颜色:": {
       "zh_tw": "扇形顏色:",
-      "en": "Sector Color:"
-    },
-    "── 模块位置 ──": {
-      "zh_tw": "── 模組位置 ──",
-      "en": "── Module Position ──"
-    },
-    "全选": {
-      "zh_tw": "全選",
-      "en": "Select All"
-    },
-    "完成色:": {
-      "zh_tw": "完成色:",
-      "en": "Ready Color:"
+      "en": "Sector Color:",
+      "ja": "セクターの色:"
     },
     "设置按键…": {
       "zh_tw": "設定按鍵…",
-      "en": "Set Key…"
+      "en": "Set Key…",
+      "ja": "キーを設定…"
     },
     "位置与隐藏": {
       "zh_tw": "位置與隱藏",
-      "en": "Position & Hide"
+      "en": "Position & Hide",
+      "ja": "位置と非表示"
     },
     "游戏在前台时显示，切到后台时自动最小化": {
       "zh_tw": "遊戲在前台時顯示，切到後台時自動最小化",
-      "en": "Show when game is focused; minimize when game is in background"
+      "en": "Show when game is focused; minimize when game is in background",
+      "ja": "ゲームが前面にあるとき表示、背面に回すと自動最小化"
     },
     "倒计时圆心Y偏移:": {
       "zh_tw": "倒計時圓心Y偏移:",
-      "en": "Timer center Y offset:"
+      "en": "Timer center Y offset:",
+      "ja": "カウントダウン中心のYオフセット:"
     },
     "标题栏状态文字:": {
       "zh_tw": "標題列狀態文字:",
-      "en": "Title bar status text:"
+      "en": "Title bar status text:",
+      "ja": "タイトルバーの状態文字:"
     },
     "状态行缩进:": {
       "zh_tw": "狀態行縮進:",
-      "en": "Status line indent:"
+      "en": "Status line indent:",
+      "ja": "状態行のインデント:"
     },
     "图标行缩进:": {
       "zh_tw": "圖標行縮進:",
-      "en": "Icon row indent:"
+      "en": "Icon row indent:",
+      "ja": "アイコン行のインデント:"
     },
     "── 常规 ──": {
       "zh_tw": "── 常規 ──",
-      "en": "── General ──"
-    },
-    "── 颜色与不透明度 ──": {
-      "zh_tw": "── 顏色與不透明度 ──",
-      "en": "── Colors & Opacity ──"
-    },
-    "左栏=显示，右栏=隐藏；拖到另一侧切换（不可跨角色）": {
-      "zh_tw": "左欄=顯示，右欄=隱藏；拖到另一側切換（不可跨角色）",
-      "en": "Left=shown, right=hidden; drag to the other side to switch (not cross-character)"
+      "en": "── General ──",
+      "ja": "── 一般 ──"
     },
     "拖动排序；勾选专精：全选=常显 / 全不选=常关": {
       "zh_tw": "拖動排序；勾選專精：全選=常顯 / 全不選=常關",
-      "en": "Drag to reorder; tick mastery: all=always show / none=always hide"
+      "en": "Drag to reorder; tick mastery: all=always show / none=always hide",
+      "ja": "ドラッグで並べ替え；専精にチェック：全選択=常時表示 / 全解除=常時非表示"
     },
     "呼吸频率:": {
       "zh_tw": "呼吸頻率：",
-      "en": "Breathing rate:"
+      "en": "Breathing rate:",
+      "ja": "ブレスの頻度:"
     },
     "层数数字勾边粗细:": {
       "zh_tw": "層數數字勾邊粗細:",
-      "en": "Stack outline width:"
-    },
-    "尖刺UI不透明度:": {
-      "zh_tw": "尖刺UI不透明度:",
-      "en": "Spike UI opacity:"
+      "en": "Stack outline width:",
+      "ja": "スタック数の縁取りの太さ:"
     },
     "跳过 v": {
       "zh_tw": "跳過 v",
-      "en": "Skip v"
+      "en": "Skip v",
+      "ja": "スキップ v"
     },
     "倒计时X偏移:": {
       "zh_tw": "倒數X偏移:",
-      "en": "Timer X Offset:"
+      "en": "Timer X Offset:",
+      "ja": "カウントダウンのXオフセット:"
     },
     "尖刺色(正常):": {
       "zh_tw": "尖刺色(正常):",
-      "en": "Spike color (normal):"
+      "en": "Spike color (normal):",
+      "ja": "スパイクの色 (通常):"
     },
     "未设置": {
       "zh_tw": "未設定",
-      "en": "Not set"
+      "en": "Not set",
+      "ja": "未設定"
     },
     "未配置更新地址": {
       "zh_tw": "未配置更新地址",
-      "en": "Update URL not configured"
+      "en": "Update URL not configured",
+      "ja": "更新URLが未設定"
     },
     "边框不透明度:": {
       "zh_tw": "邊框不透明度:",
-      "en": "Border opacity:"
+      "en": "Border opacity:",
+      "ja": "枠の不透明度:"
     },
     "Buff名位置:": {
       "zh_tw": "Buff名位置:",
-      "en": "Buff name position:"
+      "en": "Buff name position:",
+      "ja": "バフ名の位置:"
     },
     "全局": {
       "zh_tw": "全域",
-      "en": "Global"
-    },
-    "── 背景 ──": {
-      "zh_tw": "── 背景 ──",
-      "en": "── Background ──"
+      "en": "Global",
+      "ja": "グローバル"
     },
     "层数数字大小 — (计时版):": {
       "zh_tw": "層數數字大小 — (計時版):",
-      "en": "Stack number size — (Timer):"
+      "en": "Stack number size — (Timer):",
+      "ja": "スタック数のサイズ — (タイマー版):"
     },
     "── 闪光 ──": {
       "zh_tw": "── 閃光 ──",
-      "en": "── Flash ──"
+      "en": "── Flash ──",
+      "ja": "── フラッシュ ──"
     },
     "── 倒计时弧线 ──": {
       "zh_tw": "── 倒計時弧線 ──",
-      "en": "── Timer Arc ──"
+      "en": "── Timer Arc ──",
+      "ja": "── カウントダウンの円弧 ──"
     },
     "设置窗口构造异常：\n%s": {
       "zh_tw": "設定視窗建構異常：\n%s",
-      "en": "Settings window build error:\n%s"
+      "en": "Settings window build error:\n%s",
+      "ja": "設定ウィンドウの構築エラー:\n%s"
     },
     "隐藏时透明度:": {
       "zh_tw": "隱藏時透明度:",
-      "en": "Hidden opacity:"
+      "en": "Hidden opacity:",
+      "ja": "非表示時の不透明度:"
     },
     "胶囊宽度微调(Δ):": {
       "zh_tw": "膠囊寬度微調(Δ):",
-      "en": "Capsule width Δ:"
+      "en": "Capsule width Δ:",
+      "ja": "カプセル幅の微調整(Δ):"
     },
     "── 外描边 ──": {
       "zh_tw": "── 外描邊 ──",
-      "en": "── Outline ──"
-    },
-    "正在准备…": {
-      "zh_tw": "正在準備…",
-      "en": "Preparing…"
+      "en": "── Outline ──",
+      "ja": "── 外枠 ──"
     },
     "圆半径:": {
       "zh_tw": "圓半徑:",
-      "en": "Circle radius:"
+      "en": "Circle radius:",
+      "ja": "円の半径:"
+    },
+    "画布宽(0=自动):": {
+      "zh_tw": "畫布寬(0=自動):",
+      "en": "Canvas width (0=auto):",
+      "ja": "キャンバス幅 (0=自動):"
+    },
+    "画布高(0=自动):": {
+      "zh_tw": "畫布高(0=自動):",
+      "en": "Canvas height (0=auto):",
+      "ja": "キャンバス高さ (0=自動):"
     },
     "扇形不透明度:": {
       "zh_tw": "扇形不透明度:",
-      "en": "Sector opacity:"
-    },
-    "── 内存 ──": {
-      "zh_tw": "── 記憶體 ──",
-      "en": "── Memory ──"
+      "en": "Sector opacity:",
+      "ja": "セクターの不透明度:"
     },
     "Buff名字": {
       "zh_tw": "Buff名字",
-      "en": "Buff Name"
+      "en": "Buff Name",
+      "ja": "バフ名"
     },
     "倒计时弧颜色:": {
       "zh_tw": "倒計時弧顏色:",
-      "en": "Timer arc color:"
-    },
-    "── 冷却完成动画 ──": {
-      "zh_tw": "── 冷卻完成動畫 ──",
-      "en": "── Cooldown Complete Animation ──"
+      "en": "Timer arc color:",
+      "ja": "カウントダウン円弧の色:"
     },
     "── 单层buff倒计时胶囊 ──": {
       "zh_tw": "── 單層buff倒數膠囊 ──",
-      "en": "── Single-layer Buff Timer Capsule ──"
-    },
-    "多buff夹角:": {
-      "zh_tw": "多buff夾角:",
-      "en": "Multi-buff angle:"
+      "en": "── Single-layer Buff Timer Capsule ──",
+      "ja": "── 単層バフのカウントダウンカプセル ──"
     },
     "翻滚图标绝对路径:": {
       "zh_tw": "翻滾圖標絕對路徑:",
-      "en": "Dodge icon path:"
-    },
-    "翻滚图标闪光：勾边发光": {
-      "zh_tw": "翻滾圖標閃光：勾邊發光",
-      "en": "Dodge icon flash: edge glow"
+      "en": "Dodge icon path:",
+      "ja": "回避アイコンの絶対パス:"
     },
     "层数数字Y偏移:": {
       "zh_tw": "層數數字Y偏移:",
-      "en": "Stack number Y offset:"
+      "en": "Stack number Y offset:",
+      "ja": "スタック数のYオフセット:"
     },
     "模块缩放:": {
       "zh_tw": "模組縮放:",
-      "en": "Module scale:"
+      "en": "Module scale:",
+      "ja": "モジュールの拡大縮小:"
     },
     "柔和程度:": {
       "zh_tw": "柔和程度：",
-      "en": "Softness:"
+      "en": "Softness:",
+      "ja": "柔らかさ:"
     },
     "越上越靠左": {
       "zh_tw": "越上越靠左",
-      "en": "Top → Left"
+      "en": "Top → Left",
+      "ja": "上ほど左へ"
     },
     "倒计时": {
       "zh_tw": "倒計時",
-      "en": "Timer"
+      "en": "Timer",
+      "ja": "カウントダウン"
     },
     "检查更新": {
       "zh_tw": "檢查更新",
-      "en": "Check for Updates"
+      "en": "Check for Updates",
+      "ja": "更新を確認"
     },
     "── 闪光应用模块 ──": {
       "zh_tw": "── 閃光應用模組 ──",
-      "en": "── Flash Apply To ──"
+      "en": "── Flash Apply To ──",
+      "ja": "── フラッシュ適用モジュール ──"
     },
     "随分辨率放大:": {
       "zh_tw": "隨解析度放大:",
-      "en": "Resolution scale:"
-    },
-    "隐藏区": {
-      "zh_tw": "隱藏區",
-      "en": "Hidden zone"
+      "en": "Resolution scale:",
+      "ja": "解像度に応じた拡大:"
     },
     "倒计时弧线内缩:": {
       "zh_tw": "倒計時弧線內縮:",
-      "en": "Timer arc inset:"
-    },
-    "（单层buff）": {
-      "zh_tw": "（單層buff）",
-      "en": "(single-layer buff)"
+      "en": "Timer arc inset:",
+      "ja": "カウントダウン円弧の内側への縮み:"
     },
     "全勾选": {
       "zh_tw": "全勾選",
-      "en": "Check All"
+      "en": "Check All",
+      "ja": "すべてチェック"
     },
     "聚散距离:": {
       "zh_tw": "聚散距離:",
-      "en": "Spread Distance:"
+      "en": "Spread Distance:",
+      "ja": "集合/分散の距離:"
     },
     "倒计时Y偏移:": {
       "zh_tw": "倒數Y偏移:",
-      "en": "Timer Y Offset:"
+      "en": "Timer Y Offset:",
+      "ja": "カウントダウンのYオフセット:"
     },
     "显示能力名称": {
       "zh_tw": "顯示能力名稱",
-      "en": "Show Ability Name"
+      "en": "Show Ability Name",
+      "ja": "アビリティ名を表示"
     },
     "模块位置:": {
       "zh_tw": "模組位置：",
-      "en": "Module position:"
+      "en": "Module position:",
+      "ja": "モジュールの位置:"
     },
     "捕获快捷键": {
       "zh_tw": "擷取快捷鍵",
-      "en": "Capture Hotkey"
-    },
-    "全不选": {
-      "zh_tw": "全不選",
-      "en": "Deselect All"
+      "en": "Capture Hotkey",
+      "ja": "ショートカットキーを取得"
     },
     "更新下载地址：": {
       "zh_tw": "更新下載位址：",
-      "en": "Update download URL:"
-    },
-    "GitHub 镜像地址：": {
-      "zh_tw": "GitHub 鏡像位址：",
-      "en": "GitHub mirror URL:"
+      "en": "Update download URL:",
+      "ja": "更新ダウンロードURL:"
     },
     "已跳过 v": {
       "zh_tw": "已跳過 v",
-      "en": "Skipped v"
+      "en": "Skipped v",
+      "ja": "スキップ済み v"
     },
     "标题→圆间距:": {
       "zh_tw": "標題→圓間距:",
-      "en": "Title to circle gap:"
+      "en": "Title to circle gap:",
+      "ja": "タイトル→円の間隔:"
     },
     "尖刺宽度:": {
       "zh_tw": "尖刺寬度:",
-      "en": "Spike width:"
-    },
-    "核心模块": {
-      "zh_tw": "核心模組",
-      "en": "Core"
+      "en": "Spike width:",
+      "ja": "スパイクの幅:"
     },
     "横放": {
       "zh_tw": "橫放",
-      "en": "Horizontal"
-    },
-    "隐藏": {
-      "zh_tw": "隱藏",
-      "en": "Hide"
+      "en": "Horizontal",
+      "ja": "横置き"
     },
     "语言 / Language:": {
       "zh_tw": "語言 / Language:",
-      "en": "Language:"
+      "en": "Language:",
+      "ja": "言語 / Language:"
     },
     "浏览...": {
       "zh_tw": "瀏覽...",
-      "en": "Browse..."
+      "en": "Browse...",
+      "ja": "参照..."
     },
-    "外部差异化颜色（圆环/尖刺/外描边）": {
-      "zh_tw": "外部差異化顏色（圓環/尖刺/外描邊）",
-      "en": "External color diff (ring/spike/outline)"
+    "启动软件默认锁定": {
+      "zh_tw": "啟動軟體預設鎖定",
+      "en": "Lock windows on startup",
+      "ja": "起動時にウィンドウをロック"
     },
-    "置顶": {
-      "zh_tw": "永遠置頂",
-      "en": "Always on Top"
-    },
-    "未进入战斗时隐藏整个UI（尖刺圆/翻滚/技能UI 全部）": {
-      "zh_tw": "未進入戰鬥時隱藏整個UI（尖刺圓／翻滾／技能UI 全部）",
-      "en": "Hide entire UI when not in combat (spike/roll/skill UI all)"
+    "非战斗时隐藏全部 UI（尖刺圆/全 Buff/核心/翻滚/技能 UI）": {
+      "zh_tw": "非戰鬥時隱藏全部 UI（尖刺圓／全 Buff／核心／翻滾／技能 UI）",
+      "en": "Hide all UI when not in combat (spike ring / all-Buff / core / dodge / skill UI)",
+      "ja": "非戦闘時にすべてのUIを非表示（スパイク円/全バフ/コア/回避/アビリティ UI）"
     },
     "Buff名衬色块宽度微调:": {
       "zh_tw": "Buff名襯色塊寬度微調:",
-      "en": "Buff name bg width adjust:"
-    },
-    "生效区（拖动排序）": {
-      "zh_tw": "生效區（拖動排序）",
-      "en": "Active zone (drag to reorder)"
-    },
-    "显示能力冷却": {
-      "zh_tw": "顯示能力冷卻",
-      "en": "Show Ability Cooldowns"
+      "en": "Buff name bg width adjust:",
+      "ja": "バフ名の背景ブロック幅の微調整:"
     },
     "更新日志：": {
       "zh_tw": "更新日誌：",
-      "en": "Changelog:"
-    },
-    "整体等比缩放:": {
-      "zh_tw": "整體等比縮放:",
-      "en": "UI scale:"
-    },
-    "背景画布不透明度:": {
-      "zh_tw": "背景畫布不透明度:",
-      "en": "Background opacity:"
-    },
-    "── 扫描 / 缩放 / 内存 ──": {
-      "zh_tw": "── 掃描 / 縮放 / 記憶體 ──",
-      "en": "── Scan / Scale / Memory ──"
+      "en": "Changelog:",
+      "ja": "更新履歴:"
     },
     "倒计时字号:": {
       "zh_tw": "倒數字號:",
-      "en": "Timer font size:"
+      "en": "Timer font size:",
+      "ja": "カウントダウンのフォントサイズ:"
     },
     "倒计时文字色:": {
       "zh_tw": "倒計時文字色:",
-      "en": "Timer Text Color:"
+      "en": "Timer Text Color:",
+      "ja": "カウントダウン文字の色:"
     },
     "时间胶囊Y偏移:": {
       "zh_tw": "時間膠囊Y偏移:",
-      "en": "Time capsule Y offset:"
+      "en": "Time capsule Y offset:",
+      "ja": "タイムカプセルのYオフセット:"
     },
     "字号:": {
       "zh_tw": "字號:",
-      "en": "Font Size:"
+      "en": "Font Size:",
+      "ja": "フォントサイズ:"
     },
     "核心检测模块（标题栏始终显示，仅内容隐藏）": {
       "zh_tw": "核心偵測模組（標題列始終顯示，僅內容隱藏）",
-      "en": "Core detection module (title bar stays visible, only content hidden)"
+      "en": "Core detection module (title bar stays visible, only content hidden)",
+      "ja": "コア検知モジュール（タイトルバーは常時表示、内容のみ非表示）"
     },
     "── 多buff差异化（按同时监测的buff个数 2/3/4/5；每组：缩放 / 圆心水平间距 / 圆心Delta_Y / 外部差异化颜色 / 内部差异化颜色） ──": {
       "zh_tw": "── 多buff差異化（按同時監測的buff個數 2/3/4/5；每組：縮放／圓心水平間距／圓心Delta_Y／外部差異化顏色／內部差異化顏色） ──",
-      "en": "── Multi-buff differentiation (by simultaneous buff count 2/3/4/5; per group: scale / center X spacing / center Delta_Y / outer diff color / inner diff color) ──"
+      "en": "── Multi-buff differentiation (by simultaneous buff count 2/3/4/5; per group: scale / center X spacing / center Delta_Y / outer diff color / inner diff color) ──",
+      "ja": "── 複数バフの色分け（同時監視するバフ数 2/3/4/5；各グループ: 拡大縮小 / 中心の水平間隔 / "
     },
     "默认图标:": {
       "zh_tw": "預設圖標:",
-      "en": "Default icon:"
+      "en": "Default icon:",
+      "ja": "既定のアイコン:"
     },
     "尖刺与圆环": {
       "zh_tw": "尖刺與圓環",
-      "en": "Spikes & Ring"
+      "en": "Spikes & Ring",
+      "ja": "スパイクと円環"
     },
     "── 角色 Buff 顺位与专精门控（每行三勾选框 = 觉醒/真谛/秘义 / 拖动排序 / 可折叠） ──": {
       "zh_tw": "── 角色 Buff 順位與專精門控（每行三勾選框 = 覺醒/真諦/秘義 / 拖動排序 / 可折疊） ──",
-      "en": "── Character Buff Order & Mastery Gating (3 checkboxes = Awakening/Truth/Secret / drag to reorder / collapsible) ──"
+      "en": "── Character Buff Order & Mastery Gating (3 checkboxes = Awakening/Truth/Secret / drag to reorder / collapsible) ──",
+      "ja": "── キャラのバフ順位と専精ゲート（各行3つのチェック = 覚醒/真髄/極意 / ドラッグで並べ替え / 折りたたみ可）"
     },
     "放大倍数:": {
       "zh_tw": "放大倍數：",
-      "en": "Zoom factor:"
+      "en": "Zoom factor:",
+      "ja": "拡大倍率:"
     },
     "圆环色(满层):": {
       "zh_tw": "圓環色(滿層):",
-      "en": "Circle color (full stack):"
+      "en": "Circle color (full stack):",
+      "ja": "円環の色 (最大スタック):"
     },
     "当前版本：": {
       "zh_tw": "目前版本：",
-      "en": "Current version:"
-    },
-    "── 布局间距 ──": {
-      "zh_tw": "── 佈局間距 ──",
-      "en": "── Layout Spacing ──"
+      "en": "Current version:",
+      "ja": "現在のバージョン:"
     },
     "层数数字色 — (计时版):": {
       "zh_tw": "層數數字色 — (計時版):",
-      "en": "Stack number color — (Timer):"
+      "en": "Stack number color — (Timer):",
+      "ja": "スタック数の色 — (タイマー版):"
     },
     "时间胶囊宽度:": {
       "zh_tw": "時間膠囊寬度:",
-      "en": "Timer capsule width:"
+      "en": "Timer capsule width:",
+      "ja": "タイムカプセルの幅:"
     },
     "启用整体外描边": {
       "zh_tw": "啟用整體外描邊",
-      "en": "Enable outer outline"
+      "en": "Enable outer outline",
+      "ja": "全体の外枠を有効化"
     },
     "能力模块": {
       "zh_tw": "能力模組",
-      "en": "Skill Module"
+      "en": "Skill Module",
+      "ja": "アビリティモジュール"
     },
     "确定要{}所有角色的专精勾选框吗？\n（仅影响当前设置，可手动撤销）": {
       "zh_tw": "確定要{}所有角色的專精勾選框嗎？\n（僅影響目前設定，可手動撤銷）",
-      "en": "Are you sure you want to {} all characters' mastery checkboxes?\n(This only affects the current setting and can be manually undone.)"
-    },
-    "打开设置：": {
-      "zh_tw": "開啟設定：",
-      "en": "Open Settings:"
+      "en": "Are you sure you want to {} all characters' mastery checkboxes?\n(This only affects the current setting and can be manually undone.)",
+      "ja": "すべてのキャラの専精チェックボックスを{}してもよいですか？\n（現在の設定のみに影響し、手動で元に戻せます）"
     },
     "确认操作": {
       "zh_tw": "確認操作",
-      "en": "Confirm Action"
+      "en": "Confirm Action",
+      "ja": "操作の確認"
     },
     "能力冷却模块": {
       "zh_tw": "能力冷卻模組",
-      "en": "Ability cooldown module"
+      "en": "Ability cooldown module",
+      "ja": "アビリティクールダウンモジュール"
     },
     "圆角半径:": {
       "zh_tw": "圓角半徑：",
-      "en": "Corner radius:"
+      "en": "Corner radius:",
+      "ja": "角の丸み半径:"
     },
     "{} 个 buff 同屏": {
       "zh_tw": "{} 個 buff 同屏",
-      "en": "{} buffs on screen"
-    },
-    "缩放{}": {
-      "zh_tw": "縮放{}",
-      "en": "Scale {}"
+      "en": "{} buffs on screen",
+      "ja": "{} 個のバフを同時表示"
     },
     "缩放{}:": {
       "zh_tw": "縮放{}:",
-      "en": "Scale {}:"
-    },
-    "圆心水平间距{}": {
-      "zh_tw": "圓心水平間距{}",
-      "en": "Center X spacing {}"
+      "en": "Scale {}:",
+      "ja": "拡大縮小{}:"
     },
     "圆心水平间距{}:": {
       "zh_tw": "圓心水平間距{}:",
-      "en": "Center X spacing {}:"
-    },
-    "圆心Delta_Y{}": {
-      "zh_tw": "圓心Delta_Y{}",
-      "en": "Center Delta Y {}"
+      "en": "Center X spacing {}:",
+      "ja": "中心の水平間隔{}:"
     },
     "圆心Delta_Y{}:": {
       "zh_tw": "圓心Delta_Y{}:",
-      "en": "Center Delta Y {}:"
-    },
-    "外部差异化颜色{}": {
-      "zh_tw": "外部差異化顏色{}",
-      "en": "Outer diff color {}"
+      "en": "Center Delta Y {}:",
+      "ja": "中心Delta_Y{}:"
     },
     "外部差异化颜色{}:": {
       "zh_tw": "外部差異化顏色{}:",
-      "en": "Outer diff color {}:"
-    },
-    "内部差异化颜色{}": {
-      "zh_tw": "內部差異化顏色{}",
-      "en": "Inner diff color {}"
+      "en": "Outer diff color {}:",
+      "ja": "外部の色分け{}:"
     },
     "内部差异化颜色{}:": {
       "zh_tw": "內部差異化顏色{}:",
-      "en": "Inner diff color {}:"
-    },
-    "颜色分布模式{}": {
-      "zh_tw": "顏色分布模式{}",
-      "en": "Color mode {}"
+      "en": "Inner diff color {}:",
+      "ja": "内部の色分け{}:"
     },
     "颜色分布模式{}:": {
       "zh_tw": "顏色分布模式{}:",
-      "en": "Color mode {}:"
-    },
-    "同色系间距{}": {
-      "zh_tw": "同色系間距{}",
-      "en": "Hue span {}"
+      "en": "Color mode {}:",
+      "ja": "色の分布モード{}:"
     },
     "同色系间距{}:": {
       "zh_tw": "同色系間距{}:",
-      "en": "Hue span {}:"
+      "en": "Hue span {}:",
+      "ja": "同系色の間隔{}:"
     },
     "警告牌相对尺寸:": {
       "zh_tw": "警告牌相對尺寸:",
-      "en": "Warning sign relative size:"
+      "en": "Warning sign relative size:",
+      "ja": "警告サインの相対サイズ:"
     },
     "红边宽度占比:": {
       "zh_tw": "紅邊寬度占比:",
-      "en": "Red edge width ratio:"
+      "en": "Red edge width ratio:",
+      "ja": "赤枠の幅の比率:"
     },
     "觉醒": {
       "zh_tw": "覺醒",
-      "en": "Insight"
+      "en": "Insight",
+      "ja": "覚醒"
     },
     "真谛": {
       "zh_tw": "真諦",
-      "en": "Essence"
+      "en": "Essence",
+      "ja": "真髄"
     },
     "秘义": {
       "zh_tw": "秘義",
-      "en": "Crux"
+      "en": "Crux",
+      "ja": "極意"
     },
     "显示尖刺（三角本体）": {
       "zh_tw": "顯示尖刺（三角本體）",
-      "en": "Show spikes (the triangle bodies)"
+      "en": "Show spikes (the triangle bodies)",
+      "ja": "スパイクを表示（三角の本体）"
     },
     "显示装饰小球（尖刺顶端圆点）": {
       "zh_tw": "顯示裝飾小球（尖刺頂端圓點）",
-      "en": "Show decorative beads (spike-tip dots)"
+      "en": "Show decorative beads (spike-tip dots)",
+      "ja": "装飾ドットを表示（スパイク先端のドット）"
     },
     "去下载": {
       "zh_tw": "去下載",
-      "en": "Download"
+      "en": "Download",
+      "ja": "ダウンロード"
     },
     "稍后": {
       "zh_tw": "稍後",
-      "en": "Later"
+      "en": "Later",
+      "ja": "後で"
     },
     "是否前往下载？更新日志可在 设置 → 关于 查看。": {
       "zh_tw": "是否前往下載？更新日誌可在 設定 → 關於 查看。",
-      "en": "Go to download now? Changelog is available in Settings → About."
+      "en": "Go to download now? Changelog is available in Settings → About.",
+      "ja": "ダウンロードしますか？更新履歴は 設定 → 情報 で確認できます。"
     },
     "正在下载新版本…": {
       "zh_tw": "正在下載新版本…",
-      "en": "Downloading new version…"
-    },
-    "下载失败：": {
-      "zh_tw": "下載失敗：",
-      "en": "Download failed:"
-    },
-    "下载完成": {
-      "zh_tw": "下載完成",
-      "en": "Download complete"
-    },
-    "下载完成，正在启动新版本并退出当前程序。": {
-      "zh_tw": "下載完成，正在啟動新版本並退出當前程式。",
-      "en": "Download complete. Launching the new version and exiting the current one."
-    },
-    "启动新版本失败，请手动运行：": {
-      "zh_tw": "啟動新版本失敗，請手動執行：",
-      "en": "Failed to launch the new version. Please run it manually: "
-    },
-    "检查更新中…": {
-      "zh_tw": "檢查更新中…",
-      "en": "Checking for updates…"
+      "en": "Downloading new version…",
+      "ja": "新しいバージョンをダウンロード中…"
     },
     "已是最新": {
       "zh_tw": "已是最新",
-      "en": "Up to date"
+      "en": "Up to date",
+      "ja": "最新です"
     },
     "检查失败": {
       "zh_tw": "檢查失敗",
-      "en": "Update check failed"
-    },
-    "全局热键不能两两相同：\n\n「{a}」与「{b}」都设置为\n{c}\n\n请修改后再确定。": {
-      "zh_tw": "全域快速鍵不能兩兩相同：\n\n「{a}」與「{b}」都設定為\n{c}\n\n請修改後再確定。",
-      "en": "Global hotkeys cannot be duplicated:\n\nBoth {a} and {b} are set to\n{c}\n\nPlease change one before confirming."
+      "en": "Update check failed",
+      "ja": "確認失敗"
     },
     "不微调": {
       "zh_tw": "不微調",
-      "en": "No fine-tune"
+      "en": "No fine-tune",
+      "ja": "微調整なし"
     },
     "全部勾选": {
       "zh_tw": "全部勾選",
-      "en": "Select all"
+      "en": "Select all",
+      "ja": "すべてチェック"
     },
     "全部取消": {
       "zh_tw": "全部取消",
-      "en": "Clear all"
+      "en": "Clear all",
+      "ja": "すべて解除"
     },
     "按下组合键…": {
       "zh_tw": "按下組合鍵…",
-      "en": "Press a key combination…"
-    },
-    "https://ghfast.top/ （留空=仅用内置备用镜像）": {
-      "zh_tw": "https://ghfast.top/ （留空=僅用內建備用鏡像）",
-      "en": "https://ghfast.top/ (leave empty = built-in backup mirror only)"
-    },
-    "检测/下载地址走 GitHub Release CDN；国内不挂梯时若直连超时，会自动依次回退：用户镜像（下方填写）→ 内置备用镜像（ghfast.top / gh.ddlc.top / cors.isteed.cc），任一成功即停。留空镜像地址 = 仅用内置备用，不配置也行。": {
-      "zh_tw": "檢測/下載地址走 GitHub Release CDN；國內不掛梯時若直連逾時，會自動依序回退：使用者鏡像（下方填寫）→ 內建備用鏡像（ghfast.top / gh.ddlc.top / cors.isteed.cc），任一成功即停。留空鏡像地址 = 僅用內建備用，不配置也行。",
-      "en": "Detect/download URLs use GitHub Release CDN; without a VPN in China, if the direct connection times out it auto-falls back in order: user mirror (fill below) -> built-in backup mirrors (ghfast.top / gh.ddlc.top / cors.isteed.cc), stopping at the first success. Leaving the mirror blank = built-in backup only, no config needed."
-    },
-    "能力扇形色:": {
-      "en": "Skill sector color:",
-      "zh_tw": "能力扇形色:"
-    },
-    "能力倒计时色:": {
-      "en": "Skill CD timer color:",
-      "zh_tw": "能力倒計時色:"
+      "en": "Press a key combination…",
+      "ja": "キーの組み合わせを押してください…"
     },
     "呼出/隐藏所有窗口": {
       "en": "Show/Hide all windows",
-      "zh_tw": "呼出/隱藏所有視窗"
+      "zh_tw": "呼出/隱藏所有視窗",
+      "ja": "すべてのウィンドウの表示/非表示"
     },
     "锁定 / 解锁窗口": {
       "en": "Lock / Unlock windows",
-      "zh_tw": "鎖定 / 解鎖視窗"
+      "zh_tw": "鎖定 / 解鎖視窗",
+      "ja": "ウィンドウのロック / ロック解除"
     },
     "打开设置": {
       "en": "Open settings",
-      "zh_tw": "開啟設定"
+      "zh_tw": "開啟設定",
+      "ja": "設定を開く"
     },
     "红边色:": {
       "en": "Red border color:",
-      "zh_tw": "紅邊色:"
+      "zh_tw": "紅邊色:",
+      "ja": "赤枠の色:"
     },
     "黄色面:": {
       "en": "Yellow face:",
-      "zh_tw": "黃色面:"
+      "zh_tw": "黃色面:",
+      "ja": "黄色の面:"
     },
     "胶囊背景色:": {
       "en": "Capsule bg color:",
-      "zh_tw": "膠囊背景色:"
+      "zh_tw": "膠囊背景色:",
+      "ja": "カプセルの背景色:"
     },
     "胶囊边框色:": {
       "en": "Capsule border color:",
-      "zh_tw": "膠囊邊框色:"
+      "zh_tw": "膠囊邊框色:",
+      "ja": "カプセルの枠の色:"
     },
     "呼吸光颜色:": {
       "en": "Glow color:",
-      "zh_tw": "呼吸光顏色:"
+      "zh_tw": "呼吸光顏色:",
+      "ja": "ブレス発光の色:"
     },
     "选择翻滚图标": {
       "en": "Select dodge icon",
-      "zh_tw": "選擇翻滾圖標"
+      "zh_tw": "選擇翻滾圖標",
+      "ja": "回避アイコンを選択"
     },
     "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)": {
       "en": "Image files (*.png *.jpg *.jpeg *.bmp *.gif)",
-      "zh_tw": "圖片檔案 (*.png *.jpg *.jpeg *.bmp *.gif)"
+      "zh_tw": "圖片檔案 (*.png *.jpg *.jpeg *.bmp *.gif)",
+      "ja": "画像ファイル (*.png *.jpg *.jpeg *.bmp *.gif)"
     },
     "选择颜色": {
       "en": "Select color",
-      "zh_tw": "選擇顏色"
+      "zh_tw": "選擇顏色",
+      "ja": "色を選択"
     },
     "确定要把所有设置恢复为默认吗？此操作会清空当前所有自定义配置（含已禁用的 Buff）。": {
       "en": "Restore all settings to defaults? This clears all custom config (incl. disabled Buffs).",
-      "zh_tw": "確定要把所有設定恢復為預設嗎？此操作會清空目前所有自訂配置（含已停用的 Buff）。"
+      "zh_tw": "確定要把所有設定恢復為預設嗎？此操作會清空目前所有自訂配置（含已停用的 Buff）。",
+      "ja": "すべての設定を既定値に戻しますか？現在のカスタム設定（無効化したバフを含む）はすべて消去されます。"
     },
     "正在加载设置…": {
       "en": "Loading settings…",
-      "zh_tw": "正在載入設定…"
+      "zh_tw": "正在載入設定…",
+      "ja": "設定を読み込み中…"
     },
     "已加载角色数据库": {
       "en": "Character DB loaded",
-      "zh_tw": "已載入角色資料庫"
+      "zh_tw": "已載入角色資料庫",
+      "ja": "キャラデータベースを読み込みました"
     },
     "正在计算界面布局…": {
       "en": "Computing layout…",
-      "zh_tw": "正在計算介面佈局…"
+      "zh_tw": "正在計算介面佈局…",
+      "ja": "レイアウトを計算中…"
     },
     "正在加载图标资源…": {
       "en": "Loading icons…",
-      "zh_tw": "正在載入圖示資源…"
+      "zh_tw": "正在載入圖示資源…",
+      "ja": "アイコンを読み込み中…"
     },
     "已创建悬浮窗口": {
       "en": "Overlay windows created",
-      "zh_tw": "已建立懸浮視窗"
+      "zh_tw": "已建立懸浮視窗",
+      "ja": "オーバーレイウィンドウを作成しました"
     },
     "已初始化系统托盘": {
       "en": "System tray initialized",
-      "zh_tw": "已初始化系統托盤"
+      "zh_tw": "已初始化系統托盤",
+      "ja": "システムトレイを初期化しました"
     },
     "正在显示悬浮窗口…": {
       "en": "Showing overlay…",
-      "zh_tw": "正在顯示懸浮視窗…"
+      "zh_tw": "正在顯示懸浮視窗…",
+      "ja": "オーバーレイを表示中…"
     },
     "启动完成": {
       "en": "Startup complete",
-      "zh_tw": "啟動完成"
+      "zh_tw": "啟動完成",
+      "ja": "起動完了"
     },
     "重置所有窗口": {
       "en": "Reset all windows",
-      "zh_tw": "重置所有視窗"
+      "zh_tw": "重置所有視窗",
+      "ja": "すべてのウィンドウをリセット"
     },
     "确定要把三个模块的窗口位置与缩放恢复为默认并居中吗？此操作会覆盖当前布局。": {
       "en": "Reset all 3 module windows to default & center? Overwrites current layout.",
-      "zh_tw": "確定要把三個模組的視窗位置與縮放恢復為預設並置中嗎？此操作會覆蓋目前佈局。"
+      "zh_tw": "確定要把三個模組的視窗位置與縮放恢復為預設並置中嗎？此操作會覆蓋目前佈局。",
+      "ja": "3つのモジュールのウィンドウ位置と拡大縮小を既定値に戻して中央に配置しますか？現在のレイアウトは上書きされます。"
     },
     "能力冷却已隐藏": {
       "en": "Skill CD hidden",
-      "zh_tw": "能力冷卻已隱藏"
+      "zh_tw": "能力冷卻已隱藏",
+      "ja": "アビリティクールダウンは非表示です"
     },
     "初始化中...": {
       "en": "Initializing...",
-      "zh_tw": "初始化中..."
+      "zh_tw": "初始化中...",
+      "ja": "初期化中..."
     },
     "未检测到技能": {
       "en": "No skill detected",
-      "zh_tw": "未偵測到技能"
+      "zh_tw": "未偵測到技能",
+      "ja": "アビリティが検出されません"
     },
     "未检测到角色": {
       "en": "No character detected",
-      "zh_tw": "未偵測到角色"
+      "zh_tw": "未偵測到角色",
+      "ja": "キャラが検出されません"
     },
     "未检测到游戏": {
       "en": "No game detected",
-      "zh_tw": "未偵測到遊戲"
+      "zh_tw": "未偵測到遊戲",
+      "ja": "ゲームが検出されません"
     },
     "检测正常": {
       "en": "Detection OK",
-      "zh_tw": "偵測正常"
+      "zh_tw": "偵測正常",
+      "ja": "検出は正常です"
     },
     "设置...": {
       "en": "Settings...",
-      "zh_tw": "設定..."
+      "zh_tw": "設定...",
+      "ja": "設定..."
     },
     "解锁": {
       "en": "Unlock",
-      "zh_tw": "解鎖"
+      "zh_tw": "解鎖",
+      "ja": "ロック解除"
     },
     "锁定": {
       "en": "Lock",
-      "zh_tw": "鎖定"
+      "zh_tw": "鎖定",
+      "ja": "ロック"
     },
     "显示所有窗口": {
       "en": "Show all windows",
-      "zh_tw": "顯示所有視窗"
+      "zh_tw": "顯示所有視窗",
+      "ja": "すべてのウィンドウを表示"
     },
     "退出": {
       "en": "Exit",
-      "zh_tw": "退出"
-    },
-    "缩放2:": {
-      "en": "Scale 2:",
-      "zh_tw": "縮放2:"
-    },
-    "圆心水平间距2:": {
-      "en": "Circle horiz spacing 2:",
-      "zh_tw": "圓心水平間距2:"
-    },
-    "圆心Delta_Y2:": {
-      "en": "Circle ΔY 2:",
-      "zh_tw": "圓心ΔY 2:"
-    },
-    "外部差异化颜色2:": {
-      "en": "External diff color 2:",
-      "zh_tw": "外部差異化顏色2:"
-    },
-    "内部差异化颜色2:": {
-      "en": "Internal diff color 2:",
-      "zh_tw": "內部差異化顏色2:"
-    },
-    "缩放3:": {
-      "en": "Scale 3:",
-      "zh_tw": "縮放3:"
-    },
-    "圆心水平间距3:": {
-      "en": "Circle horiz spacing 3:",
-      "zh_tw": "圓心水平間距3:"
-    },
-    "圆心Delta_Y3:": {
-      "en": "Circle ΔY 3:",
-      "zh_tw": "圓心ΔY 3:"
-    },
-    "外部差异化颜色3:": {
-      "en": "External diff color 3:",
-      "zh_tw": "外部差異化顏色3:"
-    },
-    "内部差异化颜色3:": {
-      "en": "Internal diff color 3:",
-      "zh_tw": "內部差異化顏色3:"
-    },
-    "缩放4:": {
-      "en": "Scale 4:",
-      "zh_tw": "縮放4:"
-    },
-    "圆心水平间距4:": {
-      "en": "Circle horiz spacing 4:",
-      "zh_tw": "圓心水平間距4:"
-    },
-    "圆心Delta_Y4:": {
-      "en": "Circle ΔY 4:",
-      "zh_tw": "圓心ΔY 4:"
-    },
-    "外部差异化颜色4:": {
-      "en": "External diff color 4:",
-      "zh_tw": "外部差異化顏色4:"
-    },
-    "内部差异化颜色4:": {
-      "en": "Internal diff color 4:",
-      "zh_tw": "內部差異化顏色4:"
-    },
-    "缩放5:": {
-      "en": "Scale 5:",
-      "zh_tw": "縮放5:"
-    },
-    "圆心水平间距5:": {
-      "en": "Circle horiz spacing 5:",
-      "zh_tw": "圓心水平間距5:"
-    },
-    "圆心Delta_Y5:": {
-      "en": "Circle ΔY 5:",
-      "zh_tw": "圓心ΔY 5:"
-    },
-    "外部差异化颜色5:": {
-      "en": "External diff color 5:",
-      "zh_tw": "外部差異化顏色5:"
-    },
-    "内部差异化颜色5:": {
-      "en": "Internal diff color 5:",
-      "zh_tw": "內部差異化顏色5:"
-    },
-    "全显示": {
-      "en": "Show all",
-      "zh_tw": "全顯示"
-    },
-    "全不显示": {
-      "en": "Hide all",
-      "zh_tw": "全不顯示"
-    },
-    "内存探针：": {
-      "en": "Memory probe:",
-      "zh_tw": "記憶體探針："
-    },
-    "导出角色内存(找偏移用)": {
-      "en": "Dump char memory (offset hunting)",
-      "zh_tw": "匯出角色記憶體(找偏移用)"
-    },
-    "── 角色 Buff 顺位（左栏显示·右栏隐藏 / 拖动切换 / 右键置顶 / 可折叠） ──": {
-      "en": "── Character Buff order (left=shown · right=hidden / drag to swap / right-click pin / collapsible) ──",
-      "zh_tw": "── 角色 Buff 順位（左欄顯示·右欄隱藏 / 拖動切換 / 右鍵置頂 / 可折疊） ──"
-    },
-    "隐藏与位置": {
-      "zh_tw": "隱藏與位置",
-      "en": "Hide & Position"
-    },
-    "2 个 buff 同屏": {
-      "zh_tw": "2 個 buff 同屏",
-      "en": "2 buffs on screen"
-    },
-    "3 个 buff 同屏": {
-      "zh_tw": "3 個 buff 同屏",
-      "en": "3 buffs on screen"
-    },
-    "4 个 buff 同屏": {
-      "zh_tw": "4 個 buff 同屏",
-      "en": "4 buffs on screen"
-    },
-    "5 个 buff 同屏": {
-      "zh_tw": "5 個 buff 同屏",
-      "en": "5 buffs on screen"
-    },
-    "把当前角色 actor 内存按 u32 导出到桌面 actor_dump.txt，用于定位 class/异能 等裸值偏移": {
-      "zh_tw": "把當前角色 actor 記憶體按 u32 匯出到桌面 actor_dump.txt，用於定位 class/異能 等裸值偏移",
-      "en": "Dump current character actor memory as u32 to desktop actor_dump.txt, for locating class/grace raw offsets"
-    },
-    "GBFR 指示器 启动中…": {
-      "zh_tw": "GBFR 指示器 啟動中…",
-      "en": "GBFR Indicator starting…"
-    },
-    "✅ 启动完成，正在进入…": {
-      "zh_tw": "✅ 啟動完成，正在進入…",
-      "en": "✅ Startup complete, entering…"
-    },
-    "检测版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，国内快速且不易被墙；exe 下载地址从该 version.json 的 download_url 字段读取并自动填入下方，无需另外配置。": {
-      "en": "Version check URL (above) uses the GitHub Release CDN (releases/latest/download/version.json), not raw, so it is fast in mainland China and less likely to be blocked. The exe download URL is read from the download_url field of that version.json and auto-filled below — no extra configuration needed.",
-      "zh_tw": "檢測版本地址（上方）走 GitHub Release CDN（releases/latest/download/version.json），非 raw，國內快速且不易被牆；exe 下載地址從該 version.json 的 download_url 欄位讀取並自動填入下方，無需另外配置。"
-    },
-    "HTTP/2 + 切块": {
-      "zh_tw": "HTTP/2 + 區塊",
-      "en": "HTTP/2 + chunks"
-    },
-    "HTTP/1 + 切块": {
-      "zh_tw": "HTTP/1 + 區塊",
-      "en": "HTTP/1 + chunks"
-    },
-    "HTTP/1 + 单连接": {
-      "zh_tw": "HTTP/1 + 單一連線",
-      "en": "HTTP/1 + single connection"
-    },
-    "多次尝试均失败，请检查网络后重试": {
-      "zh_tw": "多次嘗試均失敗，請檢查網路後重試",
-      "en": "All attempts failed, check your network and retry"
+      "zh_tw": "退出",
+      "ja": "終了"
     },
     "下载重试": {
       "zh_tw": "下載重試",
-      "en": "Download retry"
+      "en": "Download retry",
+      "ja": "ダウンロードを再試行"
     },
     "下载失败": {
       "zh_tw": "下載失敗",
-      "en": "Download failed"
+      "en": "Download failed",
+      "ja": "ダウンロード失敗"
     },
     "下载中": {
       "zh_tw": "下載中",
-      "en": "Downloading"
+      "en": "Downloading",
+      "ja": "ダウンロード中"
     },
     "下载已取消": {
       "zh_tw": "下載已取消",
-      "en": "Download cancelled"
+      "en": "Download cancelled",
+      "ja": "ダウンロードはキャンセルされました"
     },
     "启动新版本失败": {
       "zh_tw": "啟動新版本失敗",
-      "en": "Failed to launch new version"
+      "en": "Failed to launch new version",
+      "ja": "新しいバージョンの起動に失敗"
     },
     "EXE 同步列表 (分号/换行分隔):": {
       "en": "EXE Sync List (semicolon / newline separated):",
-      "zh_tw": "EXE 同步清單 (分號 / 換行分隔):"
+      "zh_tw": "EXE 同步清單 (分號 / 換行分隔):",
+      "ja": "EXE 同期リスト (セミコロン/改行区切り):"
     },
     "多个 exe 绝对路径，可用分号或换行分隔；可附加 ||工作目录": {
       "en": "Multiple exe absolute paths, separated by semicolon or newline; optionally append ||working dir",
-      "zh_tw": "多個 exe 絕對路徑，可用分號或換行分隔；可附加 ||工作目錄"
+      "zh_tw": "多個 exe 絕對路徑，可用分號或換行分隔；可附加 ||工作目錄",
+      "ja": "複数の EXE 絶対パス。セミコロンまたは改行で区切り、||作業ディレクトリを付加できます"
     },
     "多个 exe 的绝对路径，用分号或换行分隔。每条可附加「||工作目录」指定起始位置（等同 .lnk 的起始位置，可省略）。程序启动时检测：未运行则共同启动（以指定工作目录为起始位置），已运行则跳过（不监视、不杀进程）。": {
       "en": "Absolute paths of multiple exes, separated by semicolon or newline. Each entry may append \"||working dir\" to set its start location (same as a .lnk's Start-in; optional). At launch the app checks: those not running are started together (in the given working dir); those already running are skipped (not monitored, not killed).",
-      "zh_tw": "多個 exe 的絕對路徑，用分號或換行分隔。每條可附加「||工作目錄」指定起始位置（等同 .lnk 的起始位置，可省略）。程式啟動時檢測：未執行則共同啟動（以指定工作目錄為起始位置），已執行則跳過（不監視、不殺程序）。"
+      "zh_tw": "多個 exe 的絕對路徑，用分號或換行分隔。每條可附加「||工作目錄」指定起始位置（等同 .lnk 的起始位置，可省略）。程式啟動時檢測：未執行則共同啟動（以指定工作目錄為起始位置），已執行則跳過（不監視、不殺程序）。",
+      "ja": "複数の EXE の絶対パスをセミコロンまたは改行で区切ります。各項目に「||作業ディレクトリ」を付加して開始位置を指定できます"
     },
     "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆之间留出呼吸空间可加大。": {
       "en": "Vertical spacing (px) between the title-bar color row and the ring canvas.\nDefault 0 = the two are touching; raise to leave breathing space between title bar and ring.",
-      "zh_tw": "標題欄底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題欄和圓之間留出呼吸空間可加大。"
+      "zh_tw": "標題欄底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題欄和圓之間留出呼吸空間可加大。",
+      "ja": "タイトルバーの背景行と円環キャンバスの間の垂直間隔（ピクセル）。"
     },
     "启用 EXE 同步列表": {
       "zh_tw": "啟用 EXE 同步清單",
-      "en": "Enable EXE sync list"
+      "en": "Enable EXE sync list",
+      "ja": "EXE 同期リストを有効化"
     },
-    "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。": {
-      "zh": "标题栏底色行与圆环画布之间的垂直间距（像素）。\n默认 0 表示两者直接贴在一起；想让标题栏和圆环之间留出呼吸空间可加大。",
-      "zh_tw": "標題列底色行與圓環畫布之間的垂直間距（像素）。\n預設 0 表示兩者直接貼在一起；想讓標題列和圓環之間留出呼吸空間可加大。",
-      "en": "Vertical gap (px) between the title-bar color row and the circle canvas.\n0 = they sit flush; raise this to add breathing room between title and circle."
+    "全Buff显示模块": {
+      "zh_tw": "全Buff顯示模組",
+      "en": "All-Buff Display Module",
+      "ja": "全バフ表示モジュール"
+    },
+    "添加": {
+      "zh_tw": "新增",
+      "en": "Add",
+      "ja": "追加"
+    },
+    "移除": {
+      "zh_tw": "移除",
+      "en": "Remove",
+      "ja": "削除"
+    },
+    "布局": {
+      "zh_tw": "佈局",
+      "en": "Layout",
+      "ja": "レイアウト"
+    },
+    "画布背景填充": {
+      "zh_tw": "畫布背景填充",
+      "en": "Canvas Background Fill",
+      "ja": "キャンバスの背景塗りつぶし"
+    },
+    "画布背景不透明度": {
+      "zh_tw": "畫布背景不透明度",
+      "en": "Canvas BG Opacity",
+      "ja": "キャンバスの背景の不透明度"
+    },
+    "配色与文字": {
+      "zh_tw": "配色與文字",
+      "en": "Colors & Text",
+      "ja": "配色と文字"
+    },
+    "每行数量": {
+      "zh_tw": "每行數量",
+      "en": "Per Row",
+      "ja": "1行あたりの数"
+    },
+    "显示行数": {
+      "zh_tw": "顯示行數",
+      "en": "Rows",
+      "ja": "表示行数"
+    },
+    "V2062：作为「自适应 floor」——按当前进度条宽度+外框计算的最小可视宽度之上再叠加。比最小值更小会被自动向上取。": {
+      "zh_tw": "V2062：作為「自適應下限」──以目前進度條寬度+外框計算的最小可視寬度之上再疊加。比最小值更小會被自動向上取。",
+      "en": "V2062: Acts as an auto-fit floor — layout adds the bar width + frame as the minimum visible width. Values smaller than the minimum are bumped up automatically.",
+      "ja": "V2062: 「自動調整の下限」として——現在の進捗バー幅+外枠から算出した最小表示幅に上乗せします。最小値より小さくすると見切れます。"
+    },
+    "排序方式": {
+      "zh_tw": "排序方式",
+      "en": "Sort Mode",
+      "ja": "並び替え"
+    },
+    "按ID升序": {
+      "zh_tw": "按ID升序",
+      "en": "By ID (Ascending)",
+      "ja": "ID順（昇順）"
+    },
+    "按出现时间": {
+      "zh_tw": "按出現時間",
+      "en": "By Appearance Time",
+      "ja": "出現順"
+    },
+    "决定 buff 卡片的排列方式。「按ID」按编号数值升序（稳定）；「按出现时间」按首次进入列表的相对顺序，新出现的Buff 排在末尾；V2076 修复：消失-再出现的Buff **重新**分配排序号（先出的在最前，消失后清空它自己的排序号，回归时按当前最大号+1 重新算）。例：ABC 依次出现 → ABC；B 消失 → AC；B 重现 → ACB。": {
+      "zh_tw": "決定 Buff 卡片的排列方式。「按ID」按編號數值升序（穩定）；「按出現時間」按首次進入列表的相對順序，新出現的 Buff 排在末尾；V2076 修復：消失-再出現的 Buff **重新**分配排序號（先出的在最前，消失後清空它自己的排序號，回歸時按當前最大號+1 重新算）。例：ABC 依序出現 → ABC；B 消失 → AC；B 重現 → ACB。",
+      "en": "Decides the order of buff cards. \"By ID\" sorts by ascending ID (stable). \"By Appearance Time\" preserves insertion order — new buffs go to the end; V2076 fix: a buff that left and came back gets a **fresh** sort slot (its old slot is cleared, and a new one is allocated as max+1). Example: ABC appear in order → ABC; B expires → AC; B reappears → ACB.",
+      "ja": "buff カードの並び方を決定します。「ID順」は番号の昇順（安定）、「出現順」はリストに入った相対順序で、新しいものほど後ろになります。"
+    },
+    "V2062：作为「自适应 floor」——按当前字体+元素间距+进度条+外框计算的最小可视高度之上再叠加。比最小值更小会被自动向上取。": {
+      "zh_tw": "V2062：作為「自適應下限」──以目前字型+元素間距+進度條+外框計算的最小可視高度之上再疊加。比最小值更小會被自動向上取。",
+      "en": "V2062: Acts as an auto-fit floor — layout adds fonts + element spacing + bar + frame as the minimum visible height. Values smaller than the minimum are bumped up automatically.",
+      "ja": "V2062: 「自動調整の下限」として——現在のフォント+要素間隔+進捗バー+外枠から算出した最小表示高さに上乗せします。最小値より小さくすると見切れます。"
+    },
+    "行间距": {
+      "zh_tw": "行間距",
+      "en": "Row Spacing",
+      "ja": "行間隔"
+    },
+    "卡片间距": {
+      "zh_tw": "卡片間距",
+      "en": "Card Spacing",
+      "ja": "カード間隔"
+    },
+    "不显示核心区已展示的": {
+      "zh_tw": "不顯示核心區已展示的",
+      "en": "Hide buffs shown in Core",
+      "ja": "コア領域で表示済みのものを非表示"
+    },
+    "不显示永续的": {
+      "zh_tw": "不顯示永續的",
+      "en": "Hide Infinite",
+      "ja": "永続を非表示"
+    },
+    "不显示角色专属的": {
+      "zh_tw": "不顯示角色專屬的",
+      "en": "Hide Character-Exclusive",
+      "ja": "キャラ専用を非表示"
+    },
+    "不显示专精专属": {
+      "zh_tw": "不顯示專精專屬",
+      "en": "Hide Mastery-Exclusive",
+      "ja": "専精専用を非表示"
+    },
+    "不显示单层": {
+      "zh_tw": "不顯示單層",
+      "en": "Hide Single-Layer",
+      "ja": "単層を非表示"
+    },
+    "名称字号": {
+      "zh_tw": "名稱字號",
+      "en": "Name Font Size",
+      "ja": "名前のフォントサイズ"
+    },
+    "名称颜色": {
+      "zh_tw": "名稱顏色",
+      "en": "Name Color",
+      "ja": "名前の色"
+    },
+    "层数字号": {
+      "zh_tw": "層數字號",
+      "en": "Stacks Font Size",
+      "ja": "スタック数のフォントサイズ"
+    },
+    "层数颜色": {
+      "zh_tw": "層數顏色",
+      "en": "Stacks Color",
+      "ja": "スタック数の色"
+    },
+    "时间字号": {
+      "zh_tw": "時間字號",
+      "en": "Time Font Size",
+      "ja": "時間のフォントサイズ"
+    },
+    "时间颜色": {
+      "zh_tw": "時間顏色",
+      "en": "Time Color",
+      "ja": "時間の色"
+    },
+    "进度条宽度": {
+      "zh_tw": "進度條寬度",
+      "en": "Bar Width",
+      "ja": "進捗バーの幅"
+    },
+    "进度条高度": {
+      "zh_tw": "進度條高度",
+      "en": "Bar Height",
+      "ja": "進捗バーの高さ"
+    },
+    "进度条颜色": {
+      "zh_tw": "進度條顏色",
+      "en": "Bar Color",
+      "ja": "進捗バーの色"
+    },
+    "衬底宽度": {
+      "zh_tw": "襯底寬度",
+      "en": "Backing Width",
+      "ja": "下地の幅"
+    },
+    "衬底高度": {
+      "zh_tw": "襯底高度",
+      "en": "Backing Height",
+      "ja": "下地の高さ"
+    },
+    "衬底颜色": {
+      "zh_tw": "襯底顏色",
+      "en": "Backing Color",
+      "ja": "下地の色"
+    },
+    "元素间距": {
+      "zh_tw": "元素間距",
+      "en": "Element Spacing",
+      "ja": "要素間隔"
+    },
+    "行高加成": {
+      "zh_tw": "行高加成",
+      "en": "Row Height Extra",
+      "ja": "行の高さの加算"
+    },
+    "每行文字自己的高度加成。0=自动（按系统字体测量，保证不切字）；调大=每行字与卡片上下边留更多空隙。与「元素间距」不同——元素间距是行与行之间的空隙，行高加成是每行自己的高度。": {
+      "zh_tw": "每行文字自己的高度加成。0=自動（按系統字體測量，保證不切字）；調大=每行字與卡片上下邊留更多空隙。與「元素間距」不同——元素間距是行與行之間的空隙，行高加成是每行自己的高度。",
+      "en": "Extra height added to each text row's measured font height. 0=auto (measured from system font, guarantees no clipping); increase=gives each row more padding above/below the text. Differs from 'Element Spacing' — that controls the gap between rows; this controls each row's own height.",
+      "ja": "各行の文字自体の高さの加算。0=自動（システムフォントで計測し、文字切れを防止）；大きくすると各行の文字とカードの上下に余白が増えます。「要素間隔」とは別に効きます。"
+    },
+    "进度条边框粗细": {
+      "zh_tw": "進度條邊框粗細",
+      "en": "Bar Frame Thickness",
+      "ja": "進捗バーの枠の太さ"
+    },
+    "倒计时尾声警告": {
+      "zh_tw": "倒數計時尾聲警告",
+      "en": "End-of-Timer Warning",
+      "ja": "カウントダウン終了前の警告"
+    },
+    "启用警告色": {
+      "zh_tw": "啟用警告色",
+      "en": "Enable Warning Color",
+      "ja": "警告色を有効化"
+    },
+    "剩余百分比阈值": {
+      "zh_tw": "剩餘百分比閾值",
+      "en": "Remaining % Threshold",
+      "ja": "残り割合のしきい値"
+    },
+    "警告颜色": {
+      "zh_tw": "警告顏色",
+      "en": "Warning Color",
+      "ja": "警告色"
+    },
+    "Debuff 配色（编号 ≥ 1000）": {
+      "zh_tw": "Debuff 配色（編號 ≥ 1000）",
+      "en": "Debuff Colors (ID >= 1000)",
+      "ja": "デバフの配色（番号 ≥ 1000）"
+    },
+    "Debuff 名称颜色": {
+      "zh_tw": "Debuff 名稱顏色",
+      "en": "Debuff Name Color",
+      "ja": "デバフの名前の色"
+    },
+    "Debuff 层数颜色": {
+      "zh_tw": "Debuff 層數顏色",
+      "en": "Debuff Stacks Color",
+      "ja": "デバフのスタック数の色"
+    },
+    "Debuff 时间颜色": {
+      "zh_tw": "Debuff 時間顏色",
+      "en": "Debuff Time Color",
+      "ja": "デバフの時間の色"
+    },
+    "Debuff 进度条颜色": {
+      "zh_tw": "Debuff 進度條顏色",
+      "en": "Debuff Bar Color",
+      "ja": "デバフの進捗バーの色"
+    },
+    "Debuff 警告色": {
+      "zh_tw": "Debuff 警告色",
+      "en": "Debuff Warning Color",
+      "ja": "デバフの警告色"
+    },
+    "Debuff 启用警告色": {
+      "zh_tw": "Debuff 啟用警告色",
+      "en": "Debuff Enable Warning Color",
+      "ja": "デバフの警告色を有効化"
+    },
+    "最小出现持续时间 (秒, 首次观测后不足则丢)": {
+      "zh_tw": "最小出現持續時間 (秒, 首次觀測後不足則丟)",
+      "en": "Min Appearance Duration (s, dropped if below after first seen)",
+      "ja": "最小出現持続時間 (秒, 初回観測後に不足なら破棄)"
+    },
+    "门限": {
+      "zh_tw": "門限",
+      "en": "Gate",
+      "ja": "しきい値"
+    },
+    "门限 (实时生效)": {
+      "zh_tw": "門限 (即時生效)",
+      "en": "Gate (Live)",
+      "ja": "しきい値 (リアルタイム反映)"
+    },
+    "当前层数上限 (超范围丢弃)": {
+      "zh_tw": "當前層數上限 (超範圍丟棄)",
+      "en": "Current stacks max (out of range = drop)",
+      "ja": "現在スタック数の上限 (範囲外は破棄)"
+    },
+    "上限层数上限 (超范围丢弃)": {
+      "zh_tw": "上限層數上限 (超範圍丟棄)",
+      "en": "Max stacks max (out of range = drop)",
+      "ja": "上限スタック数の上限 (範囲外は破棄)"
+    },
+    "status_id 上限 (超范围丢弃)": {
+      "zh_tw": "status_id 上限 (超範圍丟棄)",
+      "en": "status_id max (out of range = drop)",
+      "ja": "status_id 上限 (範囲外は破棄)"
+    },
+    "sub_id 上限 (超范围丢弃)": {
+      "zh_tw": "sub_id 上限 (超範圍丟棄)",
+      "en": "sub_id max (out of range = drop)",
+      "ja": "sub_id 上限 (範囲外は破棄)"
+    },
+    "最小剩余时间 (秒, remaining 少于则丢)": {
+      "zh_tw": "最小剩餘時間 (秒, remaining 少於則丟)",
+      "en": "Min remaining (s; below = drop)",
+      "ja": "最小残り時間 (秒, remaining が未満なら破棄)"
+    },
+    "最小持续时间 (秒, initial 少于则丢)": {
+      "zh_tw": "最小持續時間 (秒, initial 少於則丟)",
+      "en": "Min initial (s; below = drop)",
+      "ja": "最小持続時間 (秒, initial が未満なら破棄)"
+    },
+    "① NaN/Inf 检查": {
+      "zh_tw": "① NaN/Inf 檢查",
+      "en": "① NaN/Inf check",
+      "ja": "① NaN/Inf チェック"
+    },
+    "② ID=0/ID=1 不可能是永续": {
+      "zh_tw": "② ID=0/ID=1 不可能是永續",
+      "en": "② ID=0/ID=1 cannot be infinite",
+      "ja": "② ID=0/ID=1 は永続にならない"
+    },
+    "③ 剩余/初始时间 ≤ X(秒)丢弃": {
+      "zh_tw": "③ 剩餘/初始時間 ≤ X(秒)丟棄",
+      "en": "③ Drop if remaining/initial ≤ X(sec)",
+      "ja": "③ 残り/初期時間 ≤ X(秒)で破棄"
+    },
+    "④ 时长上限（含 9999 永续豁免）": {
+      "zh_tw": "④ 時長上限（含 9999 永續豁免）",
+      "en": "④ Duration cap (with 9999 infinite exemption)",
+      "ja": "④ 時間上限（9999 永続免除含む）"
+    },
+    "── 已固化的门限（永远开启，不可关闭）──": {
+      "zh_tw": "── 已固化的門限（永遠開啟，不可關閉）──",
+      "en": "── Hardened gates (always on, cannot be disabled) ──",
+      "ja": "── 固定されたゲート（常時オン、無効化不可）──"
+    },
+    "以下 4 条门限默认全部开启，玩家可单独关闭任意一项以诊断行为或适应特殊场景。勾选=启用，取消勾选=跳过（③/④ 数值仍可调）。": {
+      "zh_tw": "以下 4 條門限預設全部開啟，玩家可單獨關閉任意一項以診斷行為或適應特殊場景。勾選=啟用，取消勾選=跳過（③/④ 數值仍可調）。",
+      "en": "All 4 gates are ON by default; you can turn off any single one to diagnose behavior or fit special cases. Checked = enabled, unchecked = skipped (③/④ values still adjustable).",
+      "ja": "4つのゲートは既定ですべてオンです。任意の1つを個別にオフにして挙動の診断や特殊な状況へ対応できます。チェック=有効、未チェック=スキップ（③/④の数値は調整可）。"
+    },
+    "任何 remaining / initial 为 NaN 或 ±Infinity 时丢弃。对运行时瞬态类型异常（极罕见）也有兜底——纯 Python != / == 比较不抛异常。": {
+      "zh_tw": "任何 remaining / initial 為 NaN 或 ±Infinity 時丟棄。對執行期瞬態型別異常（極罕見）也有兜底——純 Python != / == 比較不拋異常。",
+      "en": "Discard any buff whose remaining/initial is NaN or ±Infinity. Also guards against rare runtime transient type errors — pure Python != / == comparisons never raise.",
+      "ja": "remaining/initial が NaN または ±Infinity のバフは破棄します。実行時の瞬間的な型異常（極めて稀）にも備え——純粋な Python の != / == 比較は例外を投げません。"
+    },
+    "status_id == 0（攻击UP）或 status_id == 1（防御UP）在游戏里不可能是永续 buff。sid=0/1 槽位残留的垃圾条目有时会把 infinite 标志位置 1，被此条过滤丢弃（默认开启）。玩家关闭后可能显示 0/1 槽位的伪永续条目，请谨慎。": {
+      "zh_tw": "status_id == 0（攻擊UP）或 status_id == 1（防禦UP）在遊戲裡不可能是永續 buff。sid=0/1 槽位殘留的垃圾條目有時會把 infinite 標誌位置 1，被此條過濾丟棄（預設開啟）。玩家關閉後可能顯示 0/1 槽位的偽永續條目，請謹慎。",
+      "en": "status_id == 0 (ATK↑) or == 1 (DEF↑) can never be an infinite buff in-game. Stale junk entries in sid=0/1 slots sometimes set the infinite flag, and this gate filters them out (ON by default). Turning it off may show fake infinite entries in slots 0/1 — use with care.",
+      "ja": "status_id == 0（攻撃UP）または == 1（防御UP）がゲーム内で永続バフになることはありません。sid=0/1 スロットに残るゴミ項目が infinite フラグを立てることがあり、このゲートが除外します（既定オン）。オフにすると 0/1 スロットの偽の永続項目が表示される可能性があります。ご注意ください。"
+    },
+    "剩余（remaining）或初始（initial）时间 ≤ 此阈值（默认 0.0 秒，范围 0.0–999.0 秒）一律丢弃。阈值=0 等价于原 V2239 规则「≤ 0 丢弃」；调到 0.5 等价于把 < 0.5 秒的瞬时 buff 全部隐藏（与下方「最小剩余/初始时间」门限功能类似，但本项走 V2243 主路径）。例外：剩余 ≥9999 由 V2216「FLT_MAX 自动永续」豁免，视为永续 buff（显示 *∞）。": {
+      "zh_tw": "剩餘（remaining）或初始（initial）時間 ≤ 此閾值（預設 0.0 秒，範圍 0.0–999.0 秒）一律丟棄。閾值=0 等價於原 V2239 規則「≤ 0 丟棄」；調到 0.5 等價於把 < 0.5 秒的瞬時 buff 全部隱藏（與下方「最小剩餘/初始時間」門限功能類似，但本項走 V2243 主路徑）。例外：剩餘 ≥9999 由 V2216「FLT_MAX 自動永續」豁免，視為永續 buff（顯示 *∞）。",
+      "en": "Any buff whose remaining or initial time ≤ this threshold (default 0.0s, range 0.0–999.0s) is dropped. Threshold 0 equals the old V2239 rule '≤0 drop'; raising it to 0.5 hides all transient buffs under 0.5s (similar to the 'min remaining/initial time' gate below, but this one goes through the V2243 main path). Exception: remaining ≥9999 is exempted by V2216 'FLT_MAX auto-infinite' and treated as infinite (shown as *∞).",
+      "ja": "残り（remaining）または初期（initial）時間がこの閾値以下（既定0.0秒、範囲0.0–999.0秒）のバフはすべて破棄します。閾値0は旧V2239ルール「≤0破棄」と等価です。0.5にすると0.5秒未満の瞬間バフをすべて非表示にします（下の「最小残り/初期時間」ゲートと似ていますが、こちらはV2243のメインパスを通ります）。例外：残り≥9999はV2216「FLT_MAX自動永続」で免除され、永続バフとして扱われます（*∞ と表示）。"
+    },
+    "initial 或 remaining 大于此上限（默认 10000.0 秒）一律视为非游戏数据（脏值）丢弃。剩余 ≥9999 由 V2216「FLT_MAX 自动判定永续」豁免，视为永续 buff（显示 *∞）。玩家可在右侧调整上限数值，范围 10.0–600000.0 秒。取消勾选=不剔除任何时长上限异常值（可能显示非常离谱的长 buff 倒计时）。": {
+      "zh_tw": "initial 或 remaining 大於此上限（預設 10000.0 秒）一律視為非遊戲資料（髒值）丟棄。剩餘 ≥9999 由 V2216「FLT_MAX 自動判定永續」豁免，視為永續 buff（顯示 *∞）。玩家可在右側調整上限數值，範圍 10.0–600000.0 秒。取消勾選=不剔除任何時長上限異常值（可能顯示非常離譜的長 buff 倒數）。",
+      "en": "Any buff whose initial or remaining exceeds this cap (default 10000.0s) is treated as non-game data (dirty value) and dropped. Remaining ≥9999 is exempted by V2216 'FLT_MAX auto-infinite' and treated as infinite (shown as *∞). You can adjust the cap on the right, range 10.0–600000.0s. Unchecking = never drop duration-cap anomalies (may show absurdly long countdowns).",
+      "ja": "initial または remaining がこの上限を超える（既定10000.0秒）バフは非ゲームデータ（不正値）として破棄します。残り≥9999はV2216「FLT_MAX自動永続」で免除され、永続バフとして扱われます（*∞ と表示）。右側で上限値を10.0–600000.0秒の範囲で調整可。チェックを外す=時間上限異常を除外しない（非常に長いカウントダウンが表示される可能性があります）。"
+    },
+    "以下 4 条门限默认全部开启，玩家可单独关闭任意一项。与主控全 buff 模块规则完全一致——但 key 用 boss_gate_ 前缀独立。": {
+      "zh_tw": "以下 4 條門限預設全部開啟，玩家可單獨關閉任意一項。與主控全 buff 模組規則完全一致——但 key 用 boss_gate_ 前綴獨立。",
+      "en": "All 4 gates are ON by default; you can turn off any single one. Identical to the main All-Buff module rules — but keys use the independent boss_gate_ prefix.",
+      "ja": "4つのゲートは既定ですべてオンです。任意の1つを個別にオフにできます。メインの全Buffモジュールと完全に同じルールですが、キーは独立した boss_gate_ プレフィックスを使用します。"
+    },
+    "任何 remaining / initial 为 NaN 或 ±Infinity 时丢弃。与主控一致。": {
+      "zh_tw": "任何 remaining / initial 為 NaN 或 ±Infinity 時丟棄。與主控一致。",
+      "en": "Discard any remaining/initial that is NaN or ±Infinity. Same as the main module.",
+      "ja": "remaining/initial が NaN または ±Infinity の場合は破棄します。メインと同じです。"
+    },
+    "status_id == 0（攻击UP）或 == 1（防御UP）在游戏里不可能是永续 buff（与主控一致）。": {
+      "zh_tw": "status_id == 0（攻擊UP）或 == 1（防禦UP）在遊戲裡不可能是永續 buff（與主控一致）。",
+      "en": "status_id == 0 (ATK↑) or == 1 (DEF↑) can never be an infinite buff in-game (same as main module).",
+      "ja": "status_id == 0（攻撃UP）または == 1（防御UP）がゲーム内で永続バフになることはありません（メインと同じ）。"
+    },
+    "剩余（remaining）或初始（initial）≤ 此阈值（默认 0.0 秒，范围 0.0–999.0 秒）一律丢弃。剩余 ≥9999 由 V2216 豁免为永续。": {
+      "zh_tw": "剩餘（remaining）或初始（initial）≤ 此閾值（預設 0.0 秒，範圍 0.0–999.0 秒）一律丟棄。剩餘 ≥9999 由 V2216 豁免為永續。",
+      "en": "Any remaining/initial ≤ this threshold (default 0.0s, range 0.0–999.0s) is dropped. Remaining ≥9999 is exempted by V2216 as infinite.",
+      "ja": "残り/初期がこの閾値以下（既定0.0秒、範囲0.0–999.0秒）の場合は破棄します。残り≥9999はV2216で永続として免除されます。"
+    },
+    "initial / remaining > 此上限（默认 10000.0 秒）一律丢弃。剩余 ≥9999 由 V2216 豁免为永续。": {
+      "zh_tw": "initial / remaining > 此上限（預設 10000.0 秒）一律丟棄。剩餘 ≥9999 由 V2216 豁免為永續。",
+      "en": "Any initial/remaining > this cap (default 10000.0s) is dropped. Remaining ≥9999 is exempted by V2216 as infinite.",
+      "ja": "initial/remaining がこの上限を超える（既定10000.0秒）場合は破棄します。残り≥9999はV2216で永続として免除されます。"
+    },
+    "V2065：在 buff 卡片下面整张画布填充一层半透明黑色，防止背景窗口（如设置对话框的文件路径标签）的内容透到 overlay 上来。0 = 纯透明（默认，沿用旧观感）；30~70 = 显著遮罩；100 = 全不透明黑底。": {
+      "zh_tw": "V2065：在 buff 卡片下面整張畫布填充一層半透明黑色，防止背景視窗（如設定對話框的檔案路徑標籤）的內容透到 overlay 上來。0 = 純透明（預設，沿用舊觀感）；30~70 = 顯著遮罩；100 = 全不透明黑底。",
+      "en": "V2065: fill a translucent black layer under the buff canvas to block background windows (e.g. a settings dialog's file-path label) from showing through. 0 = fully transparent (default, old look); 30~70 = visible mask; 100 = solid black.",
+      "ja": "V2065: buff カードの下のキャンバス全体に半透明の黒を塗り、背景ウィンドウ（設定ダイアログのファイルパスラベルなど）の内容が透けるのを防ぎます。"
+    },
+    "排序号消失宽限": {
+      "zh_tw": "排序號消失寬限",
+      "en": "Sort Slot Grace",
+      "ja": "並び順番号の消失猶予"
+    },
+    "仅对「按出现时间」排序生效。Buff 从游戏数据里读不到后，等待这么多秒才真正清除它的排序号。0 = 立即清除；调大可防止读取抖动导致卡片位置跳变，但真消失的 Buff 要等更久才会重新排到队尾。": {
+      "zh_tw": "僅對「按出現時間」排序生效。Buff 從遊戲資料裡讀不到後，等待這麼多秒才真正清除它的排序號。0 = 立即清除；調大可防止讀取抖動導致卡片位置跳變，但真消失的 Buff 要等更久才會重新排到隊尾。",
+      "en": "Only applies to \"By Appearance Time\" sorting. How many seconds to wait after a buff stops being readable from the game data before its sort slot is truly cleared. 0 = clear immediately; larger values prevent read glitches from making cards jump, but a genuinely expired buff takes longer to be re-queued at the end.",
+      "ja": "「出現順」の並び替えでのみ有効。Buff がゲームデータから読めなくなった後、この秒数だけ待ってから並び順番号を実際に削除します。0 = 即座に削除"
+    },
+    "（空）从上方下拉菜单选择 Buff 以放行多次出现。": {
+      "zh_tw": "（空）從上方下拉選單選擇 Buff 以放行多次出現。",
+      "en": "(empty) Select a Buff from the dropdown above to allow multiple appearances.",
+      "ja": "（空）上部のドロップダウンから Buff を選ぶと複数出現を許可します。"
+    },
+    "选择一个 Buff…": {
+      "zh_tw": "選擇一個 Buff…",
+      "en": "Select a Buff…",
+      "ja": "Buff を選択…"
+    },
+    "主控的全Buff模块": {
+      "zh_tw": "主控的全Buff模組",
+      "en": "Master All-Buff",
+      "ja": "プレイヤー全バフモジュール"
+    },
+    "名单": {
+      "zh_tw": "名單",
+      "en": "Lists",
+      "ja": "リスト"
+    },
+    "黑名单": {
+      "zh_tw": "黑名單",
+      "en": "Blacklist",
+      "ja": "ブラックリスト"
+    },
+    "多次出现名单": {
+      "zh_tw": "多次出現名單",
+      "en": "Multi-Appearance List",
+      "ja": "複数出現リスト"
+    },
+    "分类显示": {
+      "zh_tw": "分類顯示",
+      "en": "Categorization",
+      "ja": "分類表示"
+    },
+    "黑名单中的 buff 在全 Buff 模块中永不显示（用于屏蔽干扰视觉或毫无意义的 buff 残余，例如某些沉默帧残留的瞬时护盾）。从下方下拉菜单选择要屏蔽的 Buff（仅限全角色通用 buff；角色专属 buff 已自动排除，不必再加入黑名单）。": {
+      "zh_tw": "黑名單中的 buff 在全 Buff 模組中永不顯示（用於遮罩干擾視覺或毫無意義的 buff 殘餘，例如某些沉默幀殘留的瞬時護盾）。從下方下拉選單選擇要遮罩的 Buff（僅限全角色通用 buff；角色專屬 buff 已自動排除，不必再加入黑名單）。",
+      "en": "Buffs on the blacklist never show in the All-Buff module (use to suppress visually-jarring or meaningless buff residue, e.g. transient shields that linger for a single silent frame). Pick a buff from the dropdown below to block (only character-agnostic buffs; character-exclusive buffs are auto-excluded and need not be added).",
+      "ja": "ブラックリストの buff は全バフモジュールに一切表示されません（視覚を妨げる、または意味のない buff の残滓を隠す用途。例: 一部の一時シールド）。"
+    },
+    "多次出现名单中的 buff 在全 Buff 模块中可显示多个实例（如帕西瓦尔双重追击）；其它 buff 默认只显示 1 个。从下方下拉菜单选择要放行的 Buff（仅限全角色通用 buff；角色专属 buff 已自动排除，无法多次出现）。注：黑名单中的 buff 不会出现在此处。": {
+      "zh_tw": "多次出現名單中的 buff 在全 Buff 模組中可顯示多個實例（如帕西瓦爾雙重追擊）；其它 buff 預設只顯示 1 個。從下方下拉選單選擇要放行的 Buff（僅限全角色通用 buff；角色專屬 buff 已自動排除，無法多次出現）。注：黑名單中的 buff 不會出現在此處。",
+      "en": "Buffs on the multi-appearance list can show multiple instances in the All-Buff module (e.g. Percival's double Pursuit); all others show only 1 by default. Pick a buff from the dropdown below to allow multiple appearances (only character-agnostic buffs; character-exclusive buffs are auto-excluded and can never appear multiple times). Note: buffs already on the blacklist will not appear here.",
+      "ja": "複数出現リストの buff は全バフモジュールで複数インスタンスを表示できます（例: パーシヴァルの二重追撃）；他の buff は既定で 1 インスタンスのみです。"
+    },
+    "（空）从上方下拉菜单选择 Buff 以永久屏蔽。": {
+      "zh_tw": "（空）從上方下拉選單選擇 Buff 以永久遮罩。",
+      "en": "(empty) Select a Buff from the dropdown above to permanently block.",
+      "ja": "（空）上部のドロップダウンから Buff を選ぶと永久に除外します。"
+    },
+    "Boss Buff模块": {
+      "zh_tw": "Boss Buff模組",
+      "en": "Boss Buff",
+      "ja": "Boss バフモジュール"
+    },
+    "── 重要内存地址与数据 ──": {
+      "zh_tw": "── 重要記憶體位址與資料 ──",
+      "en": "── Key memory addresses & data ──",
+      "ja": "── 重要メモリアドレスとデータ ──"
+    },
+    "专精 mastery     = ": {
+      "zh_tw": "專精 mastery     = ",
+      "en": "Mastery mastery     = ",
+      "ja": "専門 mastery     = "
+    },
+    "启动锁定:": {
+      "zh_tw": "啟動鎖定:",
+      "en": "Startup lock:",
+      "ja": "起動時ロック:"
+    },
+    "多次出现名单中的 buff 在 Boss Buff 模块中可显示多个实例（boss 身上同 buff 多个源时各显示一次）。从下方下拉菜单选择要放行的 Buff（仅限通用 buff）。注：黑名单中的 buff 不会出现在此处。": {
+      "zh_tw": "多次出現名單中的 buff 在 Boss Buff 模組中可顯示多個實例（boss 身上同 buff 多個來源時各顯示一次）。從下方下拉選單選擇要放行的 Buff（僅限通用 buff）。註：黑名單中的 buff 不會出現在此處。",
+      "en": "Buffs in the multi-instance list may show several instances in the Boss Buff module (each source of the same buff on the boss is shown separately). Pick the Buffs to allow from the dropdown below (generic buffs only). Note: blacklisted buffs never appear here.",
+      "ja": "複数出現リストの buff は Boss Buff モジュールで複数インスタンス表示できます（boss が同じ buff を複数ソースから受けている場合、それぞれ表示）。下のドロップダウンから表示を許可する Buff を選択してください（汎用 buff のみ）。注：ブラックリストの buff はここに表示されません。"
+    },
+    "翻滚次数 dodge    = ": {
+      "zh_tw": "翻滾次數 dodge    = ",
+      "en": "Dodges dodge    = ",
+      "ja": "回避回数 dodge    = "
+    },
+    "角色 ID  pl_id    = ": {
+      "zh_tw": "角色 ID  pl_id    = ",
+      "en": "Char ID pl_id    = ",
+      "ja": "キャラID pl_id    = "
+    },
+    "角色名 char_name = ": {
+      "zh_tw": "角色名 char_name = ",
+      "en": "Name char_name = ",
+      "ja": "キャラ名 char_name = "
+    },
+    "运行状态 status  = ": {
+      "zh_tw": "運行狀態 status  = ",
+      "en": "Status status  = ",
+      "ja": "動作状態 status  = "
+    },
+    "黑名单中的 buff 在 Boss Buff 模块中永不显示（避免在 boss 监控里出现没意义的 buff 残余）。从下方下拉菜单选择要屏蔽的 Buff（仅限通用 buff；boss 专属由模块自带过滤）。": {
+      "zh_tw": "黑名單中的 buff 在 Boss Buff 模組中永不顯示（避免在 boss 監控裡出現沒意義的 buff 殘餘）。從下方下拉選單選擇要屏蔽的 Buff（僅限通用 buff；boss 專屬由模組自帶過濾）。",
+      "en": "Blacklisted buffs are never shown in the Boss Buff module (avoids meaningless buff residue in boss monitoring). Pick the Buffs to hide from the dropdown below (generic buffs only; boss-exclusive ones are filtered by the module itself).",
+      "ja": "ブラックリストの buff は Boss Buff モジュールに一切表示されません（boss 監視に意味のない buff 残滓が出るのを防ぐため）。下のドロップダウンから非表示にする Buff を選択してください（汎用 buff のみ。boss 専用はモジュール側で自動フィルタ）。"
+    },
+    "（ctrl 尚未绑定——设置窗口打开时主程序未运行）": {
+      "zh_tw": "（ctrl 尚未綁定——設定視窗開啟時主程式未執行）",
+      "en": "(ctrl not bound yet — the main program was not running when the settings window opened)",
+      "ja": "（ctrl が未バインド——設定ウィンドウを開いた時点でメインプログラムが未起動）"
+    },
+    "模块基址 base    = ": {
+      "zh_tw": "模組基底 base    = ",
+      "en": "Module base    = ",
+      "ja": "モジュール base    = "
+    },
+    "模块大小 size    = ": {
+      "zh_tw": "模組大小 size    = ",
+      "en": "Module size    = ",
+      "ja": "モジュール size    = "
+    },
+    "玩家 pptr        = ": {
+      "zh_tw": "玩家 pptr        = ",
+      "en": "Player pptr        = ",
+      "ja": "プレイヤー pptr        = "
+    },
+    "（未读到）": {
+      "zh_tw": "（未讀到）",
+      "en": "(not read)",
+      "ja": "（未読取）"
+    },
+    "（未识别）": {
+      "zh_tw": "（未識別）",
+      "en": "(unknown)",
+      "ja": "（未識別）"
+    },
+    "char_type 字节   = ": {
+      "zh_tw": "char_type 位元組 = ",
+      "en": "char_type bytes  = ",
+      "ja": "char_type バイト = "
+    },
+    "战斗中 in_combat  = ": {
+      "zh_tw": "戰鬥中 in_combat  = ",
+      "en": "In combat in_combat  = ",
+      "ja": "戦闘中 in_combat  = "
+    },
+    "训练场 in_training = ": {
+      "zh_tw": "訓練場 in_training = ",
+      "en": "In training in_training = ",
+      "ja": "訓練場 in_training = "
+    },
+    "技能数 skills    = ": {
+      "zh_tw": "技能數 skills    = ",
+      "en": "Skills skills    = ",
+      "ja": "アビ数 skills    = "
+    },
+    "全 Buff 候选 = ": {
+      "zh_tw": "全 Buff 候選 = ",
+      "en": "All Buff candidates = ",
+      "ja": "全バフ候補 = "
+    },
+    "（读取运行期数据失败：": {
+      "zh_tw": "（讀取執行期資料失敗：",
+      "en": "(failed to read runtime data: ",
+      "ja": "（実行時データの読み取り失敗："
+    },
+    "）": {
+      "zh_tw": "）",
+      "en": ")",
+      "ja": "）"
+    },
+    "行内对齐": {
+      "zh_tw": "行內對齊",
+      "en": "Row Alignment",
+      "ja": "行内揃え"
+    },
+    "自定义": {
+      "zh_tw": "自定義",
+      "en": "Custom",
+      "ja": "カスタム"
+    },
+    "顶部对齐": {
+      "zh_tw": "頂部對齊",
+      "en": "Top",
+      "ja": "上端"
+    },
+    "底部对齐": {
+      "zh_tw": "底部對齊",
+      "en": "Bottom",
+      "ja": "下端"
+    },
+    "屏幕水平对齐": {
+      "zh_tw": "螢幕水平對齊",
+      "en": "Screen Horizontal Align",
+      "ja": "画面水平揃え"
+    },
+    "屏幕垂直对齐": {
+      "zh_tw": "螢幕垂直對齊",
+      "en": "Screen Vertical Align",
+      "ja": "画面垂直揃え"
+    },
+    "整屏水平对齐方式。「自定义」= 沿用上方 X/Y 坐标自由定位（默认）；「靠左」贴屏幕左缘；「居中」水平居中；「靠右」贴屏幕右缘。每次刷新窗口（缩放/分辨率变化/行数变化）都会重算，始终贴边或居中。": {
+      "zh_tw": "整屏水平對齊方式。「自定義」= 沿用上方 X/Y 座標自由定位（預設）；「靠左」貼螢幕左緣；「居中」水平居中；「靠右」貼螢幕右緣。每次重新整理視窗（縮放/解析度變化/行數變化）都會重算，始終貼邊或居中。",
+      "en": "Screen horizontal alignment. 'Custom' = use the X/Y coordinates above (default); 'Left' snaps to the screen's left edge; 'Center' centers horizontally; 'Right' snaps to the right edge. Recalculated on every window refresh (scaling/resolution/row-count changes), always kept aligned.",
+      "ja": "画面の水平揃え。「カスタム」= 上のX/Y座標を使用（既定）；「左寄せ」は画面左端へ；「中央」は水平中央；「右寄せ」は右端へ。ウィンドウ更新（拡縮／解像度／行数変化）のたび再計算され、常に端または中央に配置。"
+    },
+    "整屏垂直对齐方式。「自定义」= 沿用上方 X/Y 坐标自由定位（默认）；「顶部对齐」贴屏幕上缘；「居中」垂直居中；「底部对齐」贴屏幕下缘（已排除任务栏）。每次刷新窗口都会重算。": {
+      "zh_tw": "整屏垂直對齊方式。「自定義」= 沿用上方 X/Y 座標自由定位（預設）；「頂部對齊」貼螢幕上緣；「居中」垂直居中；「底部對齊」貼螢幕下緣（已排除工作列）。每次重新整理視窗都會重算。",
+      "en": "Screen vertical alignment. 'Custom' = use the X/Y coordinates above (default); 'Top' snaps to the screen's top edge; 'Center' centers vertically; 'Bottom' snaps to the bottom edge (taskbar excluded). Recalculated on every window refresh.",
+      "ja": "画面の垂直揃え。「カスタム」= 上のX/Y座標を使用（既定）；「上端」は画面上端へ；「中央」は垂直中央；「下端」は下端へ（タスクバー除く）。ウィンドウ更新のたび再計算されます。"
+    },
+    "决定每行 buff 卡片在该行内的水平对齐方式。「靠左」从行首开始排（默认，与旧版行为一致）；「居中」不足一行的卡片整体居中；「靠右」贴行尾排。满行时三者完全等价，只有最后一行（不足「每行数量」）才看得出差别。": {
+      "zh_tw": "決定每行 buff 卡片在該行內的水平對齊方式。「靠左」從行首開始排（預設，與舊版行為一致）；「居中」不足一行的卡片整體置中；「靠右」貼行尾排。滿行時三者完全等價，只有最後一行（不足「每行數量」）才看得出差別。",
+      "en": "Controls the horizontal alignment of buff cards within each row. \"Left\" starts from the row start (default, same as older versions); \"Center\" centers the cards when a row is not full; \"Right\" pushes them to the row end. All three are identical for full rows — the difference only shows on the last row when it has fewer cards than \"Cards per row\".",
+      "ja": "各行内の buff カードの水平方向の配置を指定します。「左寄せ」は行頭から配置（デフォルト、旧バージョンと同じ動作）；「中央」は行が埋まらない場合にカードを中央寄せ；「右寄せ」は行末に寄せて配置。行が満杯の場合は3つとも完全に同じで、最後の行（「1行あたりの数」に満たない行）でのみ違いが現れます。"
+    },
+    "水平边距(可负)": {
+      "zh_tw": "水平邊距(可負)",
+      "en": "Horizontal Margin (can be negative)",
+      "ja": "水平マージン(負数可)"
+    },
+    "垂直边距(可负)": {
+      "zh_tw": "垂直邊距(可負)",
+      "en": "Vertical Margin (can be negative)",
+      "ja": "垂直マージン(負数可)"
+    },
+    "水平对齐时的左右边距。仅在「靠左 / 靠右」时生效。正数把窗口往外推；负数让窗口往里推（可溢出屏幕外）。「自定义/居中」不使用。": {
+      "zh_tw": "水平對齊時的左右邊距。僅在「靠左 / 靠右」時生效。正數把視窗往外推；負數讓視窗往裡推（可溢出螢幕外）。「自定義/居中」不使用。",
+      "en": "Left/right margin for horizontal alignment. Only applies to 'Left' / 'Right'. Positive pushes the window outward (away from edge); negative pulls it inward (may overflow off-screen). 'Custom' / 'Center' ignores this.",
+      "ja": "水平揃え時の左右マージン。「左寄せ／右寄せ」でのみ有効。正数はウィンドウを外側に押し出し、負数は内側に引き寄せ（画面からはみ出す可能性あり）。「カスタム／中央」では無視されます。"
+    },
+    "垂直对齐时的上下边距。仅在「顶部对齐 / 底部对齐」时生效。正数把窗口往外推；负数让窗口往里推（可盖到任务栏上、贴齐物理屏幕底）。「自定义/居中」不使用。": {
+      "zh_tw": "垂直對齊時的上下邊距。僅在「頂部對齊 / 底部對齊」時生效。正數把視窗往外推；負數讓視窗往裡推（可蓋到工作列上、貼齊實體螢幕底）。「自定義/居中」不使用。",
+      "en": "Top/bottom margin for vertical alignment. Only applies to 'Top' / 'Bottom'. Positive pushes the window outward; negative pulls it inward (may overlap the taskbar and align flush with the physical screen bottom). 'Custom' / 'Center' ignores this.",
+      "ja": "垂直揃え時の上下マージン。「上端／下端」でのみ有効。正数はウィンドウを外側に押し出し、負数は内側に引き寄せ（タスクバー上に重なって画面物理下端に貼り付け可能）。「カスタム／中央」では無視されます。"
+    },
+    "核心模块画布宽度（像素）。0 = 自动（按尖刺/圆环/标题自动计算）。\n设大窗口会更宽，内容（圆/标题/buff 名）自动水平居中；设太小会被强制拉回防裁切下限。": {
+      "zh_tw": "核心模組畫布寬度（像素）。0 = 自動（按尖刺/圓環/標題自動計算）。\n設大視窗會更寬，內容（圓/標題/buff 名）自動水平置中；設太小會被強制拉回防裁切下限。",
+      "en": "Core module canvas width (px). 0 = auto (computed from spike-circle / ring / title). A larger value makes the window wider; content (circle / title / buff names) auto-centers horizontally; too-small values are forced back up to the clipping-protection floor.",
+      "ja": "コアモジュールのキャンバス幅（px）。0 = 自動（尖り円／リング／タイトルから自動計算）。値を大きくするとウィンドウが横に広がり、内容（円／タイトル／buff 名）は自動で水平中央寄せされる。小さすぎる値はクリップ防止下限まで強制的に引き戻される。"
+    },
+    "核心模块画布高度（像素）。0 = 自动（按尖刺/圆环/标题自动计算）。\n设大窗口会更高，内容（圆/标题/buff 名）自动垂直居中；设太小会被强制拉回防裁切下限。": {
+      "zh_tw": "核心模組畫布高度（像素）。0 = 自動（按尖刺/圓環/標題自動計算）。\n設大視窗會更高，內容（圓/標題/buff 名）自動垂直置中；設太小會被強制拉回防裁切下限。",
+      "en": "Core module canvas height (px). 0 = auto (computed from spike-circle / ring / title). A larger value makes the window taller; content (circle / title / buff names) auto-centers vertically; too-small values are forced back up to the clipping-protection floor.",
+      "ja": "コアモジュールのキャンバス高さ（px）。0 = 自動（尖り円／リング／タイトルから自動計算）。値を大きくするとウィンドウが縦に高くなり、内容（円／タイトル／buff 名）は自動で垂直中央寄せされる。小さすぎる値はクリップ防止下限まで強制的に引き戻される。"
+    },
+    "自动": {
+      "zh_tw": "自動",
+      "en": "Auto",
+      "ja": "自動"
+    },
+    "【静态 · 偏移速查（2.0.4 实测 / 模块内相对，与 ASLR 无关）】": {
+      "zh_tw": "【靜態 · 偏移速查（2.0.4 實測 / 模組內相對，與 ASLR 無關）】",
+      "en": "[Static · Offset Reference (2.0.4 measured / module-relative, ASLR-independent)]",
+      "ja": "【静的 · オフセット早見表（2.0.4 実測 / モジュール内相対、ASLR 非依存）】"
+    },
+    "玩家全局指针变量地址 pptr   = (actor+0x5788 ptr)        模块内: 动态 AOB 定位": {
+      "zh_tw": "玩家全域指標變數位址 pptr   = (actor+0x5788 ptr)        模組內: 動態 AOB 定位",
+      "en": "Player global pointer address pptr  = (actor+0x5788 ptr)        in-module: dynamic AOB scan",
+      "ja": "プレイヤーグローバルポインタアドレス pptr = (actor+0x5788 ptr) モジュール内: 動的 AOB 走査"
+    },
+    "模块基址  base                = granblue_fantasy_relink.exe 基址": {
+      "zh_tw": "模組基底  base                = granblue_fantasy_relink.exe 基底",
+      "en": "Module base  base              = granblue_fantasy_relink.exe base",
+      "ja": "モジュール基底 base             = granblue_fantasy_relink.exe 基底"
+    },
+    "模块大小  size                = 0x8217000 (136.0 MB) 实测": {
+      "zh_tw": "模組大小  size                = 0x8217000 (136.0 MB) 實測",
+      "en": "Module size  size              = 0x8217000 (136.0 MB) measured",
+      "ja": "モジュールサイズ size           = 0x8217000 (136.0 MB) 実測"
+    },
+    "quest_mgr 全局指针  (与 pptr 相对 QM_DELTA = 0xC1E030)": {
+      "zh_tw": "quest_mgr 全域指標  (與 pptr 相對 QM_DELTA = 0xC1E030)",
+      "en": "quest_mgr global pointer  (relative to pptr, QM_DELTA = 0xC1E030)",
+      "ja": "quest_mgr グローバルポインタ (pptr からの相対 QM_DELTA = 0xC1E030)"
+    },
+    "    mgr + 0x210   → flow 指针 (0=城镇/非任务, 非0=任务中)": {
+      "zh_tw": "    mgr + 0x210   → flow 指標 (0=城鎮/非任務, 非0=任務中)",
+      "en": "    mgr + 0x210   → flow pointer (0=town/no-quest, non-zero=in-quest)",
+      "ja": "    mgr + 0x210   → flow ポインタ (0=街/非クエスト, 非0=クエスト中)"
+    },
+    "    mgr + 0x2d8   → flow 状态枚举 (relink-logs v2.0.2+)": {
+      "zh_tw": "    mgr + 0x2d8   → flow 狀態列舉 (relink-logs v2.0.2+)",
+      "en": "    mgr + 0x2d8   → flow state enum (relink-logs v2.0.2+)",
+      "ja": "    mgr + 0x2d8   → flow 状態列挙 (relink-logs v2.0.2+)"
+    },
+    "    mgr + 0xB20/0xB28  → 训练场计时器 (城镇=0, 训练场非0)": {
+      "zh_tw": "    mgr + 0xB20/0xB28  → 訓練場計時器 (城鎮=0, 訓練場非0)",
+      "en": "    mgr + 0xB20/0xB28  → training-area timer (town=0, training non-zero)",
+      "ja": "    mgr + 0xB20/0xB28  → 訓練場タイマー (街=0, 訓練場は非0)"
+    },
+    "    mgr + 0xAC8   → 任务已用秒数 (城镇时为残留值, 不要严格校验)": {
+      "zh_tw": "    mgr + 0xAC8   → 任務已用秒數 (城鎮時為殘留值, 不要嚴格校驗)",
+      "en": "    mgr + 0xAC8   → elapsed quest seconds (stale in town, do not validate strictly)",
+      "ja": "    mgr + 0xAC8   → クエスト経過秒数 (街では残留値、厳密検証しない)"
+    },
+    "    mgr + 0xDC8   → 任务 ID (含 0xf00000 掩码)": {
+      "zh_tw": "    mgr + 0xDC8   → 任務 ID (含 0xf00000 遮罩)",
+      "en": "    mgr + 0xDC8   → quest ID (includes 0xf00000 mask)",
+      "ja": "    mgr + 0xDC8   → クエスト ID (0xf00000 マスク含む)"
+    },
+    "actor + 0x15030 → record (内嵌)            2.0.4 沿用": {
+      "zh_tw": "actor + 0x15030 → record (內嵌)            2.0.4 沿用",
+      "en": "actor + 0x15030 → record (embedded)          carried over from 2.0.4",
+      "ja": "actor + 0x15030 → record (埋め込み)          2.0.4 から踏襲"
+    },
+    "record + 0x5B10 → 当前 charid             2.0.4 沿用": {
+      "zh_tw": "record + 0x5B10 → 目前 charid             2.0.4 沿用",
+      "en": "record + 0x5B10 → current charid           carried over from 2.0.4",
+      "ja": "record + 0x5B10 → 現在の charid            2.0.4 から踏襲"
+    },
+    "record + 0x138  → 专精节点数组 (400 槽 × 0x38) 2.0.4 沿用": {
+      "zh_tw": "record + 0x138  → 專精節點陣列 (400 槽 × 0x38) 2.0.4 沿用",
+      "en": "record + 0x138  → mastery node array (400 slots × 0x38), carried over from 2.0.4",
+      "ja": "record + 0x138  → マスタリーノード配列 (400 スロット × 0x38) 2.0.4 から踏襲"
+    },
+    "CharaPower RVA   = 0x7C22F38              2.0.4 实测 (2.0.3=0x7C21A38, 2.0.2=0x7C22CB8)": {
+      "zh_tw": "CharaPower RVA   = 0x7C22F38              2.0.4 實測 (2.0.3=0x7C21A38, 2.0.2=0x7C22CB8)",
+      "en": "CharaPower RVA   = 0x7C22F38              measured on 2.0.4 (2.0.3=0x7C21A38, 2.0.2=0x7C22CB8)",
+      "ja": "CharaPower RVA   = 0x7C22F38              2.0.4 実測 (2.0.3=0x7C21A38, 2.0.2=0x7C22CB8)"
+    },
+    "    mgr + 0x320/0x330/0x348  → node_instance_key → row (key→row map)": {
+      "zh_tw": "    mgr + 0x320/0x330/0x348  → node_instance_key → row (key→row map)",
+      "en": "    mgr + 0x320/0x330/0x348  → node_instance_key → row (key→row map)",
+      "ja": "    mgr + 0x320/0x330/0x348  → node_instance_key → row (key→row map)"
+    },
+    "    mgr + 0x728/0x738/0x750  → charid → key_vector (charid→key map)": {
+      "zh_tw": "    mgr + 0x728/0x738/0x750  → charid → key_vector (charid→key map)",
+      "en": "    mgr + 0x728/0x738/0x750  → charid → key_vector (charid→key map)",
+      "ja": "    mgr + 0x728/0x738/0x750  → charid → key_vector (charid→key map)"
+    },
+    "    row + 0x48 → node_id, row + 0x5C → unlock bit, row + 0x74 → effect_id": {
+      "zh_tw": "    row + 0x48 → node_id, row + 0x5C → unlock bit, row + 0x74 → effect_id",
+      "en": "    row + 0x48 → node_id, row + 0x5C → unlock bit, row + 0x74 → effect_id",
+      "ja": "    row + 0x48 → node_id, row + 0x5C → unlock bit, row + 0x74 → effect_id"
+    },
+    "actor + 0x1FD   → 角色类型字节 (0x07=菲莉, 0x11=齐格飞, ...)": {
+      "zh_tw": "actor + 0x1FD   → 角色類型位元組 (0x07=菲莉, 0x11=齊格飛, ...)",
+      "en": "actor + 0x1FD   → character-type byte (0x07=Ferry, 0x11=Siegfried, ...)",
+      "ja": "actor + 0x1FD   → キャラタイプ バイト (0x07=フェリ, 0x11=ジークフリート, ...)"
+    },
+    "actor + 0x1AB40 → 角色 ID (PL0100/PL0000 etc.)": {
+      "zh_tw": "actor + 0x1AB40 → 角色 ID (PL0100/PL0000 etc.)",
+      "en": "actor + 0x1AB40 → character ID (PL0100/PL0000 etc.)",
+      "ja": "actor + 0x1AB40 → キャラ ID (PL0100/PL0000 etc.)"
+    },
+    "actor + 0x5788  → player 全局指针 (pptr)": {
+      "zh_tw": "actor + 0x5788  → player 全域指標 (pptr)",
+      "en": "actor + 0x5788  → player global pointer (pptr)",
+      "ja": "actor + 0x5788  → player グローバルポインタ (pptr)"
+    },
+    "field 0x64C/0xAC8/0x5788  → 奥义槽 / 任务计时 / 玩家": {
+      "zh_tw": "field 0x64C/0xAC8/0x5788  → 奧義槽 / 任務計時 / 玩家",
+      "en": "field 0x64C/0xAC8/0x5788  → Skybound gauge / quest timer / player",
+      "ja": "field 0x64C/0xAC8/0x5788  → 奥義ゲージ / クエストタイマー / プレイヤー"
+    },
+    "【实时 · 运行期值（每 1 秒刷新）】": {
+      "zh_tw": "【即時 · 執行期值（每 1 秒刷新）】",
+      "en": "[Live · Runtime values (refreshed every 1 s)]",
+      "ja": "【リアルタイム · 実行時値（1 秒ごとに更新）】"
+    },
+    "未识别": {
+      "zh_tw": "未識別",
+      "en": "unidentified",
+      "ja": "未識別"
+    },
+    "⑤ 剩余时间 > 持续时间丢弃": {
+      "zh_tw": "⑤ 剩餘時間 > 持續時間丟棄",
+      "en": "⑤ Drop if remaining > duration",
+      "ja": "⑤ 残り時間 > 継続時間を破棄"
+    },
+    "正常情况下剩余时间（remaining）不可能大于持续时间（initial）——出现这种情况通常说明读到的是脏值或异常槽位数据，勾选后直接丢弃该条。永续 buff（显示 ∞ / *∞）不受此限：它的 initial 可能为 0 而 remaining 残留正数，属于正常现象，不会被误杀。默认开启。": {
+      "zh_tw": "正常情況下剩餘時間（remaining）不可能大於持續時間（initial）——出現這種情況通常說明讀到的是髒值或異常槽位資料，勾選後直接丟棄該條。永續 buff（顯示 ∞ / *∞）不受此限：它的 initial 可能為 0 而 remaining 殘留正數，屬於正常現象，不會被誤殺。預設開啟。",
+      "en": "Normally remaining can never exceed initial - if it does, the entry is almost certainly garbage from a stale or corrupted slot, and is dropped when this is checked. Permanent buffs (shown as the infinity symbol) are exempt: their initial may be 0 while remaining holds a leftover positive value, which is normal and must not be filtered out. Enabled by default.",
+      "ja": "通常、残り時間（remaining）が継続時間（initial）を超えることはありません——超えている場合、多くは古いスロットや破損データから読み込んだ不正値です。チェックを入れるとそのエントリを破棄します。永続 buff（∞ / *∞ 表示）は対象外です：initial が 0 でも remaining に正の値が残ることがあり、それは正常な挙動なので誤って除外されないようにしています。既定で有効。"
+    },
+    "3D 效果": {
+      "zh_tw": "3D 效果",
+      "en": "3D Effect",
+      "ja": "3Dエフェクト"
+    },
+    "── 尖刺立体感 ──": {
+      "zh_tw": "── 尖刺立體感 ──",
+      "en": "── Spike 3D ──",
+      "ja": "── スパイク 3D ──"
+    },
+    "── 通用投影（所有风格共用）──": {
+      "zh_tw": "── 通用投影（所有風格共用）──",
+      "en": "── Common Drop Shadow (all styles) ──",
+      "ja": "── 共通ドロップシャドウ（全スタイル共通）──"
+    },
+    "── 通用暗描边（所有风格共用）──": {
+      "zh_tw": "── 通用暗描邊（所有風格共用）──",
+      "en": "── Common Dark Outline (all styles) ──",
+      "ja": "── 共通ダーク輪郭（全スタイル共通）──"
+    },
+    "── 装饰小球立体感 ──": {
+      "zh_tw": "── 裝飾小球立體感 ──",
+      "en": "── Bead 3D ──",
+      "ja": "── 装飾ボール 3D ──"
+    },
+    "纯色（无 3D 效果）": {
+      "zh_tw": "純色（無 3D 效果）",
+      "en": "Solid (no 3D effect)",
+      "ja": "単色（3D効果なし）"
+    },
+    "尖刺风格:": {
+      "zh_tw": "尖刺風格:",
+      "en": "Spike style:",
+      "ja": "スパイク スタイル:"
+    },
+    "启用投影": {
+      "zh_tw": "啟用投影",
+      "en": "Enable shadow",
+      "ja": "シャドウを有効化"
+    },
+    "投影偏移 X:": {
+      "zh_tw": "投影偏移 X:",
+      "en": "Shadow offset X:",
+      "ja": "シャドウ オフセット X:"
+    },
+    "投影偏移 Y:": {
+      "zh_tw": "投影偏移 Y:",
+      "en": "Shadow offset Y:",
+      "ja": "シャドウ オフセット Y:"
+    },
+    "投影不透明度 (0-255):": {
+      "zh_tw": "投影不透明度 (0-255):",
+      "en": "Shadow alpha (0-255):",
+      "ja": "シャドウ不透明度 (0-255):"
+    },
+    "启用暗描边": {
+      "zh_tw": "啟用暗描邊",
+      "en": "Enable dark outline",
+      "ja": "ダーク輪郭を有効化"
+    },
+    "暗描边宽度 (0.0-3.0px):": {
+      "zh_tw": "暗描邊寬度 (0.0-3.0px):",
+      "en": "Outline width (0.0-3.0px):",
+      "ja": "輪郭線幅 (0.0-3.0px):"
+    },
+    "暗描边暗度 (100=不暗):": {
+      "zh_tw": "暗描邊暗度 (100=不暗):",
+      "en": "Outline darkness (100=no darken):",
+      "ja": "輪郭の暗さ (100=暗くしない):"
+    },
+    "纯色风格无独立参数（只受上面通用投影/暗描边影响）。": {
+      "zh_tw": "純色風格無獨立參數（只受上面通用投影/暗描邊影響）。",
+      "en": "Solid style has no per-style parameters (only affected by common shadow/outline above).",
+      "ja": "単色スタイルには個別パラメータなし（上記の共通シャドウ/輪郭のみ影響）。"
+    },
+    "左半亮因子 (100=不亮):": {
+      "zh_tw": "左半亮因子 (100=不亮):",
+      "en": "Left half light factor (100=no lighten):",
+      "ja": "左半分の明度係数 (100=変えない):"
+    },
+    "右半暗因子 (100=不暗):": {
+      "zh_tw": "右半暗因子 (100=不暗):",
+      "en": "Right half dark factor (100=no darken):",
+      "ja": "右半分の暗度係数 (100=暗くしない):"
+    },
+    "纯色": {
+      "zh_tw": "純色",
+      "en": "Solid",
+      "ja": "単色"
+    },
+    "径向球化（推荐）": {
+      "zh_tw": "徑向球化（推薦）",
+      "en": "Radial sphere (recommended)",
+      "ja": "放射球状（推奨）"
+    },
+    "小球风格:": {
+      "zh_tw": "小球風格:",
+      "en": "Bead style:",
+      "ja": "ボール スタイル:"
+    },
+    "纯色风格无独立参数。": {
+      "zh_tw": "純色風格無獨立參數。",
+      "en": "Solid style has no per-style parameters.",
+      "ja": "単色スタイルには個別パラメータなし。"
+    },
+    "高光亮因子 (100=不亮):": {
+      "zh_tw": "高光亮因子 (100=不亮):",
+      "en": "Highlight light factor (100=no lighten):",
+      "ja": "ハイライトの明度係数 (100=変えない):"
+    },
+    "边缘暗因子 (100=不暗):": {
+      "zh_tw": "邊緣暗因子 (100=不暗):",
+      "en": "Edge dark factor (100=no darken):",
+      "ja": "縁の暗度係数 (100=暗くしない):"
+    },
+    "高光中心偏移 (0=正中心):": {
+      "zh_tw": "高光中心偏移 (0=正中心):",
+      "en": "Highlight center offset (0=center):",
+      "ja": "ハイライト中心オフセット (0=中心):"
+    },
+    "径向球化：高光偏左上模拟右上光源，数值越大偏移越远。": {
+      "zh_tw": "徑向球化：高光偏左上模擬右上光源，數值越大偏移越遠。",
+      "en": "Radial sphere: highlight shifts upper-left to simulate an upper-right light; higher value = further offset.",
+      "ja": "放射球状：ハイライトが左上にずれ、右上の光源を演出。値が大きいほど大きくずれます。"
+    },
+    "调试数据": {
+      "zh_tw": "除錯資料",
+      "en": "Debug Data",
+      "ja": "デバッグデータ"
+    },
+    "── 调试总开关 ──": {
+      "zh_tw": "── 除錯總開關 ──",
+      "en": "── Debug Master Switch ──",
+      "ja": "── デバッグ マスタースイッチ ──"
+    },
+    "── 核心检测模块 ──": {
+      "zh_tw": "── 核心偵測模組 ──",
+      "en": "── Core Detection Module ──",
+      "ja": "── コア検出モジュール ──"
+    },
+    "── 全 Buff 模块 ──": {
+      "zh_tw": "── 全 Buff 模組 ──",
+      "en": "── All-Buff Module ──",
+      "ja": "── 全バフモジュール ──"
+    },
+    "── Boss Buff 模块 ──": {
+      "zh_tw": "── Boss Buff 模組 ──",
+      "en": "── Boss Buff Module ──",
+      "ja": "── ボスバフモジュール ──"
+    },
+    "── 能力冷却 / 翻滚模块 ──": {
+      "zh_tw": "── 能力冷卻 / 翻滾模組 ──",
+      "en": "── Skill CD / Dodge Module ──",
+      "ja": "── アビリティCD / 回避モジュール ──"
+    },
+    "启用调试假数据（不开游戏也能测 UI）": {
+      "zh_tw": "啟用除錯假資料（不開遊戲也能測 UI）",
+      "en": "Enable debug dummy data (test the UI without launching the game)",
+      "ja": "デバッグ用ダミーデータを有効化（ゲームを起動せず UI をテスト）"
+    },
+    "开启后不再读取游戏内存，五个模块全部用下面的假数据填充；关闭后立即恢复正常读取。": {
+      "zh_tw": "開啟後不再讀取遊戲記憶體，五個模組全部用下面的假資料填充；關閉後立即恢復正常讀取。",
+      "en": "When enabled, game memory is no longer read; all five modules are filled with the dummy data below. Disabling restores normal reading immediately.",
+      "ja": "有効にするとゲームメモリの読み取りを停止し、5 つのモジュールすべてを以下のダミーデータで埋めます。無効にすると即座に通常の読み取りへ戻ります。"
+    },
+    "统一显示文本:": {
+      "zh_tw": "統一顯示文字:",
+      "en": "Unified display text:",
+      "ja": "統一表示テキスト:"
+    },
+    "核心 Buff 名、全 Buff 名、Boss Buff 名、技能名统一显示这个文本。": {
+      "zh_tw": "核心 Buff 名、全 Buff 名、Boss Buff 名、技能名統一顯示這個文字。",
+      "en": "Core buff names, all-buff names, boss buff names and skill names all display this text.",
+      "ja": "コアバフ名・全バフ名・ボスバフ名・スキル名をすべてこのテキストで表示します。"
+    },
+    "固定倒计时(秒):": {
+      "zh_tw": "固定倒數計時(秒):",
+      "en": "Fixed countdown (s):",
+      "ja": "固定カウントダウン(秒):"
+    },
+    "模拟状态:": {
+      "zh_tw": "模擬狀態:",
+      "en": "Simulated status:",
+      "ja": "シミュレート状態:"
+    },
+    "正常（已识别角色）": {
+      "zh_tw": "正常（已識別角色）",
+      "en": "Normal (character detected)",
+      "ja": "正常（キャラ認識済み）"
+    },
+    "未识别到角色": {
+      "zh_tw": "未識別到角色",
+      "en": "Character not detected",
+      "ja": "キャラ未認識"
+    },
+    "初始化中": {
+      "zh_tw": "初始化中",
+      "en": "Initializing",
+      "ja": "初期化中"
+    },
+    "战斗状态:": {
+      "zh_tw": "戰鬥狀態:",
+      "en": "Combat state:",
+      "ja": "戦闘状態:"
+    },
+    "模拟战斗中（取消勾选可验证「非战斗隐藏」）": {
+      "zh_tw": "模擬戰鬥中（取消勾選可驗證「非戰鬥隱藏」）",
+      "en": "Simulate in-combat (uncheck to verify \"hide out of combat\")",
+      "ja": "戦闘中をシミュレート（チェックを外すと「非戦闘時に隠す」を検証できます）"
+    },
+    "模拟专精:": {
+      "zh_tw": "模擬專精:",
+      "en": "Simulated mastery:",
+      "ja": "シミュレート マスタリー:"
+    },
+    "不指定": {
+      "zh_tw": "不指定",
+      "en": "Unspecified",
+      "ja": "指定なし"
+    },
+    "Buff 数量:": {
+      "zh_tw": "Buff 數量:",
+      "en": "Buff count:",
+      "ja": "バフ数:"
+    },
+    "是否单层:": {
+      "zh_tw": "是否單層:",
+      "en": "Single-layer:",
+      "ja": "単層かどうか:"
+    },
+    "按单层 Buff 渲染（只有倒计时、无层数）": {
+      "zh_tw": "按單層 Buff 渲染（只有倒數計時、無層數）",
+      "en": "Render as a single-layer buff (countdown only, no stacks)",
+      "ja": "単層バフとして描画（カウントダウンのみ・スタックなし）"
+    },
+    "是否满层:": {
+      "zh_tw": "是否滿層:",
+      "en": "Full stacks:",
+      "ja": "最大スタックかどうか:"
+    },
+    "按满层渲染（层数 = 最大层数）": {
+      "zh_tw": "按滿層渲染（層數 = 最大層數）",
+      "en": "Render at full stacks (stacks = max stacks)",
+      "ja": "最大スタックで描画（スタック数 = 最大スタック数）"
+    },
+    "非满层时层数:": {
+      "zh_tw": "非滿層時層數:",
+      "en": "Stacks when not full:",
+      "ja": "非最大時のスタック数:"
+    },
+    "仅在未勾选「是否满层」时生效。": {
+      "zh_tw": "僅在未勾選「是否滿層」時生效。",
+      "en": "Only takes effect when \"Full stacks\" is unchecked.",
+      "ja": "「最大スタックかどうか」のチェックを外している場合のみ有効です。"
+    },
+    "最大层数:": {
+      "zh_tw": "最大層數:",
+      "en": "Max stacks:",
+      "ja": "最大スタック数:"
+    },
+    "专精标记:": {
+      "zh_tw": "專精標記:",
+      "en": "Mastery flags:",
+      "ja": "マスタリー フラグ:"
+    },
+    "层数:": {
+      "zh_tw": "層數:",
+      "en": "Stacks:",
+      "ja": "スタック数:"
+    },
+    "技能槽数量:": {
+      "zh_tw": "技能槽數量:",
+      "en": "Skill slot count:",
+      "ja": "スキルスロット数:"
+    },
+    "就绪槽位数:": {
+      "zh_tw": "就緒槽位數:",
+      "en": "Ready slot count:",
+      "ja": "レディ スロット数:"
+    },
+    "前 N 个槽位显示为「就绪」（触发就绪呼吸灯/闪光），其余处于倒计时。": {
+      "zh_tw": "前 N 個槽位顯示為「就緒」（觸發就緒呼吸燈/閃光），其餘處於倒數計時。",
+      "en": "The first N slots display as \"ready\" (triggering the ready breathing glow / flash); the rest are on cooldown.",
+      "ja": "先頭 N 個のスロットを「レディ」表示にします（レディ時のブレス発光／フラッシュが発動）。残りはクールダウン中になります。"
+    },
+    "冷却上限(秒):": {
+      "zh_tw": "冷卻上限(秒):",
+      "en": "Cooldown max (s):",
+      "ja": "クールダウン上限(秒):"
+    },
+    "冷却上限，决定菱形内扇形进度的比例。": {
+      "zh_tw": "冷卻上限，決定菱形內扇形進度的比例。",
+      "en": "Cooldown ceiling; determines the sector progress ratio inside the diamond.",
+      "ja": "クールダウンの上限。ひし形内の扇形プログレスの比率を決定します。"
+    },
+    "翻滚次数:": {
+      "zh_tw": "翻滾次數:",
+      "en": "Dodge count:",
+      "ja": "回避回数:"
+    },
+    "第6/7次样式:": {
+      "zh_tw": "第6/7次樣式:",
+      "en": "6th/7th style:",
+      "ja": "6/7回目のスタイル:"
+    },
+    "警告三角形": {
+      "zh_tw": "警告三角形",
+      "en": "Warning triangle",
+      "ja": "警告三角形"
+    },
+    "图片": {
+      "zh_tw": "圖片",
+      "en": "Image",
+      "ja": "画像"
+    },
+    "默认警告图:": {
+      "zh_tw": "預設警告圖:",
+      "en": "Default warning image:",
+      "ja": "既定の警告画像:"
+    },
+    "使用内置默认警告图": {
+      "zh_tw": "使用內建預設警告圖",
+      "en": "Use embedded default warning image",
+      "ja": "内蔵の既定警告画像を使用"
+    },
+    "警告图绝对路径:": {
+      "zh_tw": "警告圖絕對路徑:",
+      "en": "Warning image path:",
+      "ja": "警告画像の絶対パス:"
+    },
+    "警告图缩放:": {
+      "zh_tw": "警告圖縮放:",
+      "en": "Warning image scale:",
+      "ja": "警告画像の拡大率:"
+    },
+    "第 6/7 次翻滚显示成什么。「警告三角形」= 程序绘制的红边黄底三角（可改尺寸、边宽、圆角、配色）；「图片」= 用一张 PNG 代替，可选内置默认警告图或自己指定图片。闪光对任意 PNG 都自动生效。": {
+      "zh_tw": "第 6/7 次翻滾顯示成什麼。「警告三角形」= 程式繪製的紅邊黃底三角（可改尺寸、邊寬、圓角、配色）；「圖片」= 用一張 PNG 代替，可選內建預設警告圖或自己指定圖片。閃光對任意 PNG 都自動生效。",
+      "en": "What the 6th/7th dodge looks like. \"Warning triangle\" = a drawn red-bordered yellow triangle (size / border width / corner radius / colors adjustable); \"Image\" = use a PNG instead, either the built-in default warning image or your own. Flashing adapts to any PNG automatically.",
+      "ja": "6/7回目の回避を何で表示するか。「警告三角形」= 描画される赤枠・黄色の三角形（サイズ・枠幅・角丸・配色を調整可）；「画像」= 代わりに PNG を使用（内蔵の既定警告画像、または任意の画像）。フラッシュはどんな PNG でも自動で追従します。"
+    },
+    "勾选=用软件内置的警告图；不勾=用下方自己选的图片。": {
+      "zh_tw": "勾選=用軟體內建的警告圖；不勾=用下方自己選的圖片。",
+      "en": "Checked = use the built-in warning image; unchecked = use your own image from the field below.",
+      "ja": "オン=ソフト内蔵の警告画像を使用；オフ=下で自分で選んだ画像を使用。"
+    },
+    "警告图相对翻滚图标尺寸的百分比。100% = 和第 1~5 次的翻滚图标一样大。": {
+      "zh_tw": "警告圖相對翻滾圖標尺寸的百分比。100% = 和第 1~5 次的翻滾圖標一樣大。",
+      "en": "Warning image size as a percentage of the dodge icon size. 100% = same size as the 1st-5th dodge icons.",
+      "ja": "回避アイコンのサイズに対する警告画像の割合。100% = 1〜5回目の回避アイコンと同じ大きさ。"
     }
   }
 }
