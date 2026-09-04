@@ -261,6 +261,10 @@ https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/ver
 全 Buff / Boss 两模块顶部新增「统计条」：实时显示 共 N · Debuff · 永续 · 尾声 四项计数
 · 共 = 当前通过门限的 buff 总数；Debuff = 是否 debuff；永续 = 永续（infinite）标志；尾声 = 非永续且 剩余/初始 < 倒计时尾声警告阈值的 buff 数量。
 · 统计条占固定高度（字号比名称小 1 号），网格整体下移、模块窗口高度相应增加，文字不会被窗口底边切掉。
+== v23.20 ==
+[1] 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因：scan() 重连分支原本只清空 player 的缓存，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE；重启后若指针被复用，陈旧 boss actor 会毒害 find_boss_actor 使 boss 模块整屏空白。现与 player 对称地重连即清空，并加 pid 守卫（双保险）。
+[2] 补上日文(ja)本地化缺口：托盘菜单 / 技能模块状态占位 / 文件·颜色对话框 等约 10 处字符串此前缺 ja 键且兜底掉回中文；现已补 ja 键，兜底统一改为「lang → en → zh」。
+
 == v23.19 ==
 [1] 收紧运行期输出文件：软件现在只写 3 个文件——ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json；新增 ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG 两个总开关（默认关），关闭 boss buff 每秒 dump（last_boss_buffs.json）与前后台焦点诊断日志（overlay_focus_log.txt）的写盘，不再在游戏目录散落多余文件；
 [2] 修复 0x94(148) 这个 buff 仍显示成十六进制「0x94」的问题：根因是历史上该 sid 还没收录进内置表时，被自动记进了外部补充文件 buff_attrs_unknown.json（名称=0x94），而外部文件优先级高于内置表，于是即使后来内置补了真名「混沌转换」也被陈旧的 0x94 记录盖掉；_attr_for_sid 现在对「名称为空或仍等于十六进制 ID」的外部兜底条目改取内置真实名（仅当内置也缺失才保留），玩家手填的真名仍被尊重，避免 0x94 类「一直显示十六进制」复发。

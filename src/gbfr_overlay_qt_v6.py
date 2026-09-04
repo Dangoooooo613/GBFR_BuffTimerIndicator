@@ -478,7 +478,7 @@ _BUILD_NO = 2314  # V2314：全代码冗余彻底排查后的 A~E 级清理（�
 #   ⚠️ 行为零变化：以上全是「算了但不用」的死代码，删除不影响任何渲染结果，也不动任何 UI。
 #      注：get_settings() 里对 boss_gate_check_stack_conflict / boss_gate_duration_max 的 pop 保留
 #      （用于清理老 config 文件里的废弃键）。源码备份到 src_backups/2026-09-03_22-12-41_V2314/。
-_BUILD_NO = 2319  # V2319：① 收紧运行期输出文件——软件现在只写 3 个文件（ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json）；新增 ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG 两个总开关（默认关），关闭 boss buff 每秒 dump（last_boss_buffs.json）与前后台焦点诊断日志（overlay_focus_log.txt）的写盘，不再在游戏目录散落多余文件；② 修复 0x94(148) 仍显示成十六进制「0x94」的问题——_attr_for_sid 现在对外部补充文件里「名称为空或仍等于十六进制 ID」的陈旧兜底条目改取内置真实名（仅当内置也缺失才保留），玩家手填的真名仍被尊重，避免 0x94 类「一直显示十六进制」复发。
+_BUILD_NO = 2320  # V2320：① 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因——scan() 重连分支原本只清 player 的 quest_mgr/_prev_actor/_raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE；重启后若 module_base/handle 被复用（ASLR 关闭或巧合），陈旧 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。② 补上日文(ja)本地化缺口：之前托盘菜单（设置/解锁·锁定/显示所有窗口/重置所有窗口/退出）、技能模块状态占位（初始化中…/未检测到技能/能力冷却已隐藏）、文件与颜色对话框标题/筛选 等约 10 处按语言字典查表的字符串缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
 #   【G 级】4 个零调用的函数（共 63 行）——全是 V2239「灰色固化门限」工厂的残留。
 #     SettingsDialog.__init__ 里 allbuff / boss 两个对称作用域各定义了 3 个工厂：
 #     _gate_fixed_note（在用）+ _gate_fixed_checkbox / _gate_fixed_double_row（零调用）。
@@ -1925,7 +1925,7 @@ def _boss_actor_alive(handle, actor):
     return bool(begin and begin > 0x10000)
 
 
-def read_boss_buffs(handle, base, keywords="enemy,Em", ttl=None):
+def read_boss_buffs(handle, base, keywords="enemy,Em", ttl=None, pid=None):
     """读取当前场上 boss 身上的全部 buff/debuff。
 
     返回 (result, result_list, boss_actor, boss_name)：
@@ -1937,6 +1937,8 @@ def read_boss_buffs(handle, base, keywords="enemy,Em", ttl=None):
     未找到 boss / 读不到时返回 ({}, [], actor_or_None, name_or_None)。
 
     ttl: boss actor 缓存秒数，None = 用默认 _BOSS_CACHE_TTL（1.5s）。
+    pid: 当前游戏进程 PID（可选）。V2320 起纳入缓存键，确保重启后即使
+         module_base/handle 被复用（ASLR 关闭或巧合）也能靠 PID 变化强制失效。
     """
     import time as _t
     ttl = _BOSS_CACHE_TTL if ttl is None else ttl
@@ -1944,14 +1946,16 @@ def read_boss_buffs(handle, base, keywords="enemy,Em", ttl=None):
     c = _BOSS_CACHE
 
     actor = name = None
+    _pid_ok = (pid is None) or (c.get("pid") == pid)
     if (c.get("actor") and c.get("base") == base and c.get("handle") == handle
+            and _pid_ok
             and (now - c.get("ts", 0.0)) < ttl
             and _boss_actor_alive(handle, c["actor"])):
         actor, name = c["actor"], c["name"]
 
     if not actor:
         actor, name = find_boss_actor(handle, base, keywords)
-        c["handle"], c["base"] = handle, base
+        c["handle"], c["base"], c["pid"] = handle, base, pid
         c["actor"], c["name"], c["ts"] = actor, name, now
 
     if not actor:
@@ -6744,13 +6748,14 @@ class SettingsDialog(QDialog):
 
     def _browse_icon(self):
         lang = self.settings.get("language", "zh")
-        dlg_titles = {"zh": "选择翻滚图标", "zh_tw": "選擇翻滾圖標", "en": "Select Dodge Icon"}
+        dlg_titles = {"zh": "选择翻滚图标", "zh_tw": "選擇翻滾圖標", "en": "Select Dodge Icon", "ja": "ロールアイコンを選択"}
         dlg_filters = {"zh": "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)",
                         "zh_tw": "圖片檔案 (*.png *.jpg *.jpeg *.bmp *.gif)",
-                        "en": "Image files (*.png *.jpg *.jpeg *.bmp *.gif)"}
+                        "en": "Image files (*.png *.jpg *.jpeg *.bmp *.gif)",
+                        "ja": "画像ファイル (*.png *.jpg *.jpeg *.bmp *.gif)"}
         path, _ = QFileDialog.getOpenFileName(
-            self, dlg_titles.get(lang, dlg_titles["zh"]), "",
-            dlg_filters.get(lang, dlg_filters["zh"])
+            self, dlg_titles.get(lang, dlg_titles.get("en", dlg_titles["zh"])), "",
+            dlg_filters.get(lang, dlg_filters.get("en", dlg_filters["zh"]))
         )
         if path:
             self.icon_path.setText(path)
@@ -6764,15 +6769,15 @@ class SettingsDialog(QDialog):
                         "en": "Image files (*.png *.jpg *.jpeg *.bmp *.gif)",
                         "ja": "画像ファイル (*.png *.jpg *.jpeg *.bmp *.gif)"}
         path, _ = QFileDialog.getOpenFileName(
-            self, dlg_titles.get(lang, dlg_titles["zh"]), "",
-            dlg_filters.get(lang, dlg_filters["zh"])
+            self, dlg_titles.get(lang, dlg_titles.get("en", dlg_titles["zh"])), "",
+            dlg_filters.get(lang, dlg_filters.get("en", dlg_filters["zh"]))
         )
         if path:
             self.warning_img_path.setText(path)
 
     def pick_color(self, key, button):
         lang = self.settings.get("language", "zh")
-        color_titles = {"zh": "选择颜色", "zh_tw": "選擇顏色", "en": "Select Color"}
+        color_titles = {"zh": "选择颜色", "zh_tw": "選擇顏色", "en": "Select Color", "ja": "色を選択"}
         # V2039：颜色对话框持久化调色板。
         # 入口前：从 settings['custom_palette'] 还原到 QColorDialog 全局 16 格，
         # 这样关闭软件再打开，用户辛辛苦苦调好的色不会丢。
@@ -6784,7 +6789,7 @@ class SettingsDialog(QDialog):
             except Exception:
                 logger.debug("swallowed exception", exc_info=True)
         color = QColorDialog.getColor(qcolor(self.settings.get(key)), self,
-                                      color_titles.get(lang, color_titles["zh"]))
+                                      color_titles.get(lang, color_titles.get("en", color_titles["zh"])))
         # V2039：不论用户按 OK 还是 Cancel，都把当前 16 格里有效的颜色回写到 settings
         # 并立即 save_settings。PySide6 没有 customColors() 列表版 getter，
         # 用 customCount + customColor(i) 循环 16 格读出。
@@ -9522,14 +9527,14 @@ class GBFROverlayQt(QObject):
             return
         lang = self.settings.get("language", "zh")
         if reason == "hidden":
-            texts = {"zh": "能力冷却已隐藏", "zh_tw": "能力冷卻已隱藏", "en": "Skill CD hidden"}
+            texts = {"zh": "能力冷却已隐藏", "zh_tw": "能力冷卻已隱藏", "en": "Skill CD hidden", "ja": "スキルCD非表示"}
         elif reason == "no_game":
             return  # 不显示「等待游戏...」占位文字，仅保留窗口背景以便拖动/缩放
         elif reason == "init":
-            texts = {"zh": "初始化中...", "zh_tw": "初始化中...", "en": "Initializing..."}
+            texts = {"zh": "初始化中...", "zh_tw": "初始化中...", "en": "Initializing...", "ja": "初期化中..."}
         else:
-            texts = {"zh": "未检测到技能", "zh_tw": "未偵測到技能", "en": "No skills detected"}
-        text = texts.get(lang, texts["zh"])
+            texts = {"zh": "未检测到技能", "zh_tw": "未偵測到技能", "en": "No skills detected", "ja": "スキルが検出されません"}
+        text = texts.get(lang, texts.get("en", texts["zh"]))
 
         cx, cy = self.skill_cx, self.skill_cy
         font_size = max(10, int(self.skill_canvas_w / 11))
@@ -12371,30 +12376,31 @@ class GBFROverlayQt(QObject):
         status_action.setEnabled(False)
         self.tray_menu.addSeparator()
 
-        settings_labels = {"zh": "设置...", "zh_tw": "設定...", "en": "Settings..."}
-        settings_action = self.tray_menu.addAction(settings_labels.get(lang, settings_labels["zh"]))
+        settings_labels = {"zh": "设置...", "zh_tw": "設定...", "en": "Settings...", "ja": "設定..."}
+        settings_action = self.tray_menu.addAction(settings_labels.get(lang, settings_labels.get("en", settings_labels["zh"])))
         settings_action.triggered.connect(self.open_settings)
 
         lock_labels = {
             "zh": ("解锁" if self.locked else "锁定"),
             "zh_tw": ("解鎖" if self.locked else "鎖定"),
             "en": ("Unlock" if self.locked else "Lock"),
+            "ja": ("ロック解除" if self.locked else "ロック"),
         }
-        lock_action = self.tray_menu.addAction(lock_labels.get(lang, lock_labels["zh"]))
+        lock_action = self.tray_menu.addAction(lock_labels.get(lang, lock_labels.get("en", lock_labels["zh"])))
         lock_action.triggered.connect(self._toggle_lock)
 
-        show_all_labels = {"zh": "显示所有窗口", "zh_tw": "顯示所有視窗", "en": "Show All Windows"}
-        show_all_action = self.tray_menu.addAction(show_all_labels.get(lang, show_all_labels["zh"]))
+        show_all_labels = {"zh": "显示所有窗口", "zh_tw": "顯示所有視窗", "en": "Show All Windows", "ja": "すべてのウィンドウを表示"}
+        show_all_action = self.tray_menu.addAction(show_all_labels.get(lang, show_all_labels.get("en", show_all_labels["zh"])))
         show_all_action.triggered.connect(self._show_all)
 
-        reset_labels = {"zh": "重置所有窗口", "zh_tw": "重置所有視窗", "en": "Reset All Windows"}
-        reset_action = self.tray_menu.addAction(reset_labels.get(lang, reset_labels["zh"]))
+        reset_labels = {"zh": "重置所有窗口", "zh_tw": "重置所有視窗", "en": "Reset All Windows", "ja": "すべてのウィンドウをリセット"}
+        reset_action = self.tray_menu.addAction(reset_labels.get(lang, reset_labels.get("en", reset_labels["zh"])))
         reset_action.triggered.connect(self._reset_all_windows)
 
         self.tray_menu.addSeparator()
 
-        exit_labels = {"zh": "退出", "zh_tw": "退出", "en": "Exit"}
-        exit_action = self.tray_menu.addAction(exit_labels.get(lang, exit_labels["zh"]))
+        exit_labels = {"zh": "退出", "zh_tw": "退出", "en": "Exit", "ja": "終了"}
+        exit_action = self.tray_menu.addAction(exit_labels.get(lang, exit_labels.get("en", exit_labels["zh"])))
         exit_action.triggered.connect(QApplication.quit)
 
     def _on_tray_activated(self, reason):
@@ -12837,6 +12843,17 @@ class GBFROverlayQt(QObject):
             # 重连进程后清除裸值资源槽的锁定地址（地址已随 ASLR/堆分配改变）
             self._raw_locked_addrs = {}
             self._prev_actor = 0
+            # V2320 BUGFIX：boss 模块的指针缓存需在重连时一并清空——与上方 player 的
+            # quest_mgr/_prev_actor 重置对称。否则若重启后 module_base/handle 被复用
+            # （ASLR 关闭或巧合），_BOSS_CACHE / _BOSS_ET_CACHE 里陈旧的 boss actor /
+            # 实体表指针会一直毒害 find_boss_actor → self.boss_actor 恒为 None →
+            # boss 模块整屏空白（render_bossbuff 首闸 has_char 不过），而其他模块因各自
+            # 重解指针而正常。这正是「游戏重启后 boss 模块丢失工作、别的模块 ok」的根因。
+            self.boss_actor = None
+            self.boss_name = None
+            self.boss_buffs_filtered = []
+            _BOSS_CACHE.clear()
+            _BOSS_ET_CACHE.clear()
             # 建专精判定器（用已解析的模块基址/大小，避免重复枚举）
             self.mastery_reader = mastery_reader.MasteryReader.from_existing(
                 self.handle, self.module_base or 0, self.module_size or 0)
@@ -12930,7 +12947,7 @@ class GBFROverlayQt(QObject):
         # read_boss_buffs 内部带 1.5s 的 actor 缓存，tick 频率下不会拖慢主循环。
         try:
             if self.handle and self.module_base:
-                _b_res, _b_list, _b_actor, _b_name = read_boss_buffs(self.handle, self.module_base)
+                _b_res, _b_list, _b_actor, _b_name = read_boss_buffs(self.handle, self.module_base, pid=self.pid)
                 self.boss_actor = _b_actor
                 self.boss_name = _b_name
                 self.boss_buffs_filtered = _b_list or []

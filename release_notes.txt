@@ -1,4 +1,8 @@
 [zh]
+== v23.20 ==
+[1] 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因：scan() 重连分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE。重启后若 module_base / handle 被复用（ASLR 关闭或巧合），陈旧的 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。
+[2] 补上日文(ja)本地化缺口：托盘菜单（设置 / 解锁·锁定 / 显示所有窗口 / 重置所有窗口 / 退出）、技能模块状态占位（初始化中… / 未检测到技能 / 能力冷却已隐藏）、文件与颜色对话框标题 / 筛选 等约 10 处按语言字典查表的字符串此前缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
+
 == v23.19 ==
 [1] 收紧运行期输出文件：软件现在只写 3 个文件——ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json；新增 ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG 两个总开关（默认关），关闭 boss buff 每秒 dump（last_boss_buffs.json）与前后台焦点诊断日志（overlay_focus_log.txt）的写盘，不再在游戏目录散落多余文件；
 [2] 修复 0x94(148) 这个 buff 仍显示成十六进制「0x94」的问题：根因是历史上该 sid 还没收录进内置表时，被自动记进了外部补充文件 buff_attrs_unknown.json（名称=0x94），而外部文件优先级高于内置表，于是即使后来内置补了真名「混沌转换」也被陈旧的 0x94 记录盖掉；_attr_for_sid 现在对「名称为空或仍等于十六进制 ID」的外部兜底条目改取内置真实名（仅当内置也缺失才保留），玩家手填的真名仍被尊重，避免 0x94 类「一直显示十六进制」复发。
@@ -517,6 +521,10 @@ V2220：删除外放玩家字典 buff_attrs_user.json。现在数据来源为「
 - 翻滚图标：删掉原先的橙色矩形兜底，PNG 加载失败/未设置时改为 QPainter 现场绘制的「白对号 ✓ + 深透明圆角底」徽章，UI 风格统一。
 
 [zh_tw]
+== v23.20 ==  [zh_tw]
+[1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
+[2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
+
 == v23.19 ==  [zh_tw]
 [1] 收緊執行期輸出檔案：軟體現在只寫 3 個檔案——ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json；新增 ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG 兩個總開關（預設關），關閉 boss buff 每秒 dump（last_boss_buffs.json）與前後台焦點診斷記錄（overlay_focus_log.txt）的寫盤，不再在遊戲目錄散落多餘檔案；
 [2] 修復 0x94(148) 這個 buff 仍顯示成十六進位「0x94」的問題：根本原因在於該 sid 還沒收錄進內建表時，被自動記進了外部補充檔 buff_attrs_unknown.json（名稱=0x94），而外部檔優先級高於內建表，於是即使後來內建補了真名「混沌轉換」也被陳舊的 0x94 記錄蓋掉；_attr_for_sid 現在對「名稱為空或仍等於十六進位 ID」的外部兜底條目改取內建真實名（僅當內建也缺失才保留），玩家手填的真名仍被尊重，避免 0x94 類「一直顯示十六進位」復發。
@@ -1229,6 +1237,10 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v23.20 ==  [zh_tw]
+[1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
+[2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
+
 == v23.19 ==  [zh_tw]
 [1] 收緊執行期輸出檔案：軟體現在只寫 3 個檔案——ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json；新增 ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG 兩個總開關（預設關），關閉 boss buff 每秒 dump（last_boss_buffs.json）與前後台焦點診斷記錄（overlay_focus_log.txt）的寫盤，不再在遊戲目錄散落多餘檔案；
 [2] 修復 0x94(148) 這個 buff 仍顯示成十六進位「0x94」的問題：根本原因在於該 sid 還沒收錄進內建表時，被自動記進了外部補充檔 buff_attrs_unknown.json（名稱=0x94），而外部檔優先級高於內建表，於是即使後來內建補了真名「混沌轉換」也被陳舊的 0x94 記錄蓋掉；_attr_for_sid 現在對「名稱為空或仍等於十六進位 ID」的外部兜底條目改取內建真實名（僅當內建也缺失才保留），玩家手填的真名仍被尊重，避免 0x94 類「一直顯示十六進位」復發。
@@ -1821,6 +1833,10 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+== v23.20 ==  [en]
+[1] Fixed the root cause of "after a game restart the Boss Buff module loses its work while the other modules are fine": the scan() reconnect branch used to clear only the player's quest_mgr / _prev_actor / _raw_locked_addrs, but missed the Boss module's _BOSS_CACHE / _BOSS_ET_CACHE. If module_base / handle get reused after a restart (ASLR off or by chance), the stale boss actor / entity-table pointers keep poisoning find_boss_actor, so boss_actor stays None and the Boss module goes blank. Now it is cleared on reconnect symmetrically with the player, and read_boss_buffs's cache key gains a pid guard (double safety).
+[2] Closed a Japanese (ja) localization gap: about 10 strings looked up via a per-language dict - tray menu (Settings / Unlock-Lock / Show All Windows / Reset All Windows / Exit), the skill-module status placeholders (Initializing... / No skills detected / Skill CD hidden), and the file / color dialog titles & filters - previously had no ja key and fell back to Chinese, so those corners showed Chinese in Japanese mode. ja keys are now added, and the fallback is统一 changed to "lang -> en -> zh" so any unknown language drops to English instead of Chinese.
+
 == v23.19 ==  [en]
 [1] Tightened runtime output: the tool now writes only 3 files - ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json. Added two master switches ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG (both off by default) that stop the per-second boss-buff dump (last_boss_buffs.json) and the foreground/background focus diagnostic log (overlay_focus_log.txt) from being written, so no extra files are scattered around the game folder;
 [2] Fixed buff 0x94 (148) still showing as the hex string 0x94: the root cause was that before this sid was added to the built-in table it got auto-recorded into the external supplement file buff_attrs_unknown.json (name = 0x94), and because the external file has higher priority than the built-in table, even after the real name Chaos Shift was added internally it stayed hidden behind the stale 0x94 record. _attr_for_sid now falls back to the built-in real name for external fallback entries whose name is empty or still equals the hex ID (only kept when the built-in is also missing); names you manually filled in are still respected, preventing the stuck-showing-hex relapse for cases like 0x94.
@@ -2521,6 +2537,10 @@ V2220: Removed the external player dictionary buff_attrs_user.json. Data source 
 - Version jumped to 2000 per user request (V713 -> V2000, title bar reports 20.00).
 
 [ja]
+== v23.20 ==  [ja]
+[1] 「ゲーム再起動後にボスバフモジュールだけが機能を失い、他のモジュールは正常」の根本原因を修正：scan() の再接続分岐はこれまで player の quest_mgr / _prev_actor / _raw_locked_addrs しかクリアしておらず、ボスモジュールの _BOSS_CACHE / _BOSS_ET_CACHE を見落としていた。再起動後に module_base / handle が再利用されると（ASLR 無効または偶然）、古い boss actor / 実体テーブルポインタが find_boss_actor を常に汚染し、boss_actor がずっと None になってボスモジュールが真っ白になっていた。今は player と対称に再接続時にクリアし、さらに read_boss_buffs のキャッシュキーに pid ガードを追加（二重安全）。
+[2] 日本語(ja)ローカライズの欠落を補完：言語別辞書で引く約 10 箇所の文字列——トレイメニュー（設定 / ロック解除·ロック / すべてのウィンドウを表示 / すべてのウィンドウをリセット / 終了）、スキルモジュールの状態プレースホルダ（初期化中… / スキルが検出されません / スキルCD非表示）、ファイル・色選択ダイアログのタイトルとフィルタ——はこれまで ja キーが無く中文にフォールバックしていたため、日本語モードでこれらの隅が中文で表示されていた。ja キーを追加し、フォールバックを「lang → en → zh」に統一したため、未知の言語でも中文ではなく英文に落ちる。
+
 == v23.19 ==  [ja]
 [1] 実行時の出力を絞り込み：ツールが書き出すファイルは ptr_cache.txt / buff_attrs_unknown.json / overlay_settings.json の 3 つだけになりました。ENABLE_BOSS_BUFF_DUMP / ENABLE_FOCUS_LOG の 2 つのマスタースイッチ（いずれも既定オフ）を追加し、boss バフの毎秒ダンプ（last_boss_buffs.json）と前面/背面フォーカス診断ログ（overlay_focus_log.txt）の書き出しを止めたため、ゲームフォルダに余計なファイルが散らばらなくなりました；
 [2] 0x94(148) というバフが今も十六進文字列「0x94」として表示されていた問題を修正：根本原因は、この sid が内蔵表に追加される前に外部補充ファイル buff_attrs_unknown.json へ自動記録され（名称=0x94）、外部ファイルは内蔵表より優先順位が高いため、後から内蔵で本名「カオスシフト」が追加されても古い 0x94 記録に覆い隠されていたこと。_attr_for_sid は、名称が空または十六進 ID のままの外部フォールバック項目に対しては内蔵の本名を採用するようになり（内蔵にも無い場合のみ保持）、プレイヤーが手入力した本名は引き続き尊重されるため、0x94 のような「十六進表示が止まらない」現象の再発を防ぎます。
