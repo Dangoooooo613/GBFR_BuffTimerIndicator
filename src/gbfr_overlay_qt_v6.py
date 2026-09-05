@@ -478,7 +478,7 @@ _BUILD_NO = 2314  # V2314：全代码冗余彻底排查后的 A~E 级清理（�
 #   ⚠️ 行为零变化：以上全是「算了但不用」的死代码，删除不影响任何渲染结果，也不动任何 UI。
 #      注：get_settings() 里对 boss_gate_check_stack_conflict / boss_gate_duration_max 的 pop 保留
 #      （用于清理老 config 文件里的废弃键）。源码备份到 src_backups/2026-09-03_22-12-41_V2314/。
-_BUILD_NO = 2320  # V2320：① 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因——scan() 重连分支原本只清 player 的 quest_mgr/_prev_actor/_raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE；重启后若 module_base/handle 被复用（ASLR 关闭或巧合），陈旧 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。② 补上日文(ja)本地化缺口：之前托盘菜单（设置/解锁·锁定/显示所有窗口/重置所有窗口/退出）、技能模块状态占位（初始化中…/未检测到技能/能力冷却已隐藏）、文件与颜色对话框标题/筛选 等约 10 处按语言字典查表的字符串缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
+_BUILD_NO = 2321  # V2321：新增「任务完成后隐藏全部 UI」——把「任务成功」也当作非战斗状态的一种。机制：scan() 里观测 in_quest（= flow 指针有效）由 True 翻转为 False 即锁存 quest_completed（胜利/失败/放弃皆算结束，新任务开始清除锁存）；_sync_out_of_combat_visibility 在「任务完成隐藏」开关（默认开，独立于「非战斗隐藏」）开启且 quest_completed 时隐藏内容区。另读取 flow+0x2d8 状态枚举供诊断（亦为未来精确标定「胜利结算屏」态预留）。三语(i18n.json ui 段)已补 ja 键。
 #   【G 级】4 个零调用的函数（共 63 行）——全是 V2239「灰色固化门限」工厂的残留。
 #     SettingsDialog.__init__ 里 allbuff / boss 两个对称作用域各定义了 3 个工厂：
 #     _gate_fixed_note（在用）+ _gate_fixed_checkbox / _gate_fixed_double_row（零调用）。
@@ -2342,6 +2342,7 @@ DEFAULT_SETTINGS = {
     "show_bead": True,
     "out_of_combat_hide": True,
     "out_of_combat_opacity": 0,
+    "hide_on_quest_complete": True,
     "show_titlebar_status": True,
     "buff_enabled": {
         "PL0000_0": True,
@@ -4482,6 +4483,10 @@ class SettingsDialog(QDialog):
         self.ooc_hide_chk = QCheckBox(_tr("非战斗时隐藏全部 UI（尖刺圆/全 Buff/核心/翻滚/技能 UI）"))
         self.ooc_hide_chk.setChecked(bool(self.settings.get("out_of_combat_hide", DEFAULT_SETTINGS["out_of_combat_hide"])))
         cf.addRow(_tr("非战斗隐藏:"), self.ooc_hide_chk)
+        # V2321：任务完成后隐藏全部 UI（把「任务成功」也当作非战斗状态的一种）
+        self.hide_on_quest_complete_chk = QCheckBox(_tr("任务完成后隐藏全部 UI（把「任务成功」也当作非战斗）"))
+        self.hide_on_quest_complete_chk.setChecked(bool(self.settings.get("hide_on_quest_complete", DEFAULT_SETTINGS["hide_on_quest_complete"])))
+        cf.addRow(_tr("任务完成隐藏:"), self.hide_on_quest_complete_chk)
         self.ooc_op_spn = QSpinBox()
         self.ooc_op_spn.setRange(0, 100)
         self.ooc_op_spn.setSuffix("%")
@@ -6248,6 +6253,7 @@ class SettingsDialog(QDialog):
                 # 状态
                 live_lines.append(_tr("运行状态 status  = ") + f"{status}")
                 live_lines.append(_tr("战斗中 in_combat  = ") + f"{in_combat}    " + _tr("训练场 in_training = ") + f"{in_training}")
+                live_lines.append(_tr("任务完成 quest_completed = ") + f"{getattr(c, 'quest_completed', False)}    " + _tr("flow 状态枚举 = ") + f"{getattr(c, 'quest_flow_state', 0):#x}")
                 live_lines.append(_tr("专精 mastery     = ") + f"{mastery_zh}")
                 live_lines.append(_tr("翻滚次数 dodge    = ") + f"{dodge_count}")
                 live_lines.append(_tr("技能数 skills    = ") + f"{sk_n}    " + _tr("全 Buff 候选 = ") + f"{buf_n}")
@@ -6697,6 +6703,8 @@ class SettingsDialog(QDialog):
         self.show_skill_module_chk.stateChanged.connect(self._emit_changed)
         self.show_allbuff_module_chk.stateChanged.connect(self._emit_changed)
         self.show_boss_module_chk.stateChanged.connect(self._emit_changed)
+        # V2321：任务完成后隐藏（实时生效）
+        self.hide_on_quest_complete_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_core_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_infinite_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_exclusive_chk.stateChanged.connect(self._emit_changed)
@@ -6849,6 +6857,7 @@ class SettingsDialog(QDialog):
         self.show_spikes_chk.setChecked(DEFAULT_SETTINGS["show_spikes"])
         self.show_bead_chk.setChecked(DEFAULT_SETTINGS["show_bead"])
         self.ooc_hide_chk.setChecked(DEFAULT_SETTINGS["out_of_combat_hide"])
+        self.hide_on_quest_complete_chk.setChecked(DEFAULT_SETTINGS["hide_on_quest_complete"])
         self.ooc_op_spn.setValue(DEFAULT_SETTINGS["out_of_combat_opacity"])
         self.show_titlebar_status.setChecked(DEFAULT_SETTINGS["show_titlebar_status"])
         self.titlebar_font_size_spn.setValue(DEFAULT_SETTINGS["titlebar_font_size"])
@@ -7231,6 +7240,7 @@ class SettingsDialog(QDialog):
         self.settings["show_bead"] = self.show_bead_chk.isChecked()
         self.settings["out_of_combat_hide"] = self.ooc_hide_chk.isChecked()
         self.settings["out_of_combat_opacity"] = self.ooc_op_spn.value()
+        self.settings["hide_on_quest_complete"] = self.hide_on_quest_complete_chk.isChecked()
         self.settings["show_titlebar_status"] = self.show_titlebar_status.isChecked()
         self.settings["titlebar_font_size"] = self.titlebar_font_size_spn.value()
         self.settings["title_align"] = self.title_align_combo.currentData()
@@ -8102,6 +8112,12 @@ class GBFROverlayQt(QObject):
         self.module_size = 0
         self.quest_mgr = None
         self.in_training_area = False
+        # V2321：任务完成检测（用于「任务完成后隐藏」）。_quest_completed_latch 在
+        # in_quest 由 True→False 翻转时置位（胜利/失败/放弃皆算结束），新任务开始清除。
+        self.quest_completed = False
+        self._quest_completed_latch = False
+        self._prev_in_quest = False
+        self.quest_flow_state = 0
         self.status = "init"
         self.active_buffs = []
         self.dodge_count = 0
@@ -12471,7 +12487,14 @@ class GBFROverlayQt(QObject):
         # 非战斗 = 不在副本/任务中 且 不在训练场
         in_training_area = getattr(self, "in_training_area", False)
         ooc_hide = bool(self.settings.get("out_of_combat_hide", False))
-        want_hide_content = ooc_hide and not in_combat and not in_training_area
+        # V2321：任务完成后隐藏——把「任务成功」也当作非战斗状态的一种。
+        # 独立于「非战斗隐藏」开关：即使未开启非战斗隐藏，勾选本项也会在任务结束后隐藏 UI。
+        quest_complete_hide = bool(self.settings.get("hide_on_quest_complete", True))
+        quest_completed = getattr(self, "quest_completed", False)
+        want_hide_content = (
+            (ooc_hide and not in_combat and not in_training_area)
+            or (quest_complete_hide and quest_completed and not in_training_area)
+        )
         if want_hide_content:
             opacity_f = max(0.0, min(100, int(self.settings.get("out_of_combat_opacity", 0)))) / 100.0
             self._ooc_content_mult = opacity_f
@@ -12699,6 +12722,10 @@ class GBFROverlayQt(QObject):
         self.pl_id = "PL0000"
         self.in_combat = bool(st.get("debug_in_combat", True))
         self.in_training_area = False
+        self.quest_completed = False
+        self._quest_completed_latch = False
+        self._prev_in_quest = False
+        self.quest_flow_state = 0
         m = str(st.get("debug_mastery", "") or "")
         self.current_mastery = m if m in ("awakening", "truth", "secret") else None
 
@@ -13065,6 +13092,8 @@ class GBFROverlayQt(QObject):
         # 训练场通过 quest_mgr+0xB20/0xB28 两个 u32 计时器判定（小镇等恒为0，训练场非零）。
         in_combat = True
         in_training_area = False
+        in_quest = False
+        quest_flow_state = 0
         if self.module_base and self.handle:
             try:
                 if self.quest_mgr is None:
@@ -13091,10 +13120,26 @@ class GBFROverlayQt(QObject):
                         in_training_area = False
                     if in_training_area:
                         in_combat = True
+                    # V2321：读取 flow 状态枚举（诊断用；亦供未来精确标定「胜利结算屏」态）
+                    if flow and flow > 0x10000:
+                        try:
+                            quest_flow_state = read_u32(self.handle, flow + 0x2D8)
+                        except Exception:
+                            quest_flow_state = 0
             except Exception:
                 in_combat = True
         self.in_combat = in_combat
         self.in_training_area = in_training_area
+        self.quest_flow_state = quest_flow_state
+        # V2321：任务完成锁存——in_quest 由 True 翻转为 False 即「任务已结束」（胜利/失败/放弃皆算）。
+        # 新任务开始（False→True）时清除锁存。quest_completed 供「任务完成后隐藏」复用非战斗隐藏机制。
+        _prev_in_quest = getattr(self, "_prev_in_quest", False)
+        if in_quest and not _prev_in_quest:
+            self._quest_completed_latch = False
+        elif _prev_in_quest and not in_quest:
+            self._quest_completed_latch = True
+        self._prev_in_quest = in_quest
+        self.quest_completed = bool(getattr(self, "_quest_completed_latch", False))
 
     def close_handle(self):
         if self.handle:

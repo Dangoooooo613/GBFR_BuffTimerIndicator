@@ -1,4 +1,7 @@
 [zh]
+== v23.21 ==
+[1] 新增「任务完成后隐藏全部 UI」：把「任务成功」也当作非战斗状态的一种。机制——scan() 里观测 in_quest（= 任务 flow 指针有效）由 True 翻转为 False 即锁存 quest_completed（胜利 / 失败 / 放弃皆算结束，开新任务时清除锁存）；「任务完成隐藏」开关（默认开，独立于「非战斗隐藏」）开启且 quest_completed 时隐藏内容区。另读取 flow+0x2d8 状态枚举供诊断（亦为未来精确标定「胜利结算屏」态预留）。
+
 == v23.20 ==
 [1] 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因：scan() 重连分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE。重启后若 module_base / handle 被复用（ASLR 关闭或巧合），陈旧的 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。
 [2] 补上日文(ja)本地化缺口：托盘菜单（设置 / 解锁·锁定 / 显示所有窗口 / 重置所有窗口 / 退出）、技能模块状态占位（初始化中… / 未检测到技能 / 能力冷却已隐藏）、文件与颜色对话框标题 / 筛选 等约 10 处按语言字典查表的字符串此前缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
@@ -521,6 +524,9 @@ V2220：删除外放玩家字典 buff_attrs_user.json。现在数据来源为「
 - 翻滚图标：删掉原先的橙色矩形兜底，PNG 加载失败/未设置时改为 QPainter 现场绘制的「白对号 ✓ + 深透明圆角底」徽章，UI 风格统一。
 
 [zh_tw]
+== v23.21 ==
+[1] 新增「任務完成後隱藏全部 UI」：把「任務成功」也當作非戰鬥狀態的一種。機制——scan() 裡觀測 in_quest（= 任務 flow 指標有效）由 True 翻轉為 False 即鎖存 quest_completed（勝利 / 失敗 / 放棄皆算結束，開新任務時清除鎖存）；「任務完成隱藏」開關（預設開，獨立於「非戰鬥隱藏」）開啟且 quest_completed 時隱藏內容區。另讀取 flow+0x2d8 狀態列舉供診斷（亦為未來精確標定「勝利結算屏」態預留）。
+
 == v23.20 ==  [zh_tw]
 [1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
 [2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
@@ -1237,6 +1243,9 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v23.21 ==
+[1] 新增「任務完成後隱藏全部 UI」：把「任務成功」也當作非戰鬥狀態的一種。機制——scan() 裡觀測 in_quest（= 任務 flow 指標有效）由 True 翻轉為 False 即鎖存 quest_completed（勝利 / 失敗 / 放棄皆算結束，開新任務時清除鎖存）；「任務完成隱藏」開關（預設開，獨立於「非戰鬥隱藏」）開啟且 quest_completed 時隱藏內容區。另讀取 flow+0x2d8 狀態列舉供診斷（亦為未來精確標定「勝利結算屏」態預留）。
+
 == v23.20 ==  [zh_tw]
 [1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
 [2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
@@ -1833,6 +1842,9 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+== v23.21 ==
+[1] New "Hide all UI after quest complete": treat quest success as a kind of out-of-combat state. Mechanism - in scan(), when in_quest (valid quest flow pointer) flips from True to False we latch quest_completed (covers win / fail / abort; the latch is cleared when a new quest starts); with the "Hide on quest complete" toggle on (default on, independent of "Hide when out of combat") the content area is hidden while quest_completed. Also reads the flow+0x2d8 state enum for diagnostics (and reserves room to precisely detect the "victory result screen" state later).
+
 == v23.20 ==  [en]
 [1] Fixed the root cause of "after a game restart the Boss Buff module loses its work while the other modules are fine": the scan() reconnect branch used to clear only the player's quest_mgr / _prev_actor / _raw_locked_addrs, but missed the Boss module's _BOSS_CACHE / _BOSS_ET_CACHE. If module_base / handle get reused after a restart (ASLR off or by chance), the stale boss actor / entity-table pointers keep poisoning find_boss_actor, so boss_actor stays None and the Boss module goes blank. Now it is cleared on reconnect symmetrically with the player, and read_boss_buffs's cache key gains a pid guard (double safety).
 [2] Closed a Japanese (ja) localization gap: about 10 strings looked up via a per-language dict - tray menu (Settings / Unlock-Lock / Show All Windows / Reset All Windows / Exit), the skill-module status placeholders (Initializing... / No skills detected / Skill CD hidden), and the file / color dialog titles & filters - previously had no ja key and fell back to Chinese, so those corners showed Chinese in Japanese mode. ja keys are now added, and the fallback is统一 changed to "lang -> en -> zh" so any unknown language drops to English instead of Chinese.
@@ -2537,6 +2549,9 @@ V2220: Removed the external player dictionary buff_attrs_user.json. Data source 
 - Version jumped to 2000 per user request (V713 -> V2000, title bar reports 20.00).
 
 [ja]
+== v23.21 ==
+[1] 新機能「クエスト完了後にすべてのUIを非表示」：クエスト成功を非戦闘状態の一種として扱う。仕組み——scan() 内で in_quest（クエスト flow ポインタが有効）が True から False に反転した時点で quest_completed をラッチ（勝利 / 失敗 / 中止のいずれも「終了」とみなし、新しいクエスト開始時にラッチ解除）；「クエスト完了で非表示」トグル（既定オン、「非戦闘時に非表示」から独立）がオンかつ quest_completed のとき、コンテンツ領域を非表示にする。併せて flow+0x2d8 の状態列挙を診断用に読取（将来の「勝利リザルト画面」状態の正確な特定にも備える）。
+
 == v23.20 ==  [ja]
 [1] 「ゲーム再起動後にボスバフモジュールだけが機能を失い、他のモジュールは正常」の根本原因を修正：scan() の再接続分岐はこれまで player の quest_mgr / _prev_actor / _raw_locked_addrs しかクリアしておらず、ボスモジュールの _BOSS_CACHE / _BOSS_ET_CACHE を見落としていた。再起動後に module_base / handle が再利用されると（ASLR 無効または偶然）、古い boss actor / 実体テーブルポインタが find_boss_actor を常に汚染し、boss_actor がずっと None になってボスモジュールが真っ白になっていた。今は player と対称に再接続時にクリアし、さらに read_boss_buffs のキャッシュキーに pid ガードを追加（二重安全）。
 [2] 日本語(ja)ローカライズの欠落を補完：言語別辞書で引く約 10 箇所の文字列——トレイメニュー（設定 / ロック解除·ロック / すべてのウィンドウを表示 / すべてのウィンドウをリセット / 終了）、スキルモジュールの状態プレースホルダ（初期化中… / スキルが検出されません / スキルCD非表示）、ファイル・色選択ダイアログのタイトルとフィルタ——はこれまで ja キーが無く中文にフォールバックしていたため、日本語モードでこれらの隅が中文で表示されていた。ja キーを追加し、フォールバックを「lang → en → zh」に統一したため、未知の言語でも中文ではなく英文に落ちる。

@@ -4576,6 +4576,26 @@
       "zh_tw": "警告圖相對翻滾圖標尺寸的百分比。100% = 和第 1~5 次的翻滾圖標一樣大。",
       "en": "Warning image size as a percentage of the dodge icon size. 100% = same size as the 1st-5th dodge icons.",
       "ja": "回避アイコンのサイズに対する警告画像の割合。100% = 1〜5回目の回避アイコンと同じ大きさ。"
+    },
+    "任务完成后隐藏全部 UI（把「任务成功」也当作非战斗）": {
+      "zh_tw": "任務完成後隱藏全部 UI（把「任務成功」也當作非戰鬥）",
+      "en": "Hide all UI after quest complete (treat quest success as out-of-combat)",
+      "ja": "クエスト完了後にすべてのUIを非表示（クエスト成功を非戦闘扱いに）"
+    },
+    "任务完成隐藏:": {
+      "zh_tw": "任務完成隱藏:",
+      "en": "Hide on quest complete:",
+      "ja": "クエスト完了で非表示:"
+    },
+    "任务完成 quest_completed = ": {
+      "zh_tw": "任務完成 quest_completed = ",
+      "en": "quest completed = ",
+      "ja": "クエスト完了 = "
+    },
+    "flow 状态枚举 = ": {
+      "zh_tw": "flow 狀態列舉 = ",
+      "en": "flow state enum = ",
+      "ja": "flow 状態列挙 = "
     }
   }
 }

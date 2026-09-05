@@ -199,5 +199,6 @@
   "classmech_window_y": 860,
   "classmech_scale_percent": 100,
   "show_skill_cd": true,
-  "sync_exe_list": ""
+  "sync_exe_list": "",
+  "hide_on_quest_complete": true
 }

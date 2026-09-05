@@ -35,7 +35,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="GBFR_CooldownIndicator_V2320",
+    name="GBFR_CooldownIndicator_V2321",
     icon='assets/app_icon.ico',
     debug=False,
     bootloader_ignore_signals=False,
