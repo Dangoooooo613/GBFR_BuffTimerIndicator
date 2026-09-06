@@ -1,4 +1,67 @@
 [zh]
+
+== v23.28 ==
+[1] 关掉运行期自动产生的 buff_attrs_unknown.json：新增 ENABLE_UNKNOWN_DUMP 总开关（默认关闭），_dump_unknown_buffs 受控后运行时不再创建/改写该文件。运行期散落文件由「三份」收敛为「两份」（仅 overlay_settings.json / ptr_cache.txt）。玩家仍可手动建同名文件补充未知 buff 名称（读取路径不受影响）。flow 枚举隐藏范围沿用 V2327。
+
+== v23.28 ==
+[1] 關掉執行期自動產生的 buff_attrs_unknown.json：新增 ENABLE_UNKNOWN_DUMP 總開關（預設關閉），_dump_unknown_buffs 受控後執行期不再建立/改寫該檔案。執行期散落檔案由「三份」收斂為「兩份」（僅 overlay_settings.json / ptr_cache.txt）。玩家仍可手動建同名檔案補充未知 buff 名稱（讀取路徑不受影響）。flow 列舉隱藏範圍沿用 V2327。
+
+== v23.28 ==
+[1] Stop auto-generating buff_attrs_unknown.json at runtime: added ENABLE_UNKNOWN_DUMP master switch (default off); with it off _dump_unknown_buffs no longer creates/rewrites the file. Runtime side-files reduced from three to two (only overlay_settings.json / ptr_cache.txt). Players can still manually create the file to supply unknown buff names (load path unaffected). flow hide range unchanged from V2327.
+
+== v23.28 ==
+[1] 実行時に自動生成されていた buff_attrs_unknown.json を停止：ENABLE_UNKNOWN_DUMP マスタースイッチ（既定オフ）を追加。オフの場合 _dump_unknown_buffs はファイルを作成・上書きしない。実行時の副ファイルを「3 種」から「2 種」（overlay_settings.json / ptr_cache.txt のみ）に削減。プレイヤーは同名ファイルを手動作成して未知 buff 名を補完可能（読み込み経路は影響なし）。flow の非表示範囲は V2327 のまま。
+
+== v23.27 ==
+[1] 微调 flow 隐藏范围：在 V2326 基础上把 0x10 单独放行为「战斗中/显示」，仅隐藏 0x11~0x1F。完整规则（in_quest 时）：0x1~0xF 与 0x10 与 0x20+ 显示 UI；0x0（空闲）与 0x11~0x1F（含 0x1b 结算）隐藏 UI。即「0x1~0xF、0x10、0x20+ 显示；0x0 与 0x11~0x1F 隐藏」。训练场逻辑不变。
+
+== v23.27 ==
+[1] 微調 flow 隱藏範圍：在 V2326 基礎上把 0x10 單獨放行為「戰鬥中/顯示」，僅隱藏 0x11~0x1F。完整規則（in_quest 時）：0x1~0xF 與 0x10 與 0x20+ 顯示 UI；0x0（閒置）與 0x11~0x1F（含 0x1b 結算）隱藏 UI。即「0x1~0xF、0x10、0x20+ 顯示；0x0 與 0x11~0x1F 隱藏」。訓練場邏輯不變。
+
+== v23.27 ==
+[1] Fine-tuned the flow hide range: on top of V2326, 0x10 is now released as "in-combat / shown", only 0x11~0x1F are hidden. Full rule (in_quest): 0x1~0xF and 0x10 and 0x20+ show UI; 0x0 (idle) and 0x11~0x1F (incl. 0x1b result) hide UI. i.e. "0x1~0xF, 0x10, 0x20+ show; 0x0 and 0x11~0x1F hide". Training-area logic unchanged.
+
+== v23.27 ==
+[1] flow の非表示範囲を微調整：V2326 に基づき 0x10 を「戦闘中／表示」として単独で解放し、0x11~0x1F のみ非表示とする。完全なルール（in_quest 中）：0x1~0xF と 0x10 と 0x20 以上は UI 表示；0x0（待機）と 0x11~0x1F（0x1b 結果 を含む）は UI 非表示。「0x1~0xF、0x10、0x20 以上は表示；0x0 と 0x11~0x1F は非表示」に相当。訓練場の判定は変わらず。
+
+== v23.26 ==
+[1] 修正 V2325 反向误判的 flow 状态机：实测 0x1b 落在 0x10~0x1F 范围应隐藏、0x6 落在 0x1~0xF 范围应显示。新规则（in_quest 时）：低位带非零 0x1~0xF（含 0x6 联机 / 0xc 战斗）显示 UI；0x0（空闲）与高位带 0x10~0x1F（含 0x1b 结算）隐藏 UI；0x20+ 未知态保守当战斗中显示。即「0x1~0xF 与 0x20+ 显示、0x0 与 0x10~0x1F 隐藏」。训练场逻辑不变。
+
+== v23.26 ==
+[1] 修正 V2325 反向誤判的 flow 狀態機：實測 0x1b 落在 0x10~0x1F 範圍應隱藏、0x6 落在 0x1~0xF 範圍應顯示。新規則（in_quest 時）：低位元非零 0x1~0xF（含 0x6 聯機 / 0xc 戰鬥）顯示 UI；0x0（閒置）與高位元 0x10~0x1F（含 0x1b 結算）隱藏 UI；0x20+ 未知態保守當戰鬥中顯示。即「0x1~0xF 與 0x20+ 顯示、0x0 與 0x10~0x1F 隱藏」。訓練場邏輯不變。
+
+== v23.26 ==
+[1] Fixed the reversed flow rule from V2325: in real play 0x1b (which sits in 0x10~0x1F) should be hidden, and 0x6 (which sits in 0x1~0xF) should be shown. New rule (in_quest): low-nibble non-zero 0x1~0xF (incl. 0x6 co-op / 0xc combat) shows UI; 0x0 (idle) and high-nibble 0x10~0x1F (incl. 0x1b result) hide UI; 0x20+ unknown is conservatively treated as combat (shown). i.e. "0x1~0xF and 0x20+ show, 0x0 and 0x10~0x1F hide". Training-area logic unchanged.
+
+== v23.26 ==
+[1] V2325 で逆転していた flow 判定を修正：実機では 0x1b（0x10~0x1F 範囲）は非表示、0x6（0x1~0xF 範囲）は表示が正しい。新ルール（in_quest 中）：下位ニブル非ゼロ 0x1~0xF（0x6 協力 / 0xc 戦闘 を含む）は UI 表示；0x0（待機）と上位ニブル 0x10~0x1F（0x1b 結果 を含む）は UI 非表示；0x20 以上の未知値は保守的に戦闘扱い（表示）。「0x1~0xF と 0x20 以上は表示、0x0 と 0x10~0x1F は非表示」に相当。訓練場の判定は変わらず。
+
+== v23.25 ==
+[1] 按实机观测精简 flow 状态机判定「任务中是否战斗」：低位带 0x0~0xF 一律视为非战斗（UI 消失），≥0x10 一律视为战斗（UI 显示，含 0x15 拾宝 / 0x1b 结算）；仅 0xc（战斗时肯定要出现）虽在低位带仍单独放行为战斗中。即「0x0~0xF 非战斗、其余皆战斗」。训练场逻辑不变。
+
+== v23.25 ==
+[1] 依實機觀測精簡 flow 狀態機判定「任務中是否戰鬥」：低位元 0x0~0xF 一律視為非戰鬥（UI 消失），≥0x10 一律視為戰鬥（UI 顯示，含 0x15 拾寶 / 0x1b 結算）；僅 0xc（戰鬥時肯定要出現）雖在低位元仍單獨放行為戰鬥中。即「0x0~0xF 非戰鬥、其餘皆戰鬥」。訓練場邏輯不變。
+
+== v23.25 ==
+[1] Simplified the in-quest combat detection from the real flow enum: low nibble 0x0~0xF is treated as non-combat (UI hidden), >=0x10 as combat (UI shown, incl. 0x15 loot / 0x1b result); only 0xc (the observed must-show combat state) is excepted even though it sits in the low nibble. i.e. "0x0~0xF = non-combat, everything else = combat". Training-area logic unchanged.
+
+== v23.25 ==
+[1] 実機観測の flow 列挙に基づき「クエスト中の戦闘判定」を簡略化：下位ニブル 0x0~0xF は非戦闘（UI 非表示）、0x10 以上は戦闘（UI 表示、0x15 宝箱 / 0x1b 結果 を含む）；低位ニブルの 0xc（戦闘時に必ず表示されると確認）のみ例外として戦闘扱い。「0x0~0xF は非戦闘、それ以外は戦闘」に相当。訓練場の判定は変わらず。
+
+== v23.24 ==
+[1] 基于 flow 状态枚举重写「任务中非战斗隐藏」（实机观测驱动）：flow 枚举——0x0=无任务/空闲、0x6=联机、0xc=战斗(必显示)、0x15=拾取宝箱、0x1b=结算(任务完成)。规则：枚举∈活跃态(战斗0xc/拾宝0x15)→战斗中(显示UI)；枚举∈低位带0x0~0xF非活跃态、或=结算0x1b→任务中非战斗(隐藏UI)。训练场逻辑由 in_training_area 单独判定，不受影响。标题栏与状态栏视觉回退到 V2321 状态（移除 V2322 诊断行与 V2323 标题栏改动），UI 更干净。
+
+
+== v23.23 ==
+[1] 修正「任务完成后隐藏」没效果并真正接通触发：V2321 靠 in_quest(True→False 边沿)锁存，但 GBFR 结算屏期间 flow 指针仍有效、in_quest 一直为 True，边沿要等回城才翻，等于没触发。本版改为盯住 flow+0x2D8 状态枚举——in_quest 仍为 True 的结算屏期间，枚举从「战斗值」跳到「结束值」即判定任务完成（不依赖具体结束值，带连续 3 拍去抖防战斗内瞬时跳变）；离开任务即清除锁存，回城后 UI 恢复。V2322 新增的标题栏「任务完成」诊断行（完成 / 战斗 / flow 枚举）保留，用于确认本修正是否生效。
+
+
+== v23.22 ==
+[1] 核心模块标题栏新增「任务完成」实时诊断行：把 quest_completed 标志位（「任务完成后隐藏」的判定依据）连同 in_quest / flow+0x2D8 状态枚举实时画到标题栏状态文字带，解锁时拼在角色+buff 行后、锁定时单独显示。便于在实战 / 结算屏期间观察该标志到底有没有翻转、flow 枚举在结算屏变成什么值，据此标定真正的「任务完成」触发点（V2321 的 in_quest 边沿锁存因结算屏期间 flow 指针仍有效而不触发，需依此诊断结果修正）。
+
+== v23.21 ==
+[1] 新增「任务完成后隐藏全部 UI」：把「任务成功」也当作非战斗状态的一种。机制——scan() 里观测 in_quest（= 任务 flow 指针有效）由 True 翻转为 False 即锁存 quest_completed（胜利 / 失败 / 放弃皆算结束，开新任务时清除锁存）；「任务完成隐藏」开关（默认开，独立于「非战斗隐藏」）开启且 quest_completed 时隐藏内容区。另读取 flow+0x2d8 状态枚举供诊断（亦为未来精确标定「胜利结算屏」态预留）。
+
 == v23.20 ==
 [1] 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因：scan() 重连分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE。重启后若 module_base / handle 被复用（ASLR 关闭或巧合），陈旧的 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。
 [2] 补上日文(ja)本地化缺口：托盘菜单（设置 / 解锁·锁定 / 显示所有窗口 / 重置所有窗口 / 退出）、技能模块状态占位（初始化中… / 未检测到技能 / 能力冷却已隐藏）、文件与颜色对话框标题 / 筛选 等约 10 处按语言字典查表的字符串此前缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
@@ -521,6 +584,21 @@ V2220：删除外放玩家字典 buff_attrs_user.json。现在数据来源为「
 - 翻滚图标：删掉原先的橙色矩形兜底，PNG 加载失败/未设置时改为 QPainter 现场绘制的「白对号 ✓ + 深透明圆角底」徽章，UI 风格统一。
 
 [zh_tw]
+
+== v23.24 ==
+[1] 基於 flow 狀態列舉重寫「任務中非戰鬥隱藏」（實機觀測驅動）：flow 列舉——0x0=無任務/閒置、0x6=聯機、0xc=戰鬥(必顯示)、0x15=拾取寶箱、0x1b=結算(任務完成)。規則：列舉∈活躍態(戰鬥0xc/拾寶0x15)→戰鬥中(顯示UI)；列舉∈低位帶0x0~0xF非活躍態、或=結算0x1b→任務中非戰鬥(隱藏UI)。訓練場邏輯由 in_training_area 單獨判定，不受影響。標題欄與狀態欄視覺回退到 V2321 狀態（移除 V2322 診斷行與 V2323 標題欄改動），UI 更乾淨。
+
+
+== v23.23 ==
+[1] 修正「任務完成後隱藏」沒效果並真正接通觸發：V2321 靠 in_quest(True→False 邊緣)鎖存，但 GBFR 結算畫面期間 flow 指標仍有效、in_quest 一直為 True，邊緣要等回城才翻，等於沒觸發。本版改為盯住 flow+0x2D8 狀態列舉——in_quest 仍為 True 的結算畫面期間，列舉從「戰鬥值」跳到「結束值」即判定任務完成（不依賴具體結束值，帶連續 3 拍去抖防戰鬥內瞬時跳變）；離開任務即清除鎖存，回城後 UI 恢復。V2322 新增的標題欄「任務完成」診斷行（完成 / 戰鬥 / flow 列舉）保留，用於確認本修正是否生效。
+
+
+== v23.22 ==
+[1] 核心模块标题栏新增「任務完成」即時診斷行：把 quest_completed 標誌位（「任務完成後隱藏」的判定依據）連同 in_quest / flow+0x2D8 狀態列舉即時畫到標題欄狀態文字帶，解鎖時接在角色+buff 行之後、鎖定時單獨顯示。便於在實戰 / 結算畫面期間觀察該標誌到底有沒有翻轉、flow 列舉在結算畫面變成什麼值，據此標定真正的「任務完成」觸發點（V2321 的 in_quest 邊緣鎖存因結算畫面期間 flow 指標仍有效而不觸發，需依此診斷結果修正）。
+
+== v23.21 ==
+[1] 新增「任務完成後隱藏全部 UI」：把「任務成功」也當作非戰鬥狀態的一種。機制——scan() 裡觀測 in_quest（= 任務 flow 指標有效）由 True 翻轉為 False 即鎖存 quest_completed（勝利 / 失敗 / 放棄皆算結束，開新任務時清除鎖存）；「任務完成隱藏」開關（預設開，獨立於「非戰鬥隱藏」）開啟且 quest_completed 時隱藏內容區。另讀取 flow+0x2d8 狀態列舉供診斷（亦為未來精確標定「勝利結算屏」態預留）。
+
 == v23.20 ==  [zh_tw]
 [1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
 [2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
@@ -1237,6 +1315,9 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本号按用户指定跳至 2000（V713 -> V2000，标题栏自报 20.00）。
 
 [zh_tw]
+== v23.21 ==
+[1] 新增「任務完成後隱藏全部 UI」：把「任務成功」也當作非戰鬥狀態的一種。機制——scan() 裡觀測 in_quest（= 任務 flow 指標有效）由 True 翻轉為 False 即鎖存 quest_completed（勝利 / 失敗 / 放棄皆算結束，開新任務時清除鎖存）；「任務完成隱藏」開關（預設開，獨立於「非戰鬥隱藏」）開啟且 quest_completed 時隱藏內容區。另讀取 flow+0x2d8 狀態列舉供診斷（亦為未來精確標定「勝利結算屏」態預留）。
+
 == v23.20 ==  [zh_tw]
 [1] 修復「遊戲重啟後 boss buff 模組丟失工作、其他模組正常」的根本原因：scan() 重連分支原本只清空 player 的 quest_mgr / _prev_actor / _raw_locked_addrs，漏了 boss 模組的 _BOSS_CACHE / _BOSS_ET_CACHE。重啟後若 module_base / handle 被重複使用（ASLR 關閉或巧合），陳舊的 boss actor / 實體表指標會一直毒害 find_boss_actor，使 boss_actor 恆為 None、boss 模組整屏空白。現與 player 對稱地重連即清空，並給 read_boss_buffs 的快取鍵加入 pid 守衛（雙保險）。
 [2] 補上日文(ja)本地化缺口：托盤選單（設定 / 解鎖·鎖定 / 顯示所有視窗 / 重置所有視窗 / 退出）、技能模組狀態佔位（初始化中… / 未偵測到技能 / 能力冷卻已隱藏）、檔案與顏色對話框標題 / 篩選 等約 10 處按語言字典查表的字串此前缺 ja 鍵、且兜底掉回中文，切日文時這些角落會顯示中文；現已補 ja 鍵，並把兜底統一改為「lang → en → zh」，任何未知語言都掉英文而非中文。
@@ -1833,6 +1914,21 @@ V2220：刪除外放玩家字典 buff_attrs_user.json。現在資料來源為「
 - 版本號按用戶指定跳至 2000（V713 -> V2000，標題欄自報 20.00）。
 
 [en]
+
+== v23.24 ==
+[1] Rewrote "hide UI during non-combat inside a quest" driven by the real flow-state enum observed in-game: flow enum - 0x0=no quest/idle, 0x6=co-op, 0xc=combat (must show), 0x15=looting chest, 0x1b=result/quest-complete. Rule: enum in an active state (combat 0xc / loot 0x15) -> in combat (show UI); enum in the low 0x0~0xF band (non-active) or = result 0x1b -> non-combat inside quest (hide UI). Training-area logic is handled separately by in_training_area and is unaffected. The title bar and status strip visuals are reverted to the V2321 state (the V2322 diagnostic line and V2323 title-bar changes are removed), giving a cleaner UI.
+
+
+== v23.23 ==
+[1] Fix "hide UI after quest complete" never firing, and actually wire the trigger: V2321 latched on the in_quest (True→False) edge, but during GBFR's result screen the flow pointer stays valid so in_quest stays True — the edge only flips back in town, so it never fired (user saw "no effect"). This version watches the flow+0x2D8 state enum instead: while in_quest is still True on the result screen, when the enum jumps from its "in-combat" value to an "ended" value, the quest is treated as complete (no hard-coded end value; 3 consecutive scans of debounce guard against brief in-combat blips); leaving the quest clears the latch so the UI returns in town. The V2322 title-bar "quest complete" diagnostic line (done / in-combat / flow enum) is kept to confirm this fix works.
+
+
+== v23.22 ==
+[1] Core module title bar gains a live "quest complete" diagnostic line: the quest_completed flag (what "hide UI after quest complete" keys off), together with in_quest and the flow+0x2D8 state enum, is drawn into the title-bar status strip — appended after the character+buff line when unlocked, shown alone when locked. This lets you watch during combat / the result screen whether the flag actually flips and what the flow enum becomes there, so the real "quest complete" trigger can be calibrated (V2321's in_quest edge-latch never fired because the flow pointer stays valid through the result screen; needs this diagnosis to fix).
+
+== v23.21 ==
+[1] New "Hide all UI after quest complete": treat quest success as a kind of out-of-combat state. Mechanism - in scan(), when in_quest (valid quest flow pointer) flips from True to False we latch quest_completed (covers win / fail / abort; the latch is cleared when a new quest starts); with the "Hide on quest complete" toggle on (default on, independent of "Hide when out of combat") the content area is hidden while quest_completed. Also reads the flow+0x2d8 state enum for diagnostics (and reserves room to precisely detect the "victory result screen" state later).
+
 == v23.20 ==  [en]
 [1] Fixed the root cause of "after a game restart the Boss Buff module loses its work while the other modules are fine": the scan() reconnect branch used to clear only the player's quest_mgr / _prev_actor / _raw_locked_addrs, but missed the Boss module's _BOSS_CACHE / _BOSS_ET_CACHE. If module_base / handle get reused after a restart (ASLR off or by chance), the stale boss actor / entity-table pointers keep poisoning find_boss_actor, so boss_actor stays None and the Boss module goes blank. Now it is cleared on reconnect symmetrically with the player, and read_boss_buffs's cache key gains a pid guard (double safety).
 [2] Closed a Japanese (ja) localization gap: about 10 strings looked up via a per-language dict - tray menu (Settings / Unlock-Lock / Show All Windows / Reset All Windows / Exit), the skill-module status placeholders (Initializing... / No skills detected / Skill CD hidden), and the file / color dialog titles & filters - previously had no ja key and fell back to Chinese, so those corners showed Chinese in Japanese mode. ja keys are now added, and the fallback is统一 changed to "lang -> en -> zh" so any unknown language drops to English instead of Chinese.
@@ -2537,6 +2633,21 @@ V2220: Removed the external player dictionary buff_attrs_user.json. Data source 
 - Version jumped to 2000 per user request (V713 -> V2000, title bar reports 20.00).
 
 [ja]
+
+== v23.24 ==
+[1] 実機観測した flow 状態列挙に基づき「クエスト中の非戦闘時に UI を非表示」を書き直し：flow 列挙——0x0=クエスト無し/待機、0x6=マルチ、0xc=戦闘(必ず表示)、0x15=宝箱取得、0x1b=リザルト/クエスト完了。規則：列挙が活躍状態(戦闘0xc/取得0x15)なら戦闘中(UI表示)；列挙が低位帯0x0~0xFの非活躍状態、または=リザルト0x1bならクエスト中の非戦闘(UI非表示)。訓練場のロジックは in_training_area で別途判定され影響を受けない。タイトルバーとステータス帯の見た目は V2321 の状態に戻し（V2322 の診斷行と V2323 のタイトルバー変更を削除）、UI をよりすっきりさせた。
+
+
+== v23.23 ==
+[1] 「クエスト完了後に UI を非表示」が発火しない問題を修正し、トリガーを実際に接続：V2321 は in_quest(True→False エッジ)で鎖存していたが、GBFR のリザルト画面中は flow ポインタが有効なままなので in_quest は True のまま、エッジは町に戻るまで反転せず、結果として発火しなかった（ユーザーが「効かない」と報告）。本版は flow+0x2D8 の状態列挙を監視：リザルト画面で in_quest がまだ True の間に、列挙が「戦闘中」値から「終了」値へ跳んだらクエスト完了と判定（特定の終了値に依存せず、戦闘中の瞬時な跳びを防ぐため 3 スキャン連続のデバウンス付き）；クエスト離脱で鎖存をクリアし、町では UI が戻る。V2322 で追加したタイトルバーの「クエスト完了」診断行（完了 / 戦闘中 / flow 列挙）は本修正の動作確認のため残している。
+
+
+== v23.22 ==
+[1] コアモジュールのタイトルバーに「クエスト完了」のリアルタイム診断行を追加：quest_completed フラグ（「クエスト完了後に UI を非表示」の判定基準）を in_quest と flow+0x2D8 の状態列挙と共にタイトルバーのステータス帯に描画（ロック解除時はキャラ+buff 行の直後、ロック時は単独表示）。戦闘中 / リザルト画面中にこのフラグが実際に反転するか、flow 列挙がリザルトで何になるかを観察でき、これにより真の「クエスト完了」トリガーを特定できる（V2321 の in_quest エッジ検出はリザルト中も flow ポインタが有効なため発火せず、この診断で修正が必要）。
+
+== v23.21 ==
+[1] 新機能「クエスト完了後にすべてのUIを非表示」：クエスト成功を非戦闘状態の一種として扱う。仕組み——scan() 内で in_quest（クエスト flow ポインタが有効）が True から False に反転した時点で quest_completed をラッチ（勝利 / 失敗 / 中止のいずれも「終了」とみなし、新しいクエスト開始時にラッチ解除）；「クエスト完了で非表示」トグル（既定オン、「非戦闘時に非表示」から独立）がオンかつ quest_completed のとき、コンテンツ領域を非表示にする。併せて flow+0x2d8 の状態列挙を診断用に読取（将来の「勝利リザルト画面」状態の正確な特定にも備える）。
+
 == v23.20 ==  [ja]
 [1] 「ゲーム再起動後にボスバフモジュールだけが機能を失い、他のモジュールは正常」の根本原因を修正：scan() の再接続分岐はこれまで player の quest_mgr / _prev_actor / _raw_locked_addrs しかクリアしておらず、ボスモジュールの _BOSS_CACHE / _BOSS_ET_CACHE を見落としていた。再起動後に module_base / handle が再利用されると（ASLR 無効または偶然）、古い boss actor / 実体テーブルポインタが find_boss_actor を常に汚染し、boss_actor がずっと None になってボスモジュールが真っ白になっていた。今は player と対称に再接続時にクリアし、さらに read_boss_buffs のキャッシュキーに pid ガードを追加（二重安全）。
 [2] 日本語(ja)ローカライズの欠落を補完：言語別辞書で引く約 10 箇所の文字列——トレイメニュー（設定 / ロック解除·ロック / すべてのウィンドウを表示 / すべてのウィンドウをリセット / 終了）、スキルモジュールの状態プレースホルダ（初期化中… / スキルが検出されません / スキルCD非表示）、ファイル・色選択ダイアログのタイトルとフィルタ——はこれまで ja キーが無く中文にフォールバックしていたため、日本語モードでこれらの隅が中文で表示されていた。ja キーを追加し、フォールバックを「lang → en → zh」に統一したため、未知の言語でも中文ではなく英文に落ちる。

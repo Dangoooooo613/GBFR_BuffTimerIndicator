@@ -253,7 +253,10 @@ def _note_unknown_buff(sid):
 def _dump_unknown_buffs(force=False):
     """V2224：把观测到的未知 sid 落盘到 EXE_DIR/buff_attrs_unknown.json（既是诊断日志，也是玩家补充文件）。
     未知 buff 默认显示十六进制 ID；玩家可直接在该文件补 名称/繁中名/英文名/日文名，保存后下一帧即生效。
-    本文件亦供玩家核对「见过哪些不认识的 buff」、或向作者反馈 ID 以便补充进内置 buff_attrs.json。已有条目只更新观测次数/时间。"""
+    本文件亦供玩家核对「见过哪些不认识的 buff」、或向作者反馈 ID 以便补充进内置 buff_attrs.json。已有条目只更新观测次数/时间。
+    V2328：受 ENABLE_UNKNOWN_DUMP 总开关控制（默认关）——关闭时本函数直接返回，运行时不会自动产生/改写该文件。"""
+    if not ENABLE_UNKNOWN_DUMP:
+        return
     if not _UNKNOWN_BUFF_SIDS:
         return
     now = time.time()
@@ -303,10 +306,14 @@ def _sanitize_info(info):
             _d[k] = v
     return _d
 
-# V2319：调试 dump 总开关（默认关）。开启后才会写 last_boss_buffs.json / overlay_focus_log.txt，
-# 避免运行时散落多余文件（正常只应输出 overlay_settings.json / ptr_cache.txt / buff_attrs_unknown.json 三份）。
+# V2319：调试 dump 总开关（默认关）。开启后才会写 last_boss_buffs.json / overlay_focus_log.txt。
+# V2328：未知 buff 清单 dump 总开关（默认关）——关闭后运行时不再自动创建/改写 EXE_DIR/buff_attrs_unknown.json。
+#   该文件本兼具「自动诊断日志」与「玩家外部改名补充文件」双重用途；关闭自动 dump 后，玩家仍可手动创建同名文件
+#   来补充未知 buff 名称（USER_ATTRS 热加载读取路径不受任何影响），只是程序不再主动产生/改写它。
+#   正常只应输出 overlay_settings.json / ptr_cache.txt 两份（不再产生 buff_attrs_unknown.json）。
 ENABLE_BOSS_BUFF_DUMP = False
 ENABLE_FOCUS_LOG = False
+ENABLE_UNKNOWN_DUMP = False
 
 def _dump_boss_buffs(items, raw=None):
     """V2213 debug：dump 过滤**后**的 items + 过滤**前**的原始数据 raw。
@@ -384,7 +391,8 @@ def _dump_boss_buffs(items, raw=None):
 #     伊德隐藏槽(id_direct)、芙劳转世的恩宠(actor_timer)。它们 sid 是负数占位且互相冲突，
 #     不在 buff_attrs.json 的 sid 键空间，故外放字典用 "SP:{PL}:{idx}" 独立键，天然都是角色专属。
 #  ⑤ 主控全 Buff 模块也支持未知 buff：与 V2208 的 Boss 模块一致，未收录 buff 不再丢弃而显示其十六进制 ID；
-#     且**通过全部门限后**才记进未知清单，每 5 秒落盘 EXE_DIR/buff_attrs_unknown.json（玩家可在此补名，保存即生效）。
+#     且**通过全部门限后**才记进未知清单，每 5 秒落盘 EXE_DIR/buff_attrs_unknown.json（玩家可在此补名，保存即生效）；
+#     落盘受 V2328 的 ENABLE_UNKNOWN_DUMP 总开关控制（默认关），关闭时运行时不再自动产生该文件。
 # 版本号：标题栏与自动更新共用同一基线，与 release_notes / version.json 同步。
 # V2208：Boss Buff 模块对未收录进 buff_attrs.json 的未知 buff 不再直接丢弃——
 # 原本 render_bossbuff 在 `attr = BUFF_ATTRS.get(...)` 拿到 None 时 `continue` 掉，
@@ -478,7 +486,7 @@ _BUILD_NO = 2314  # V2314：全代码冗余彻底排查后的 A~E 级清理（�
 #   ⚠️ 行为零变化：以上全是「算了但不用」的死代码，删除不影响任何渲染结果，也不动任何 UI。
 #      注：get_settings() 里对 boss_gate_check_stack_conflict / boss_gate_duration_max 的 pop 保留
 #      （用于清理老 config 文件里的废弃键）。源码备份到 src_backups/2026-09-03_22-12-41_V2314/。
-_BUILD_NO = 2320  # V2320：① 修复「游戏重启后 boss buff 模块丢失工作、其他模块正常」的根因——scan() 重连分支原本只清 player 的 quest_mgr/_prev_actor/_raw_locked_addrs，漏了 boss 模块的 _BOSS_CACHE / _BOSS_ET_CACHE；重启后若 module_base/handle 被复用（ASLR 关闭或巧合），陈旧 boss actor / 实体表指针会一直毒害 find_boss_actor，使 boss_actor 恒为 None、boss 模块整屏空白。现与 player 对称地重连即清空，并给 read_boss_buffs 的缓存键加入 pid 守卫（双保险）。② 补上日文(ja)本地化缺口：之前托盘菜单（设置/解锁·锁定/显示所有窗口/重置所有窗口/退出）、技能模块状态占位（初始化中…/未检测到技能/能力冷却已隐藏）、文件与颜色对话框标题/筛选 等约 10 处按语言字典查表的字符串缺 ja 键、且兜底掉回中文，切日文时这些角落会显示中文；现已补 ja 键，并把兜底统一改为「lang → en → zh」，任何未知语言都掉英文而非中文。
+_BUILD_NO = 2328  # V2328：关掉运行期自动产生的 buff_attrs_unknown.json。新增 ENABLE_UNKNOWN_DUMP 总开关（默认 False），_dump_unknown_buffs 首行即 `if not ENABLE_UNKNOWN_DUMP: return`——关闭后 tick() 虽仍每帧调用该函数，但运行时不再创建/改写 EXE_DIR/buff_attrs_unknown.json。玩家仍可手动建同名文件补充未知 buff 名称（USER_ATTRS 热加载读取路径不受影响）。顺带把运行期散落文件从「三份」收敛为「两份」（overlay_settings.json / ptr_cache.txt）。flow 枚举隐藏范围沿用 V2327（0x1~0xF、0x10、0x20+ 显示；0x0 与 0x11~0x1F 隐藏）。UI 视觉维持 V2321 状态。
 #   【G 级】4 个零调用的函数（共 63 行）——全是 V2239「灰色固化门限」工厂的残留。
 #     SettingsDialog.__init__ 里 allbuff / boss 两个对称作用域各定义了 3 个工厂：
 #     _gate_fixed_note（在用）+ _gate_fixed_checkbox / _gate_fixed_double_row（零调用）。
@@ -1041,6 +1049,22 @@ QUEST_MGR_AOB = (
     "xx xx xx xx xx c7 87"
 )
 QUEST_FLOW_OFFSET = 0x210  # mgr+0x210 -> flow 对象指针（!=0 表示在任务中）
+
+# V2327：flow 状态枚举（flow+0x2D8）的「任务内战斗/非战斗」分类（在 V2326 基础上微调）。
+# 用户实机观测（任务中）：
+#   0x0=无任务/空闲  0x6=联机  0xc=战斗(必显示)  0x15=拾取宝箱  0x1b=结算(任务完成)
+# 规则（仅当 in_quest 成立时生效）：
+#   低位带非零 0x1~0xF（含 0x6 联机 / 0xc 战斗）→ 「战斗」→ UI 显示；
+#   {0x0}（空闲/无任务）与 高位带 0x11~0x1F（结算等，含 0x1b）→ 「非战斗」→ UI 隐藏；
+#   0x10 单独放行 → 「战斗」→ UI 显示；
+#   0x20+ 未知态保守当「战斗」（显示），避免误藏战斗中 UI。
+# 即：显示集合 = {0x10} ∪ 0x1~0xF ∪ 0x20+；隐藏集合 = {0x0} ∪ 0x11~0x1F。训练场逻辑由 in_training_area 单独判定。
+_QUEST_NONCOMBAT_FLOW = {0x0} | set(range(0x11, 0x20))   # 0x0 + 0x11~0x1F（0x10 单独放行）
+def _quest_non_combat(flow_state):
+    """任务内是否处于「非战斗/应隐藏 UI」子状态。"""
+    if 0x20 <= flow_state:
+        return False          # 0x20+ 未知 → 保守当战斗（显示）
+    return flow_state in _QUEST_NONCOMBAT_FLOW
 
 # 训练场识别：quest_mgr+0xB20 与 +0xB28 两个 u32 计时器/计数器
 # 小镇/甲板/花都等非战斗地点恒为 0；进入训练场（自由战斗/木桩）后变为非零。
@@ -2342,6 +2366,7 @@ DEFAULT_SETTINGS = {
     "show_bead": True,
     "out_of_combat_hide": True,
     "out_of_combat_opacity": 0,
+    "hide_on_quest_complete": True,
     "show_titlebar_status": True,
     "buff_enabled": {
         "PL0000_0": True,
@@ -4482,6 +4507,10 @@ class SettingsDialog(QDialog):
         self.ooc_hide_chk = QCheckBox(_tr("非战斗时隐藏全部 UI（尖刺圆/全 Buff/核心/翻滚/技能 UI）"))
         self.ooc_hide_chk.setChecked(bool(self.settings.get("out_of_combat_hide", DEFAULT_SETTINGS["out_of_combat_hide"])))
         cf.addRow(_tr("非战斗隐藏:"), self.ooc_hide_chk)
+        # V2321：任务完成后隐藏全部 UI（把「任务成功」也当作非战斗状态的一种）
+        self.hide_on_quest_complete_chk = QCheckBox(_tr("任务完成后隐藏全部 UI（把「任务成功」也当作非战斗）"))
+        self.hide_on_quest_complete_chk.setChecked(bool(self.settings.get("hide_on_quest_complete", DEFAULT_SETTINGS["hide_on_quest_complete"])))
+        cf.addRow(_tr("任务完成隐藏:"), self.hide_on_quest_complete_chk)
         self.ooc_op_spn = QSpinBox()
         self.ooc_op_spn.setRange(0, 100)
         self.ooc_op_spn.setSuffix("%")
@@ -6248,6 +6277,7 @@ class SettingsDialog(QDialog):
                 # 状态
                 live_lines.append(_tr("运行状态 status  = ") + f"{status}")
                 live_lines.append(_tr("战斗中 in_combat  = ") + f"{in_combat}    " + _tr("训练场 in_training = ") + f"{in_training}")
+                live_lines.append(_tr("任务完成 quest_completed = ") + f"{getattr(c, 'quest_completed', False)}    " + _tr("flow 状态枚举 = ") + f"{getattr(c, 'quest_flow_state', 0):#x}")
                 live_lines.append(_tr("专精 mastery     = ") + f"{mastery_zh}")
                 live_lines.append(_tr("翻滚次数 dodge    = ") + f"{dodge_count}")
                 live_lines.append(_tr("技能数 skills    = ") + f"{sk_n}    " + _tr("全 Buff 候选 = ") + f"{buf_n}")
@@ -6697,6 +6727,8 @@ class SettingsDialog(QDialog):
         self.show_skill_module_chk.stateChanged.connect(self._emit_changed)
         self.show_allbuff_module_chk.stateChanged.connect(self._emit_changed)
         self.show_boss_module_chk.stateChanged.connect(self._emit_changed)
+        # V2321：任务完成后隐藏（实时生效）
+        self.hide_on_quest_complete_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_core_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_infinite_chk.stateChanged.connect(self._emit_changed)
         self.allbuff_exclude_exclusive_chk.stateChanged.connect(self._emit_changed)
@@ -6849,6 +6881,7 @@ class SettingsDialog(QDialog):
         self.show_spikes_chk.setChecked(DEFAULT_SETTINGS["show_spikes"])
         self.show_bead_chk.setChecked(DEFAULT_SETTINGS["show_bead"])
         self.ooc_hide_chk.setChecked(DEFAULT_SETTINGS["out_of_combat_hide"])
+        self.hide_on_quest_complete_chk.setChecked(DEFAULT_SETTINGS["hide_on_quest_complete"])
         self.ooc_op_spn.setValue(DEFAULT_SETTINGS["out_of_combat_opacity"])
         self.show_titlebar_status.setChecked(DEFAULT_SETTINGS["show_titlebar_status"])
         self.titlebar_font_size_spn.setValue(DEFAULT_SETTINGS["titlebar_font_size"])
@@ -7231,6 +7264,7 @@ class SettingsDialog(QDialog):
         self.settings["show_bead"] = self.show_bead_chk.isChecked()
         self.settings["out_of_combat_hide"] = self.ooc_hide_chk.isChecked()
         self.settings["out_of_combat_opacity"] = self.ooc_op_spn.value()
+        self.settings["hide_on_quest_complete"] = self.hide_on_quest_complete_chk.isChecked()
         self.settings["show_titlebar_status"] = self.show_titlebar_status.isChecked()
         self.settings["titlebar_font_size"] = self.titlebar_font_size_spn.value()
         self.settings["title_align"] = self.title_align_combo.currentData()
@@ -8102,6 +8136,10 @@ class GBFROverlayQt(QObject):
         self.module_size = 0
         self.quest_mgr = None
         self.in_training_area = False
+        # V2324：任务内「非战斗隐藏」基于 flow 枚举判定，结果落在 quest_completed 标志位。
+        self.quest_completed = False
+        self.quest_flow_state = 0
+        self.in_quest = False
         self.status = "init"
         self.active_buffs = []
         self.dodge_count = 0
@@ -12471,7 +12509,15 @@ class GBFROverlayQt(QObject):
         # 非战斗 = 不在副本/任务中 且 不在训练场
         in_training_area = getattr(self, "in_training_area", False)
         ooc_hide = bool(self.settings.get("out_of_combat_hide", False))
-        want_hide_content = ooc_hide and not in_combat and not in_training_area
+        # V2327：任务中非战斗隐藏——基于 flow 枚举判定任务内非战斗子状态（0x0 与 0x11~0x1F 为非战斗，0x10 单独放行），
+        # 由 scan() 写入 self.quest_completed（详见模块顶部 _QUEST_NONCOMBAT_FLOW / _quest_non_combat）。
+        # 独立于「非战斗隐藏」开关：即使未开启非战斗隐藏，勾选本项也会在任务内非战斗时隐藏 UI。
+        quest_complete_hide = bool(self.settings.get("hide_on_quest_complete", True))
+        quest_completed = getattr(self, "quest_completed", False)
+        want_hide_content = (
+            (ooc_hide and not in_combat and not in_training_area)
+            or (quest_complete_hide and quest_completed and not in_training_area)
+        )
         if want_hide_content:
             opacity_f = max(0.0, min(100, int(self.settings.get("out_of_combat_opacity", 0)))) / 100.0
             self._ooc_content_mult = opacity_f
@@ -12699,6 +12745,10 @@ class GBFROverlayQt(QObject):
         self.pl_id = "PL0000"
         self.in_combat = bool(st.get("debug_in_combat", True))
         self.in_training_area = False
+        self.in_quest = bool(st.get("debug_in_combat", True))
+        # 调试：取消「模拟战斗中」→ 模拟非战斗 → 触发任务中非战斗隐藏，便于验证
+        self.quest_completed = not bool(st.get("debug_in_combat", True))
+        self.quest_flow_state = 0
         m = str(st.get("debug_mastery", "") or "")
         self.current_mastery = m if m in ("awakening", "truth", "secret") else None
 
@@ -13063,8 +13113,9 @@ class GBFROverlayQt(QObject):
         # ── 战斗/任务状态检测（用于「非战斗隐藏」）──
         # 非战斗 = 不在副本/任务中 且 不在训练场。
         # 训练场通过 quest_mgr+0xB20/0xB28 两个 u32 计时器判定（小镇等恒为0，训练场非零）。
-        in_combat = True
         in_training_area = False
+        in_quest = False
+        quest_flow_state = 0
         if self.module_base and self.handle:
             try:
                 if self.quest_mgr is None:
@@ -13075,8 +13126,7 @@ class GBFROverlayQt(QObject):
                 mgr = self.quest_mgr
                 if mgr:
                     flow = read_u64(self.handle, mgr + QUEST_FLOW_OFFSET)
-                    in_quest = bool(flow and flow > 0x10000)
-                    in_combat = in_quest
+                    in_quest = bool(flow)  # flow 对象指针有效 = 处于任务中
                     try:
                         training_timers = [
                             read_u32(self.handle, mgr + off) or 0
@@ -13089,12 +13139,30 @@ class GBFROverlayQt(QObject):
                         in_training_area = (not in_quest) and (t20 != 0 or t28 != 0)
                     except Exception:
                         in_training_area = False
-                    if in_training_area:
-                        in_combat = True
+                    # V2324：读取 flow 状态枚举（任务内子状态机）
+                    if flow:
+                        try:
+                            quest_flow_state = read_u32(self.handle, flow + 0x2D8)
+                        except Exception:
+                            quest_flow_state = 0
             except Exception:
-                in_combat = True
-        self.in_combat = in_combat
+                pass
+        # V2327：基于 flow 枚举的「真正的战斗中」判定（详见模块顶部 _QUEST_NONCOMBAT_FLOW / _quest_non_combat）。
+        #   · 枚举 ∈ 0x1~0xF（含 0x6 联机 / 0xc 战斗）→ 战斗中(显示 UI)
+        #   · 枚举 == 0x10 → 战斗中(显示 UI，单独放行)
+        #   · 枚举 ∈ {0x0} ∪ 0x11~0x1F（含 0x1b 结算）→ 任务中非战斗(隐藏 UI)
+        #   · 枚举 ≥0x20 未知 → 保守当战斗中(显示)
+        # 训练场由 in_training_area 单独判定，不影响此处。
+        if in_quest:
+            quest_non_combat = _quest_non_combat(quest_flow_state)
+        else:
+            quest_non_combat = False
+        self.in_combat = in_training_area or (in_quest and not quest_non_combat)
         self.in_training_area = in_training_area
+        self.in_quest = in_quest
+        self.quest_flow_state = quest_flow_state
+        # 复用 quest_completed 标志位驱动「任务中非战斗隐藏」（设置项 hide_on_quest_complete）。
+        self.quest_completed = bool(in_quest and quest_non_combat)
 
     def close_handle(self):
         if self.handle:
