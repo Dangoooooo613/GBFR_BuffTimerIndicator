@@ -257,10 +257,115 @@ https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/ver
 
 ## Changelog | 更新日志
 
-== v23.07 ==
-全 Buff / Boss 两模块顶部新增「统计条」：实时显示 共 N · Debuff · 永续 · 尾声 四项计数
-· 共 = 当前通过门限的 buff 总数；Debuff = 是否 debuff；永续 = 永续（infinite）标志；尾声 = 非永续且 剩余/初始 < 倒计时尾声警告阈值的 buff 数量。
-· 统计条占固定高度（字号比名称小 1 号），网格整体下移、模块窗口高度相应增加，文字不会被窗口底边切掉。
+== v24.02 ==
+[1] v24.02 (24.02)（正式版）：把当前配置烘焙进出厂默认值 —— 新玩家拿到手就是调好的样子，「恢复默认」也等于这一套配置。  【烘焙范围】DEFAULT_SETTINGS 共 431 项，与程序目录的 overlay_settings.json 逐键比对后烘焙 85 处：67 个标量 + 3 个名单字典的 18 个子项（启用状态 5 / 排序 4 / 专精 6）。涉及外观配色（警示牌、标题栏、圆环勾边、文字描边等统一为同一套颜色）、尖刺立体感（投影偏移 4/5→2/2、描边 1.0→0.5、暗度 150→140、两分面 130/110→104/106）、闪光放大与时长（150%/167ms→120%/100ms）、五个模块的窗口位置与边距、自定义调色板、主控与 Boss 的进度条与底板尺寸、技能冷却胶囊配色与呼吸灯、预警色，以及贝阿朵丽丝的 buff 名单（PL2600_4/5/6/7 停用、PL2600_9 启用等）。  【刻意不烘焙 4 项运行时/环境值】保持原有出厂默认，避免影响其他玩家：① skip_version（「跳过此版本」记录，烘了所有人都会默认跳过该更新提示）；② sync_exe_list（作者本机的「同步外部程序」路径，烘了玩家会默认去启动一个不存在的程序）；③ class_duration_max（程序实战学习出的峰值时长，不是手动设置项）；④ skill_cooldown_max（实战学习的技能冷却峰值表，让每位玩家自己积累）。  【也刻意不引入 44 个历史残留键】它们只存在于旧配置文件里、源码已零引用（V2312 净简化删掉的 5 种尖刺风格参数、V2314 删掉的 8 个门限旧键与 boss 名单/闪光旧键、V2400 删掉的色彩插值参数、调试数据旧键名、恩布拉斯科槽旧键），新玩家不会产生。  【实现】只替换「值」：缩进、逗号、行尾注释、注释对齐、键顺序、嵌套结构全部原样保留。设置项键名与数量零变化，旧配置文件可直接沿用，不会丢配置。
+[Fix] v24.02 (24.02) (official release): the current setup is now baked into the factory defaults -- a fresh install looks exactly like a tuned one, and "Reset to Defaults" restores this same configuration.  [What was baked in] DEFAULT_SETTINGS has 431 entries; comparing it key by key against the overlay_settings.json in the program folder, 85 changes were applied: 67 scalars plus 18 entries inside 3 list dictionaries (5 enabled flags, 4 ordering values, 6 mastery flags). This covers the colour scheme (warning sign, title bar, circle outline, text outline and more unified into one palette), the spike 3D look (shadow offset 4/5 -> 2/2, outline 1.0 -> 0.5, darkness 150 -> 140, two-tone 130/110 -> 104/106), flash size and duration (150%/167ms -> 120%/100ms), window positions and margins of all five modules, the custom palette, main/boss bar and backing sizes, skill-cooldown capsule colours and breathing light, warning colours, and Beatrix's buff list (PL2600_4/5/6/7 disabled, PL2600_9 enabled, and more).  [Deliberately NOT baked in: 4 runtime/environment values] They keep their previous factory defaults so other players are not affected: (1) skip_version -- the "skip this version" record (baking it would make everyone silently skip that update prompt); (2) sync_exe_list -- the author's local "sync external program" path (baking it would make players try to launch a program they do not have); (3) class_duration_max -- a peak duration learned from live play, not a user setting; (4) skill_cooldown_max -- the learned skill-cooldown peak table, left for each player to build up.  [Also NOT introduced: 44 leftover keys] They exist only in old config files and are referenced nowhere in the code (the 5 spike-style parameters removed by V2312, the 8 old gate keys plus the boss-list and flash keys removed by V2314, the colour-interpolation keys removed by V2400, old debug-data key names, and the Embrasque gauge keys). A fresh install will never create them.  [Implementation] Only the values were replaced: indentation, commas, trailing comments, comment alignment, key order and nesting are all preserved exactly. The set of setting keys is unchanged, so existing config files keep working and nothing is lost.
+
+== v24.01 ==
+[1] v24.01 (24.01)（正式版）：修复「恩布拉斯克之力+槽」层数变化时外层尖刺与装饰小球不闪光的问题。【现象】操作贝阿朵丽丝时该融合卡片层数变化（例如 2 层 → 3 层），新出现的尖刺直接冒出来、没有闪光动画，顶端装饰小球也不变白、不放大；而其余所有 buff 的闪光一切正常。【真因】每帧刷新的执行顺序问题——尖刺闪光检测原本紧跟在「真实 buff 列表装配完成」之后运行，而「恩布拉斯克之力+槽」与「恩布拉斯科槽」这两张卡片是在同一帧更靠后的位置才被合成并加入显示列表，于是闪光检测从没「看见」它们、它们也从未留下闪光记录；渲染时按名字查不到记录，只能走普通（不闪光）分支。【修法】把整块闪光检测挪到所有卡片装配完成之后再执行，合成卡片与普通 buff 从此走同一条闪光通道。【无副作用】恩布拉斯科槽层数恒为 0 永不误触发；融合卡片在之力 0 层时是单层形态、本就不画尖刺。【其他一切不变】设置项、界面文案、落盘文件（仍只有 overlay_settings.json 与 ptr_cache.txt）零改动，配置与上一版完全兼容。
+[Fix] v24.01 (24.01) (official release): fixed the missing flash on the outer spikes and decorative beads of the fused card "Embrasque Unleashed+Gauge" when its stack count changes. (What you saw) Playing Beatrix, a stack change on that fused card (e.g. 2 -> 3) made the new spike pop out with no flash animation, and the bead on its tip neither turned white nor scaled up; every other buff flashed normally. (Root cause) A frame-update ordering issue: the spike-flash detection used to run right after the real buff list was assembled, while the two synthesized cards are built and appended to the display list later in the same frame -- so the detection never saw them and never recorded a flash, and at draw time the lookup returned nothing, falling back to the plain non-flashing branch. (Fix) The whole flash-detection block now runs after every card has been assembled, so synthesized cards share the same flash path as ordinary buffs. (No side effects) The Emblasque Gauge stack count is always 0 so it can never false-trigger, and the fused card is single-layer with no spikes when its stacks are 0. (Everything else unchanged) Settings, UI strings and on-disk files (still only overlay_settings.json and ptr_cache.txt) are untouched; the config file stays fully compatible with the previous release.
+
+== v24.00 ==
+[1] v24.00 (24.00)（正式版）：清爽版 —— 运行期不再产生任何多余文件，i18n 全量补全，代码冗余清零。【① 程序目录从今往后只会有两个文件】此前软件运行时会往 exe 同目录落一堆「诊断资料」，其中最恼人的是 buff_attrs_unknown.json —— 它**没有任何开关，任何版本都会生成**。本版把四套诊断落盘功能**整块删除**（开关常量、文件名常量、函数、调用点一并删掉，不留空壳、不留死代码）： · buff_attrs_unknown.json —— 未知 buff 自动记录 + mtime 热加载外部补充名（「读取」能力也一并删除：USER_ATTRS / _USER_ATTRS_MTIME / _reload_user_attrs() 整链移除，_attr_for_sid() 收敛为「内置表 → hex 兜底」二级） · last_boss_buffs.json —— boss buff 快照 · emb_gauge_debug.txt —— 恩布拉斯科槽读取链路埋点（已完成使命，正是它把「槽完全没法识别」定位到 3 个真因） · overlay_focus_log.txt —— 窗口焦点诊断日志 现在 exe 同目录**只会出现** overlay_settings.json（你的设置）与 ptr_cache.txt（指针缓存）这两个文件。唯一例外：你主动点「检查更新 → 下载」时会短暂出现一个 .part 临时文件，下载完立刻改名成 exe，不会残留。 说明：buff 名称的唯一真源回归内置表 buff_attrs.json（147 条）。以前「在 buff_attrs_unknown.json 里手写名字就能热更新」这条路已关闭 —— 遇到显示成十六进制的新 buff，直接告诉我名字，我加进内置表。 另外：窗口的前后台显隐逻辑与那个焦点日志**完全无关**，不受影响。【② i18n 覆盖补全】新增一套全量审计工具（5 项检查：源码用了但 i18n 没有 / i18n 有但源码用不到 / 动态键 / 未走翻译的裸中文 / 缺语种），据此修： · 补 10 个缺失键：「调试数据」选项卡里的 4 个「数量:」标签 + 4 个「注入多少个」提示 + 2 个尖刺风格选项 —— 此前这些在英文/繁中/日文界面会残留中文 · 删 5 个死键：色彩插值的 HSL / HSV / RGB / 双色渐变 / 插值色彩空间 —— 该功能早已移除，键却还留在表里 · 再补 1 个防御键「尚未添加」（名单空态占位的兜底默认值，当前不可达但留着会漏中文） · 现在 ui 段 502 条、四语缺语 0、裸中文 0、死键 0；另有 9 处动态翻译的 37 个候选键已逐个核对，全部命中【③ 修复「更新日志」面板一直是空白】这是个老 bug：version.json 的 changelog 字段约定是**三语字典**（README 与发布工具都按字典写），但主干这份退化成了一串纯字符串数组；读取函数只认字典和字符串，遇到数组直接返回空串 → 无论检查更新成功与否，「设置 → 关于/更新」的更新日志框永远是空的。本版把 changelog 恢复成三语字典（zh / zh_tw / en，并补上 zh_tw 与 en 的历史），同时让读取函数兼容数组，旧格式数据也不会再读成空白。顺带修掉发布工具的一个隐患：它遇到非字典的旧 changelog 会把历史**整段清空**，现在会先把数组拼成文本保留下来。【④ 冗余代码清理】死方法 2 → 0、死属性 14 → 0、重复块 0（5 处是「主控 ↔ Boss」刻意对称的结构，保持不动）、设置项真孤儿 0/431。恩布拉斯科槽读取器里的统计仪表（字节数 / RPM 成败数 / 各类拒绝原因 / 命中块分布 / 世代计数等）**全是「只写不读」的遥测**，一并删除；顺带收益是 1.28GB 扫描的内层循环不再每个数据块都上一次锁。其余一切不变：恩布拉斯科槽读取（8 块全覆盖 + 地址失效固定等 1 秒 + 退避上限 3 秒 + 世代号防堆积）、槽百分比 1 位小数、融合 buff「恩布拉斯克之力+槽」的动态单层/多层形态、能力/核心/翻滚/全 Buff/Boss 五个模块，全部原样保留。
+[Fix] v24.00 (24.00) (official release): the clean-up release -- nothing extra is written to disk at runtime, full i18n coverage, and zero code redundancy.(1) From now on the program folder contains only two files. Previously the app dropped a pile of "diagnostic material" next to the exe; the worst offender was buff_attrs_unknown.json, which had no switch at all and was written by every single build. This release removes four diagnostic-to-disk features outright -- the enable flags, the file-name constants, the functions and every call site are gone, leaving no shells and no dead code: - buff_attrs_unknown.json -- auto-recording of unknown buff IDs plus mtime hot-reloading of external name overrides. The reading side is gone too: USER_ATTRS / _USER_ATTRS_MTIME / _reload_user_attrs() were removed as a chain, and _attr_for_sid() is back to a two-level lookup (built-in table -> hex fallback). - last_boss_buffs.json -- the boss buff snapshot. - emb_gauge_debug.txt -- the Emblasque gauge reading-chain probe (job done: it is what pinned "the gauge can never be recognised" down to three root causes). - overlay_focus_log.txt -- the window focus diagnostic log. The program folder now contains only overlay_settings.json (your settings) and ptr_cache.txt (pointer cache). The single exception: if you actively click "Check for updates -> Download", a .part temporary file appears briefly and is renamed to the exe the moment the download finishes, leaving no residue. Note: buff names are once again sourced solely from the built-in buff_attrs.json (147 entries). The old route of hand-writing a name into buff_attrs_unknown.json for a hot reload is closed -- if you ever see a new buff rendered as a hex ID, just tell me the name and I will add it to the built-in table. Also note: the window foreground/background show-hide logic is completely unrelated to that focus log and is unaffected.(2) Full i18n coverage. Added a complete audit tool (five checks: keys used in code but missing from i18n / keys present in i18n but unused in code / dynamic keys / bare Chinese UI text that bypasses translation / entries missing a language) and fixed what it found: - Added 10 missing keys: the four "count:" labels on the Debug Data tab, four "how many to inject" tooltips, and two spike-style options. These previously leaked Chinese into the English / Traditional Chinese / Japanese UI. - Removed 5 dead keys: the colour-interpolation HSL / HSV / RGB / two-colour-gradient / interpolation-colour-space entries -- that feature was removed long ago but the keys stayed behind. - Added 1 more defensive key ("Nothing added yet") for the empty-list placeholder's fallback default. - The ui section now holds 502 entries with zero missing languages, zero bare Chinese and zero dead keys. Nine dynamic translation sites covering 37 candidate keys were verified one by one.(3) Fixed the permanently blank "update log" panel. An old bug: version.json's changelog field is specified as a three-language dictionary (both the README and the publishing tool write it that way), but this copy had degraded into a plain string array; the reader only understands dictionaries and strings, so it returned an empty string for arrays -- meaning the update-log box under Settings -> About/Update was always empty, whether or not an update check succeeded. This release restores changelog to a three-language dictionary (zh / zh_tw / en, with the zh_tw and en histories filled in) and also teaches the reader to accept arrays, so legacy data no longer renders blank. A related hazard in the publishing tool is fixed as well: it used to wipe the entire history when the previous changelog was not a dictionary; it now joins arrays into text first.(4) Redundancy clean-up. Dead methods 2 -> 0, dead attributes 14 -> 0, duplicate blocks 0 (the five remaining ones are the deliberate Main <-> Boss symmetry and must not be merged), genuinely orphaned settings keys 0/431. All statistics-only telemetry inside the Emblasque gauge reader (byte counters, RPM success/failure counts, per-reason rejection counters, per-block hit distribution, generation counters) was write-only and has been removed; a pleasant side effect is that the inner loop of the 1.28 GB scan no longer takes a lock for every chunk.Everything else is unchanged: Emblasque gauge reading (all 8 blocks covered, a fixed 1-second wait after an address goes stale, a 3-second backoff cap, and generation numbers to prevent thread pile-up), the gauge percentage at one decimal place, the dynamic single-layer / multi-layer form of the fused "Embrasque Unleashed + gauge" buff, and the Skill / Core / Dodge / All-Buff / Boss modules.
+
+== v23.82 ==
+[1] v23.82 (23.82)（正式版）：关闭诊断埋点，并公布上一版修复的实战验证结果。①【关闭埋点】诊断版一向会往程序目录写 emb_gauge_debug.txt（它自带 4MB 上限，不会无限膨胀）。这个埋点已经完成使命——正是靠它把「槽完全没法识别」定位到了三个真因；如今槽读取已稳定，本版起不再写日志文件。埋点代码全部保留、没有删除，日后需要复查只要把开关改回 True。②【实战验证 · 最后一个未知量已钉死】上一版修复后连续实战 36 分钟、留下 4136 条样本，据此把三条修复全部验证完毕。对象所在的块确实会变：本次实测依次经过块 5 → 块 4 → 块 6（对象地址分别 0x53b1ec04270 / 0x53b0d2b8ff0 / 0x53b2c007020），而且**每个地址只属于一个块、跨块冲突 0 次**。所以真相是「对象被回收后在另一个块重建」，而不是「同一对象在多个块里都有副本、谁先扫到算谁」——后者意味着靠调整扫描优先级就能解决，前者意味着调优先级**治不了本**。实测结论是后者，即只有「8 块全覆盖 + 失败后快速重扫」才有效，这也正是上一版的修法。③【优选块被证实】对象落在优选块 [4,5,6] 的样本占 99.0%，落在这三块之外的 **0 条**；实测对象出现过的块恰好就是 {4,5,6}，与当初的优选集合完全吻合（块 3 始终有 vtable 指纹却从未被锁定 —— 说明判据正确排除了它，不存在误锁）。④【识别速度被量化】三次「对象消失 → 重新出现」的实测间隔分别是 **2 秒 / 3 秒 / 2 秒**（旧版最坏要白等 15 秒）：槽一出现，两三秒内必被抓住。⑤【卡顿彻底消除】扫描世代号 2→15（旧版曾 10 秒内暴涨 300 次）、连续未命中峰值 1（退避从未升档）、重扫限流从未触发、扫描线程峰值 8（无堆积）。⑥【槽读取正常】state=found 占 87.5%、status=ok 99.7%、槽值覆盖 0.0~1.0 共 896 个不同取值、方向 up 占 71% / down 占 29%。⑦ 槽百分比沿用上一版的 1 位小数显示。
+[Fix] v23.82 (23.82) (official release): diagnostic logging is switched off, and this release publishes the combat verification of the previous fix. (1) Logging off -- diagnostic builds wrote emb_gauge_debug.txt next to the executable (it had a 4 MB cap, so it never grew without bound). That instrumentation has done its job: it is what pinpointed the three root causes behind 'the gauge buff cannot be recognised at all'. Gauge reading is stable now, so this build stops writing the log file. None of the instrumentation code was removed -- flip the switch back to True if it is ever needed again. (2) Combat verification, last unknown resolved -- after the previous fix, one continuous 36-minute session produced 4136 samples, which confirm all three fixes. The block holding the object really does change: this run moved through block 5, then block 4, then block 6 (object addresses 0x53b1ec04270 / 0x53b0d2b8ff0 / 0x53b2c007020 respectively), and every address belonged to exactly one block, with zero cross-block conflicts. So the truth is 'the object is recycled and rebuilt in a different block', not 'the same object exists in several blocks and whichever is scanned first wins'. That distinction matters: the second story would mean scan priority alone could fix it, while the first means priority cannot -- only full 8-block coverage plus a fast rescan after a miss works. The measurements say it is the first, which is exactly what the previous release implemented. (3) Preferred blocks confirmed -- objects landed in the preferred blocks [4,5,6] in 99.0% of samples, with zero samples outside them; the blocks where the object actually appeared were exactly {4,5,6}, matching the chosen set perfectly (block 3 always had vtable fingerprints yet was never locked, so the predicate correctly rejected it and there is no mis-locking). (4) Detection speed quantified -- the three measured gaps between 'object disappears' and 'object re-acquired' were 2 s, 3 s and 2 s (the old build could wait up to 15 s): once the gauge appears it is picked up within two to three seconds. (5) Stuttering gone -- scan generation counter moved 2 to 15 (the old build spiked to 300 restarts in 10 seconds), peak consecutive misses was 1 (the backoff never escalated), the rescan throttle never engaged, and peak scan threads was 8 (no pile-up). (6) Gauge reading healthy -- state=found 87.5%, status=ok 99.7%, gauge values covering 0.0-1.0 across 896 distinct values, direction up 71% / down 29%. (7) The gauge percentage keeps the 1-decimal display from the previous release.
+
+== v23.81 ==
+[1] v23.81 (23.81)：把恩布拉斯科槽的百分比由 2 位小数改为 1 位小数。V2380 已经修好槽的识别（8 块全覆盖 + 地址失效后固定等 1 秒 + 退避上限 3 秒），本版只调显示精度。改动落在两处渲染分支：槽 buff 在「恩布拉斯克之力」未生效时是单层形态、生效后是融合的多层形态，两条路径显示的是同一个百分比，此前都写作 `f"{_pct:.2f}%"`（如 45.32%），现统一改为 `f"{_pct:.1f}%"`（如 45.3%）。计时胶囊的宽度本来就是按文字实际渲染宽度自适应算的，所以会跟着自动收窄，不需要再调任何参数。除显示精度外一切不变：槽值仍按内存原值读取，不四舍五入、不回写；上升（充能中）显示百分比、下降（生效中）显示倒计时秒数的方向判定不变；低于 3 秒的青色告警配色也不受影响（槽百分比方向固定按 999.0 处理，永远不会误触发告警色）。不影响判据、扫描块与任何读取逻辑。⚠️ 本版仍为诊断版。
+[Fix] v23.81 (23.81): The Emblasque gauge percentage now shows 1 decimal place instead of 2. V2380 had already fixed gauge recognition (full 8-block coverage, a fixed 1-second wait after an address goes stale, and a 3-second backoff cap), so this release only adjusts display precision. Two rendering branches were changed: while Emblasque Force is inactive the gauge buff renders as a single-layer buff, and once the Force becomes active it renders as a fused multi-layer buff -- both paths show the same percentage and both previously used `f"{_pct:.2f}%"` (e.g. 45.32%), now unified to `f"{_pct:.1f}%"` (e.g. 45.3%). The timer badge width is already computed from the actual rendered text width, so it narrows automatically and no parameter needs retuning. Nothing else changed: the gauge value is still read raw from memory, never rounded and never written back; the direction rule (ascending = charging, shows a percentage; descending = active, shows a countdown in seconds) is untouched; and the cyan low-time warning colour is unaffected (the gauge percentage path is pinned to 999.0, so it can never trigger the warning colour by mistake). No change to the detection predicate, the scanned blocks, or any read logic. NOTE: this build is still a diagnostic build.
+
+== v23.80 ==
+[1] v23.80 (23.80)：修复「槽完全没法识别」并追回 V2379 的两处反向改动。①【推翻 V2379 的「伪对象」论断】V2379 断言块 3/4 存在「判据全中、槽值却恒为 0」的伪对象，并用一个自造场景（把真对象放在块 5）去证明它 —— 那属于循环论证。反证是 2026-09-08 的实机实测（同一套判据、块[4] 内 vtable 命中 111 个）：值=0 的 109 个候选里一个紫色都没有、一个 200x200 都没有，紫色 200x200 全内存唯一，说明判据本身不会误锁。②【真正的病根是漏块】独立版工具的源文件里写的是 `QCheckBox("块%d" % i)` 与 `setChecked(i in EMB_SCAN_BLOCKS)`，界面「块N」显示的就是下标 i 本身，所以它的 [5,6,7] 是 0-based、覆盖 {5,6,7}；与 09-08 实机实测的 {4}（块[4]=0x2EE43400000）取并集 = {4,5,6}。而历史的 [3,4,5,6,7] 与 V2379 的 [5,6,7,3,4] 都漏了 idx=2（同样是 256MB 块），且 V2379 把唯一有实测支撑的 idx=4 排到了最后 —— 对象落在 idx=2、或落在 4 却后启动，就是「完全没法识别」。已用穷举实验证实：把真对象依次放进 0~7 每一块，历史值和 V2379 值在块 0/1/2 上必然读不到，而新的全覆盖列表 8 块全部命中。修法：扫描集合改为 PREFERRED=[4,5,6] + FALLBACK=[3,2,7,0,1] = 8 块全覆盖，错峰 0.05 秒使 8 块最迟 0.35 秒全部启动 —— 优先级只决定谁先跑，绝不漏块。③【地址失效后的等待是真凶】原代码在该分支用指数退避值，而该值来自「整轮未命中」计数，n=5 就是 8 秒、封顶 15 秒；地址失效在实战中是常态（切场景 / 槽清零后对象被回收 / 槽满重置），每失效一次就白等 8~15 秒才重扫，直接表现为「槽完全没法识别、像一直在找地址」。已改为固定 1 秒。④【退避上限 15 秒 → 3 秒】09-08 实测已确认「对象进战斗才创建、槽清零即回收」，所以「扫不到」在战斗前段是正常状态而非故障；15 秒上限意味着槽开始充能后最多 15 秒才被发现一次，实战就是「槽根本不识别」。V2378 的世代号 / 重扫硬闸 / 新鲜上下文全部保留。诊断日志的 hit_blk 与 blk_hits 现已覆盖 8 块，打一场即可由 hit_blk 直接读出对象真实在哪个块。⚠️ 本版仍为诊断版。
+[Fix] v23.80 (23.80): Fixed 'the gauge buff cannot be recognised at all' and reverted two wrong-direction changes from V2379. (1) The V2379 'fake object' claim is disproved. V2379 asserted that block 3/4 contains a fake object that passes the whole predicate while its gauge value stays 0, and 'proved' it with a self-made scenario (real object planted in block 5) - that is circular reasoning. The counter-evidence is the live measurement of 2026-09-08 (same predicate, 111 vtable hits inside block[4]): among the 109 candidates with value 0, not one is purple and not one is 200x200, and purple 200x200 is unique in the whole process - so the predicate cannot mis-lock. (2) The real cause is a missing block. The standalone tool's source reads QCheckBox("block %d" % i) and setChecked(i in EMB_SCAN_BLOCKS), so its UI label 'block N' is the index i itself - its [5,6,7] is 0-based and covers {5,6,7}; unioned with the live measurement's {4} (block[4] = 0x2EE43400000) that gives {4,5,6}. But the historic [3,4,5,6,7] and V2379's [5,6,7,3,4] both omit index 2 (also a 256 MB block), and V2379 pushed index 4 - the only one with live evidence - to the very end. If the object lands in index 2, or lands in 4 but starts late, you get 'cannot be recognised at all'. An exhaustive experiment confirms it: placing the real object in each of blocks 0-7 in turn, the historic value and the V2379 value can never find it in blocks 0/1/2, while the new full-coverage list hits all 8. The fix: the scan set becomes PREFERRED=[4,5,6] + FALLBACK=[3,2,7,0,1] = all 8 blocks covered, with a 0.05 s stagger so that all 8 start within 0.35 s - priority only decides who runs first, it never skips a block. (3) The wait after an address goes stale was another culprit: that branch used the exponential backoff value, which comes from the 'whole round missed' counter - 8 s at n=5 and capped at 15 s. Address staleness is routine in practice (scene change / object recycled when the gauge empties / gauge reset when full), so each staleness wasted 8-15 s before rescanning, which is exactly 'cannot be recognised at all and looks like it keeps searching'. It now uses a fixed 1 s. (4) The backoff cap drops from 15 s to 3 s: the 2026-09-08 measurement confirmed the object is created when combat starts and recycled when the gauge empties, so 'not found' is a normal state early in a fight, not a fault; a 15 s cap meant up to 15 s before the gauge charging was noticed, i.e. 'never recognised'. All V2378 work (scan generation, rescan hard gate, fresh-context rule) is retained. The diagnostic hit_blk and blk_hits now cover all 8 blocks, so one battle tells you from hit_blk exactly which block holds the object. NOTE: still a diagnostic build.
+
+== v23.79 ==
+[1] 修复「槽的 buff 完全没法识别 / 恒为 0%」。真因是**扫描块优先级**：反编译独立版工具 GBFR_EmblasqueGauge 的 V1.00~V1.04 对比发现，V1.00~V1.02 没有 EMB_SCAN_BLOCKS 常量（扫全部 8 块），V1.03 才首次引入 `(5,6,7)` 并在 V1.04 沿用，且 V1.04 界面带「勾选要扫描的块」复选框——当年是刻意排除前面的块；主干后来改成 `[3,4,5,6,7]` 把它们放了回来。5 块并发抢锁时，若块 3/4 存在「指纹/紫色/200x200 全中但 ctrl+0x28 恒为 0」的伪对象，谁先命中由线程调度决定 → 同一份代码时好时坏（这才是「V2373 能用、V2374/V2375 不能」的形态，与「力+槽解耦」无关）。实证：块 3 放伪对象(0.0)、块 5 放真对象(0.5)，旧顺序 6/6 次读到 0.0；新顺序 [5,6,7,3,4] + 0.05s 错峰后 6/6 次读到 0.5。修法不删任何块：优选块先跑、兜底块慢一拍。V2378 的世代号/重扫硬闸/指数退避全部保留。诊断日志新增 hit_blk、blk_hits 两列。⚠️ 仍是诊断版。
+[Fix] Fixed 'the gauge buff cannot be recognised at all / stuck at 0%'. Real cause: **scan block priority**. Decompiling the standalone GBFR_EmblasqueGauge V1.00-V1.04 shows V1.00-V1.02 had no EMB_SCAN_BLOCKS constant at all (all 8 blocks), V1.03 introduced (5,6,7) and V1.04 kept it, and V1.04's UI even had per-block scan checkboxes - the earlier blocks were excluded deliberately. The main branch later changed it to [3,4,5,6,7], putting them back. When 5 blocks race for the lock and block 3/4 contains a fake object matching the fingerprint/purple/200x200 predicate but whose ctrl+0x28 value is permanently 0, the winner depends purely on thread scheduling - the same code works sometimes and fails other times (that is the 'V2373 works, V2374/V2375 does not' shape, and it has nothing to do with the Unleashed+Gauge decoupling). Proof: fake object (0.0) in block 3 and real object (0.5) in block 5 - the old order read 0.0 6/6 times; the new order [5,6,7,3,4] with a 0.05s stagger read 0.5 6/6 times. The fix removes no block: preferred blocks start first, fallback blocks one beat later. All V2378 work (scan generation, rescan hard gate, exponential backoff) is kept. The diagnostic log gains hit_blk and blk_hits columns. NOTE: still a diagnostic build.
+
+== v23.78 ==
+[1] 修复「软件一直卡、像一直在找恩布拉斯科槽的地址」。先纠正上一版误判：V2372→V2373 的「力+槽解耦」对槽读取器**零影响**（默认两开关都开时扫描门控条件逐字等价），卡顿与识别问题不是解耦造成的。真因是读取器自身两处缺陷：① 线程世代竞争——新一轮扫描清掉「停止」标志后，会把上一轮已被打断、尚未退出的线程重新放行，这些过期线程把上一轮的完成计数记到新一轮头上，导致误判「本轮已扫完」而叠开下一轮，线程与每轮 1.28GB 扫描不断堆积（=「一直卡、像一直在找地址」）。现为每轮扫描加世代编号，过期线程安静退出且不改动任何计数。② 重扫没有下限——上一版指数退避只在「整轮跑完且未命中」时生效，而每帧状态抖动会打断轮次并清零退避计数，退避永远停在 0.5 秒档。现加与打断无关的最短重扫间隔（1 秒起，未命中指数升到 15 秒封顶），且「离开战场超 2 秒再进入」立即重扫、不白等。⚠️ 仍带断点诊断 emb_gauge_debug.txt（新增 gen/gap/consec 三列）。
+[Fix] Fixed 'the app is constantly laggy and looks like it keeps searching for the Emblasque Gauge address'. Correction of the previous build's diagnosis: the V2372->V2373 Unleashed+Gauge decoupling has ZERO effect on the gauge reader (with both toggles on by default the scan gating condition is literally equivalent), so the lag and detection problem were not caused by the decoupling. Real cause: two defects inside the reader. (1) Thread-generation race - starting a new scan clears the stop flag, un-freezing threads from the previous round that were interrupted but had not exited; those stale threads credited the previous round's completion counts to the new round, so the reader wrongly concluded the round was done and stacked another round on top while background threads were still running - threads and a fresh 1.28GB scan kept piling up. Each round now carries a generation number; stale threads exit quietly and no longer touch any counter. (2) No lower bound on rescans - the previous exponential backoff only applied when a round finished completely without a hit, but per-frame state flapping interrupted rounds and zeroed the backoff counter, so it was permanently stuck at the 0.5s step. Added a minimum rescan interval immune to interruption (1s floor, rising exponentially to a 15s cap while nothing is found); leaving combat for more than 2s then re-entering rescans immediately. NOTE: still carries the break-point tracer (emb_gauge_debug.txt, new columns gen/gap/consec).
+
+== v23.77 ==
+[1] （诊断版）① 恢复融合 buff「恩布拉斯克之力+槽」(PL2600_10) 的动态形态：恩布拉斯克之力(sid 102) 未生效(层数 0)时变单层 buff 只显示槽（中心不画层数，仅画上升百分比/下降倒计时徽章），之力生效(层数>0)自动切回多层（中心层数 + 下方槽胶囊）；② 撤销 V2375 对扫描块的误收窄，EMB_SCAN_BLOCKS 回到 [3,4,5,6,7]；③ 新增「恩布拉斯科槽读取链路」诊断埋点：每 0.5s 把读取器状态·地址·读数·方向、扫描轮数·退避秒数·被打断次数·线程数·进度、RPM 成败数、vtable 指纹命中数与各类拒绝原因、最终注入项写入 exe 同目录 emb_gauge_debug.txt；④ 修复「一直卡、像一直在找槽的地址」：全部块未命中时原本固定 0.5 秒就重扫 1.28GB，现改为指数退避（0.5→1→2→4→8→15 秒封顶），命中或允许状态变化即归零。⚠️ 诊断版：埋点默认开启，正式发布前关闭。
+[Fix] [diagnostic build] (1) Restored the dynamic form of the fused 'Embrasque Unleashed+Gauge' buff (PL2600_10): while Embrasque Unleashed (sid 102) is inactive (0 stacks) it becomes a single-layer buff showing only the gauge (no center stack count, just the rising-percentage / falling-countdown badge); once Unleashed is active (stacks>0) it reverts to the multi-layer form (center stack count + bottom gauge capsule). (2) Reverted V2375's over-narrowed scan blocks - EMB_SCAN_BLOCKS is back to [3,4,5,6,7]. (3) Added a read-chain tracer for the Emblasque Gauge: every 0.5s it writes the reader state/address/value/direction, scan pass/backoff/reset-count/threads/progress, RPM success-fail counts, vtable-pattern hits with per-reason rejections, and the final injected entries to emb_gauge_debug.txt next to the exe. (4) Fixed 'always laggy, looks like it keeps searching for the gauge address': on a full miss it used to rescan 1.28GB every 0.5s unconditionally; it now backs off exponentially (0.5 to 15s cap) and resets on a hit or when the allowed state changes. NOTE: diagnostic build - the tracer is ON by default and will be switched off before a public release.
+
+== v23.76 ==
+[1] 修复「V2374/V2375 槽不识别 / 恒为 0」——回退槽相关逻辑到 V2373 已知可用基线。根因：V2374 把融合 buff「恩布拉斯克之力+槽」(PL2600_10) 的 single_layer 由 False 改为 (_fuse_stacks==0)，之力 0 层时融合块强制切单层样式、丢掉「层数+胶囊」外观，看起来像槽不识别；V2375 又误判「块 3/4 含伪匹配对象」，把 EMB_SCAN_BLOCKS 收窄为 [5,6,7] 并加 _miss_streak，若槽对象落在块 3/4 会直接读不到。经真实 exe 字节码比对，V2373 与 V2374 的槽读取器(update)/扫描(_scan_block)/全部渲染逐字节一致，唯一差异就是 PL2600_10 的 single_layer 那 8 字节。本版撤销 V2374 single_layer 改动 + 撤销 V2375 两块误诊，完全回到 V2373 槽行为。V2375 行为零回归。
+[Fix] Fixed "V2374/V2375 slot not recognized / always 0" by reverting slot-related logic to the V2373 known-good baseline. Root cause: V2374 changed the fusion buff "Embrasque Unleashed+Gauge" (PL2600_10) single_layer from False to (_fuse_stacks==0), so at 0 stacks the fusion block was forced into single-layer style, dropping the familiar "stacks + gauge capsule" look and appearing as if the slot were not recognized. V2375 then misdiagnosed "blocks 3/4 contain fake-match objects", narrowing EMB_SCAN_BLOCKS to [5,6,7] and adding _miss_streak - if the slot object lives in block 3/4 it becomes unreadable. Byte-code comparison of the real EXEs shows V2373 and V2374 slot reader (update) / scanner (_scan_block) / all rendering are byte-identical; the only difference is those 8 bytes of PL2600_10 single_layer. This build removes the V2374 single_layer change and both V2375 misdiagnoses, fully restoring V2373 slot behavior. Zero regression vs V2375.
+== v23.75 ==
+[1] 修复恩布拉斯科槽读数恒为 0% 与软件卡顿双症状。① 扫描块由 [3,4,5,6,7] 收窄为 [5,6,7]——块 3/4 含伪匹配对象（vtable+紫色 disp+200x200 全中，但 ctrl+0x28 槽值恒为 0 或乱跳），并发线程先锁伪对象导致槽恒为 0%；② found 直读分支加「连续 3 次 RPM 失败才解锁」容错，避免单次读值抖动触发整轮 1.28GB 重扫造成卡顿。V2374 行为零回归。
+[Fix] Fixed two symptoms at once — Emblasque Gauge stuck at 0% and UI stuttering. Scan blocks narrowed from [3,4,5,6,7] to [5,6,7]; blocks 3/4 contained fake-match objects (vtable + purple disp + 200x200 all matched, but ctrl+0x28 gauge value was stuck at 0 or jumping), so the concurrent thread locked the fake object first and the gauge read 0% forever. The found direct-read branch now tolerates up to 3 consecutive RPM failures before unlocking, preventing a single read glitch from triggering a full 1.28GB rescan that caused the stutter. Zero regression over V2374.
+
+== v23.74 ==
+[1] 融合 buff「恩布拉斯克之力+槽」(PL2600_10) 形态动态切换。恩布拉斯克之力(sid 102) 无层数时变单层 buff 只显示槽（与恩布拉斯科槽同构，中心不画层数、仅画上升百分比/下降倒计时徽章）；一旦之力生效(层数>0) 自动切回多层 buff 形式（中心层数 + 下方槽胶囊）。即注入时 `single_layer=(_fuse_stacks==0)`。V2373 行为零回归。
+[Fix] Fused buff 'Embrasque Unleashed+Gauge' (PL2600_10) now switches form dynamically. When Embrasque Unleashed (sid 102) has 0 stacks it becomes a single-layer buff showing only the gauge (same as Emblasque Gauge: no center stack count, only the rising-percentage / falling-countdown badge); the moment Unleashed becomes active (stacks>0) it reverts to the multi-layer form (center stack count + bottom gauge capsule). i.e. inject with `single_layer=(_fuse_stacks==0)`. Zero regression over V2373.
+
+== v23.73 ==
+[1] 将「恩布拉斯克之力+槽」(PL2600_10 融合 buff) 与「恩布拉斯科槽」(PL2600_9) 彻底解耦。融合块从 PL2600_9 块内拆出为并列独立分支，仅依赖 PL2600_10 启用 + 三专精门控——关掉恩布拉斯科槽也能单独显示力+槽。读取器改为任一个启用即驱动、读数统一算一次供两个 buff 共用。V2372 行为零回归。
+[Fix] Fully decoupled 'Embrasque Unleashed+Gauge' (PL2600_10 fused buff) from 'Emblasque Gauge' (PL2600_9). The fused block is now a sibling independent branch gated only by PL2600_10 enable + 3 mastery; turning off the Emblasque Gauge still shows the fused buff alone. The reader now runs if either is enabled, computing the gauge read once and sharing it. Zero regression over V2372.
+
+== v23.72 ==
+[1] 修复「恩布拉斯克之力+槽」(PL2600_10 融合 buff) 勾选后常不显示的问题。原注入门限要求恩布拉斯克之力(sid 102)层数必须 >0 才显示，导致未叠层时状态栏完全看不到该图标。改为与恩布拉斯科槽一致的常显占位（无层数时显示 0层+0.00%），勾选 PL2600_10 即可在状态栏看到该合成图标。V2371 行为零回归。
+[Fix] Fixed 'Embrasque Unleashed+Gauge' (PL2600_10 fused buff) not showing after being enabled. The old inject gate required Embrasque Unleashed (sid 102) stacks > 0, so with no stacks the icon was invisible. Now it shows a placeholder at all times like the Emblasque Gauge (0 stacks + 0.00% when idle); enabling PL2600_10 shows the fused icon in the status bar. Zero regression over V2371.
+
+== v23.71 ==
+[1] 失效自检 + 自动重连。检测到指针链失效（游戏中打着打着整屏空白，status!=ok 但游戏仍在跑）时，节流后自动 close_handle() 触发下一拍 scan() 重连分支重新定位全部指针。read_overlay_data 抛异常降级为 no_char 以纳入看门狗；tick() 异常兜底同步强制（带冷却）重定位。触发门槛 1.5s / 自愈冷却 3.0s。V2370 行为零回归。
+[Fix] Failure self-check + auto-reconnect. When a stale pointer chain is detected (the overlay goes blank mid-combat: status!=ok but the game is still running), after a throttle delay it automatically calls close_handle() so the next scan() reconnect branch re-locates all pointers. read_overlay_data exceptions are downgraded to no_char so the watchdog catches them; the tick() exception fallback also force-recovers (throttled). Trigger threshold 1.5s / recovery cooldown 3.0s. Zero regression over V2370.
+
+== v23.70 ==
+[1] 恩布拉斯科槽（单层 sid 103）与融合 buff「恩布拉斯克之力+槽」（sid 104）上升（充能中）时的百分比显示精确到小数点后两位（如 53.27%），下降（生效中）倒计时显示不变。同时修改单层胶囊与非单层胶囊两处显示逻辑。V2369 行为零回归。
+[Fix] Emblasque Gauge (single-layer sid 103) and the fused 'Embrasque Unleashed+Gauge' buff (sid 104) now show the rising (charging) percentage to two decimal places (e.g. 53.27%); the falling (active) countdown is unchanged. Both the single-layer capsule and the non-single-layer capsule display paths were updated. Zero regression over V2369.
+
+== v23.69 ==
+Fused buff "Embrasque Unleashed+Gauge" gets its own enable/mastery toggles. i18n.json PL2600 gains an idx=10 synthetic buff entry (sid=104); the Buff Enable/Disable tab auto-adds a new row. settings defaults add PL2600_10 (enabled=True/order=11/all three masteries ticked). The inject block now reads PL2600_10 for gating, fully decoupled from the Emblasque Gauge PL2600_9. Zero regression over V2368.
+
+== v23.68 ==
+[1] 新增融合 buff「恩布拉斯克之力+槽」(贝阿朵丽丝)。非单层带倒计时形式（中心层数 + 下方胶囊，同团长 class 等级）：中心 = 恩布拉斯克之力(sid 102) 当前层数；下方胶囊按恩布拉斯科槽方向显示——上升(up)显百分比、下降(down)显倒计时。注入复用 PL2600_9 启用开关 + 三专精门控，仅当恩布拉斯克之力层数>0 时显示。ExStatus entry 补 sid 字段供检索。V2367 行为零回归。
+[Fix] Added a fused buff "Embrasque Unleashed+Gauge" (Beatrix). Non-single-layer with countdown form (center stack number + bottom capsule, same as the captain's class level): center = current stacks of Embrasque Unleashed (sid 102); bottom capsule shows per Emblasque Gauge direction - rising (up) shows percentage, falling (down) shows countdown. Injection reuses the PL2600_9 enable switch + 3 mastery gates, shown only when Embrasque Unleashed stacks > 0. The ExStatus entry now carries a sid field for lookup. Zero regression over V2367.
+== v23.67 ==
+[1] 恩布拉斯科槽(sid 103 合成 buff)注入条件与 in_combat 解耦。旧逻辑 _emb_allowed 受 in_combat 控制，导致非战斗时 reader 被复位、圆位消失，玩家在状态栏括号里看不到该 buff。新逻辑：启用开关 + PL2600 → 始终注入（兜底 0%/0s/up），reader 仍受 in_combat 限制（非战斗时不跑后台线程，省 CPU）。保证战斗+非战斗下状态栏括号里都始终有「恩布拉斯科槽」。V2366 行为零回归。
+[Fix] Decoupled Emblasque Gauge (sid 103 synthetic buff) inject condition from in_combat. The old _emb_allowed was gated on in_combat, so out of combat the reader was reset and the slot disappeared — players could not see it in the status bar bracket. New logic: enable switch + PL2600 → always inject (fallback 0%/0s/up); reader still gated by in_combat (no background scanning threads when OOC, saves CPU). Guarantees the slot is always visible in the status bar bracket in both combat and non-combat. Zero regression over V2366.
+== v23.66 ==
+[1] 恩布拉斯科槽(emblasque, sid 103)显示逻辑修正——删去原「上行百分比/下行秒」分两行渲染的分支；改为在单层倒计时文本框内按读取器判定方向显示：上升(充能中)显百分比、下降(生效中)显倒计时。EmblasqueGaugeReader 新增 direction 判定(up/down，持平沿用上次防抖)，注入块把 gauge_dir 带入 _emb_buff。V2365 行为零回归。
+[Fix] Fixed Emblasque Gauge (emblasque, sid 103) display logic — removed the old two-row 'rising % / falling seconds' branch; now shown inside the single-layer countdown text box, switching by gauge direction from the reader: rising (charging) shows percentage, falling (active) shows countdown. EmblasqueGaugeReader gains a direction detector (up/down, holds last direction when steady to avoid jitter); the inject block passes gauge_dir via _emb_buff. Zero regression over V2365.
+== v23.65 ==
+[1] 修正 V2351 误把 sid 102 恩布拉斯克之力标为 single_layer=true 的**根因**：它本质是层数累加 buff（4/10），不是单层 buff。single_layer=true 让它走了只画倒计时胶囊的单层分支，而该 buff 在游戏中是 infinite 无 timer，圆里空白不显示数字。i18n.json 把 sid 102 的 single_layer 改回 false，回归非单层渲染路径（正常画层数大数字 + 计时胶囊）。同时回滚 V2364 在 _draw_center_text 单层分支加的「带层数单层 buff」第 4 分支补丁（属本末倒置，已删除）。V2364 行为零回归。
+[Fix] Fixed the root cause of V2351 wrongly flagging sid 102 "Embrasque Unleashed" as single_layer=true. It is actually a stack-accumulating buff (4/10), not a single-layer buff; single_layer=true routed it into the single-layer branch that only draws a countdown capsule, while in-game this buff is infinite with no timer, leaving the circle blank. i18n.json now sets sid 102 single_layer back to false, restoring the non-single-layer render path (properly draws the big stack number + timer capsule). Also reverted the V2364 4th-branch ("stacked single-layer buff") hack added to _draw_center_text, which was a misdiagnosis and has been removed. Zero regression over V2364.
+== v23.63 ==
+[1] 修复「恩布拉斯克之力(sid 102) 完全不显示」两处确定性 bug——① 核心模块渲染窗口原硬上限 5 槽（含恩布拉斯科槽合成 buff 时 6 槽），贝阿朵丽丝有 10 个 buff，恩布拉斯克之力(order=8) 永远被截断；现改为容纳全部 active_buffs（上限 12）并补 7~10 槽布局。② 恩布拉斯克之力本质为通用奥义层数 buff，却误标 only-truth 专精门控，非 truth 专精不显；i18n 加 always_show 标记、门控循环豁免，任何专精下常显。V2362 行为零回归。
+[Fix] Fixed two deterministic bugs where "Embrasque Unleashed" (sid 102) never displayed. ① The core render window was hard-capped at 5 slots (6 with the synthetic Emblasque Gauge buff); Beatrix has 10 buffs so Embrasque Unleashed (buff_order=8) was always truncated out. Now the window holds all active_buffs (cap 12) with added 7~10 slot layouts. ② Embrasque Unleashed was wrongly flagged truth-only mastery gating; added an always_show flag and exempted it from gating so it shows under any mastery. Zero regression over V2362.
+
+== v23.62 ==
+[1] 修复「恩布拉斯科槽」两处回归——① 把 i18n 中 is_synthetic=True 的合成 buff 从常规渲染循环排除，消除与注入叠加产生的「两个槽」；② 注入改为先判启用开关 settings["PL2600_9"]（面板停用即复位 reader、不注入），并以 order=10 追加到 active_buffs 末尾（不再 insert(0) 抢占 slot0 把恩布拉斯克之力(order=8) 挤出 [:5]）；render_core 在含合成 buff 时把可见窗口扩到 6，恩布拉斯科槽永不被截断、也不挤占真实 buff 名额。其余 V2361 行为零回归。
+[Fix] Fixed two regressions in 'Emblasque Gauge' — ① Excluded the i18n synthetic buff (is_synthetic=True) from the normal render loop, eliminating the 'two slots' artifact (it was both a reserved empty slot and an injected synthetic buff). ② Injection now first checks the enable toggle settings["PL2600_9"] (disabling it in the panel resets the reader and skips injection), and appends at order=10 to the end of active_buffs instead of insert(0) at slot0 (which pushed 'Embrasque Unleashed' (sid 102, order=8) out of [:5]). render_core now expands the visible window to 6 when a synthetic buff is present, so the gauge is never truncated and never steals a real buff's slot. Zero regression over V2361.
+
+== v23.61 ==
+[1] 在「Buff启用/禁用」面板的贝阿朵丽丝 (PL2600) 分组下补「恩布拉斯科槽」勾选行（PL2600_9 槽位，默认三专精全开）；scan() 末尾读取 buff_mastery["PL2600_9"] 的觉醒/真谛/秘义勾选状态控制该合成 buff 是否注入 active_buffs；i18n.json buffs.PL2600 末尾加第 10 条 sid=103 / gauge_mode="emblasque"。V2360 → V2361 行为零回归。
+[Fix] Added the missing 'Emblasque Gauge' row under Beatrix (PL2600) in the 'Buff enable/disable' panel (slot PL2600_9, all three mastery columns ticked by default); scan() now reads buff_mastery["PL2600_9"] and gates the synthetic buff injection on awakening/truth/secret checkboxes; i18n.json buffs.PL2600 gained a 10th entry (sid=103, gauge_mode="emblasque"). Zero regression over V2360.
+
+== v23.60 ==
+[1] 将 V1.04「恩布拉斯科槽读取器」核心逻辑并入主干（V2327 → V2360）。贝阿朵丽丝(PL2600)战斗中时，用多线程并发扫描锁定 0x6147120 vtable + 紫色 200x200 disp 的 ctrl，每帧直读 ctrl+0x28 浮点(0~1) 槽占比；命中后向 active_buffs 注入一个「单层 buff」条目（名称「恩布拉斯科槽」），上行显示百分比、下行显示秒（val=1.0 → 100% / 38s）。扫描块固定为 [3,4,5,6,7]。其余 buff / 专精 / 战斗判定逻辑零回归。
+[Fix] Merged the V1.04 'Emblasque Gauge reader' core into the main build (V2327 -> V2360). While playing Beatrix (PL2600) in combat, a multi-threaded concurrent scan locks onto the ctrl with vtable 0x6147120 + purple 200x200 disp, then reads ctrl+0x28 float (0~1) gauge ratio every frame; on lock it injects a 'single-layer buff' entry (named 'Emblasque Gauge') into active_buffs, showing the percentage on top and seconds on the bottom (val=1.0 -> 100% / 38s). Scan blocks are fixed to [3,4,5,6,7]. All other buff / mastery / combat logic is unchanged.
+
+== v23.52 ==
+[1] 恢复「恩布拉斯科槽（贝能表）」为独立读取模块 —— 扫描一次缓存读取。基线保留 V2327 干净战斗/非战斗逻辑 + V2349 批量提速；在「PL2600 贝阿朵丽丝 + 战斗中」时激活恩布拉斯科槽读取器：进战斗后扫一次绝对地址（module_base+0x7B89E08 块指针数组→块[4]→vtable 指纹 base+0x6147120→判紫色 200x200→读 ctrl+0x28 浮点 0~1），锁定后停止扫描、每帧只读本地址（1 次 RPM），战斗结束作废、下场重扫。主线程分片扫描（每 tick 16MB、不冻结 UI，大块走 rpm_long 隔离熔断），无后台线程、无 EmblasqueReader 复杂度。显示为「恩布拉斯科槽」浮点槽条目（0~100%），未锁定时不显示。
+
+[Fix] Restored the 'Emblasque Gauge (Bea-gauge)' as a standalone read module — scan once, then cache and read. Baseline keeps V2327's clean in/out-of-combat logic + V2349's batched reads; the Emblasque Gauge reader activates only for 'PL2600 Beatrix + in combat': after combat starts it scans the absolute address once (module_base+0x7B89E08 block-pointer array → block[4] → vtable fingerprint base+0x6147120 → purple 200x200 check → read ctrl+0x28 float 0~1), then stops scanning and reads only that address every frame (1 RPM call), invalidated at combat end and re-scanned next fight. Scanning is chunked on the main thread (16MB per tick, no UI freeze; big blocks go through rpm_long isolated from the main-loop fuse), no background thread, no EmblasqueReader complexity. Shown as an 'Emblasque Gauge' float gauge entry (0~100%); hidden until locked.
+
+== v23.51 ==
+[1] 彻底删除「恩布拉斯克之力 + 恩布拉斯科槽」融合路径 —— V2350 试图恢复但挂载代码未实际落地（仅加了常量，内圈 gauge 永不出现）。现改为：sid 102「恩布拉斯克之力」回归贝阿朵丽丝单层 buff（只显示层数 + 倒计时，无内层紫色环 / 无内存扫描 / 零 RPM 调用）。i18n 删 emb_gauge_host、single_layer 改 true。
+
+[Fix] Removed the "Emblasque Unleashed + Emblasque Gauge" fusion entirely — V2350 tried to restore it but the mount code never actually landed (only a constant was added, inner gauge never appeared). sid 102 "Emblasque Power" is now a plain Beatrix single-layer buff (stack count + countdown, no inner purple ring / no memory scan / zero RPM calls). i18n: dropped emb_gauge_host, single_layer=true.
+
+== v23.50 ==
+[1] 修复 V2349「恩布拉斯科槽（贝能表）不显示」的 bug — V2348 误删了 sid 102「恩布拉斯克之力」融合恩布拉斯科槽的内层紫色环代码（`entry["embedded_gauge"]=True` 挂载段）。已恢复：纯 sid 102 自身 ExStatus 倒计时驱动，零 RPM 调用、零内存扫描、不依赖 EmblasqueReader / 8 块扫 / vtable 校验——视觉表现与 V2341 一致，性能架构与 V2349 主线程 5.2ms 一致。玩家进副本放「恩布拉斯克之力」时，紫色内层环会立即出现，倒计时与游戏本身一致；其余角色无变化。
+
+[Fix] Restored V2341 "Embrasque Unleashed + Emblasque Gauge" fusion display that V2348 accidentally broke — V2348 deleted the `entry["embedded_gauge"]=True` attachment line as a presumed "Emblasque Gauge leftover", but that line also served as the emb_gauge_host attachment for sid 102. Re-attached: inner purple ring + 38s countdown now driven by sid 102's own ExStatus timer, zero RPM / zero memory scan. Visual matches V2341; performance architecture matches V2349.
+
 == v23.28 ==
 [1] 关掉运行期自动产生的 buff_attrs_unknown.json（新增 ENABLE_UNKNOWN_DUMP 默认关开关）。运行期散落文件收敛为两份（overlay_settings.json / ptr_cache.txt）。玩家仍可手动建同名文件补充未知 buff 名称。flow 隐藏范围沿用 V2327。
 
@@ -316,6 +421,14 @@ https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/ver
 [5] 【工具链】新增三个自查脚本（死函数 / 死变量 / 重复代码块），并修复一个**会误删在用翻译**的判定 bug：旧判定直接拿源码原文和文案表比对，而源码里换行是 \n 两个字符、文案表里是真正的换行，导致所有带换行的文案都被误判成没人用（实测误报 6 条，全部是在用的），修正后误报归零、一条都没误删；
 [6] 复核结果：死函数 0、死变量 0、死常量 0、未使用的 import 0、孤儿设置键 0、孤儿文案 0、翻译缺失 0；重复代码块 5 段（6 行阈值下 30 段）全部是 allbuff 与 boss 刻意保持的对称结构，可合并的 0 处。源码 13874 行 → 13825 行。
 
+== v23.15 ==
+[1] Second redundancy-cleanup pass: still dead-code-only removal, plus a fix for a batch of stale log line numbers that actively misled debugging. Zero behaviour change, pixel-identical rendering;
+[2] [G] Removed 4 never-called functions (63 lines). The "Gates" page defines 3 local factories in each of its two mirrored allbuff / boss scopes; two of them - the greyed-out "fixed" checkbox and the fixed value-row - have had zero callers ever since V2243 turned the four gates into toggleable options. Only the note-label factory is still used;
+[3] [H] Removed 4 write-only internal fields: an obsolete dodge-icon cache, a quest-manager scan base address (4 writes, 0 reads), a value named ui_scale that all three module windows rewrite on every single frame while nothing in the whole app ever reads it (real scaling goes through a different pair of values - removing it also drops 3 useless attribute writes per frame), and an update-dialog handle that was only ever set to None;
+[4] [I] Fixed 55 hardcoded line numbers inside log messages. Entries like "swallowed exception @line 4604" were typed in by hand years ago; the file has since grown from roughly 6,000 to 13,800 lines, so all 55 now point at the wrong place - off by 4 to more than 2,000 lines, and 3 of them were never filled in at all (literally "@line 0"). The number is dropped rather than corrected: the entry already carries a full traceback with the real file, line and function, and it points at the raising line instead of the handler, which is both more accurate and impossible to let go stale again;
+[5] [Tooling] Added three self-audit scripts (dead functions / dead attributes / duplicated blocks) and fixed a check that would have deleted live translations: the orphan test compared raw source text against the translation table, but a newline is the two characters \n in source versus a real newline in the table, so every multi-line string was reported as unused (6 false positives, all of them actually in use). It now compares real string values parsed from the AST - false positives went to zero and no key was removed;
+[6] Re-audit: dead functions 0, dead attributes 0, dead constants 0, unused imports 0, orphan setting keys 0, orphan translation keys 0, missing translations 0. All 5 duplicated blocks are the deliberately mirrored allbuff / boss structures - 0 merge candidates. Source 13874 -> 13825 lines.
+
 == v23.14 ==
 [1] 全代码冗余彻底排查后的 A~E 级清理：只删「算了但不用」的死代码，顺手修 5 处多语言漏接；行为零变化、渲染结果完全不变；
 [2] 【A 级】删除 Boss 模块 4 处死赋值 + 1 处重复赋值：ex_excl / ex_mast（Boss 的角色专属 / 专精过滤自 V2226 起已固化为无条件剔除，且 Boss 侧从未有过对应 UI 控件，两个设置键同步移除）、g_conflict（层数矛盾检查已固化，该键早已在保存时被清理）、g_durmax（真正生效的是 boss_gate_duration_max_with_infinite_exemption）、重复的 g_e_durmax；
@@ -325,6 +438,16 @@ https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/ver
 [6] 【D 级附带修复】修 5 处多语言漏接：「未设置」（4 处）与「按下组合键…」（1 处）此前写死中文，切到英文 / 繁中 / 日文时仍然显示中文，现已接回统一翻译接口；
 [7] 【E 级】删除 3 个死常量；删除 2 处 fm2 = QFontMetrics(f2)——每个 buff 卡片每帧都会新建一个字体度量对象却从不使用（V2073 的写法早已被 stacks_h 取代），属于实打实的每帧开销；4 处占位变量规范化；死赋值审计 24 处 → 13 处（剩余均为约定性解包占位，刻意保留）；
 [8] 不动任何 UI、不删任何玩家可见功能。未使用的 import 0 条、常量条件死分支 0 处、翻译缺失 0 条。
+
+== v23.14 ==
+[1] A~E tier cleanup after a full redundancy audit: removes only dead code that was computed but never used, plus 5 missed i18n wirings. Zero behavior change, pixel-identical rendering.
+[2] [A] Removed 4 dead assignments + 1 duplicated assignment in the Boss module: ex_excl / ex_mast (Boss exclusive/mastery filtering has been an unconditional drop since V2226, and the Boss side never had any matching UI control, so both setting keys are removed as well), g_conflict (stack-conflict check is hardcoded), g_durmax (the one that actually works is boss_gate_duration_max_with_infinite_exemption), and a duplicated g_e_durmax read.
+[3] [B] Removed 6 leftover Windows API declarations from V2019/V2020 plus the _SHELL_CLASS_NAMES constant. They were declared but never called; foreground detection only ever used get_foreground_pid(). The planned EnumWindows cross-check was never wired up (the enum_state diagnostic field, permanently "n/a", is the proof). 24 lines removed, plus the leftover enum_state dead parameter: permanently "n/a" yet threaded through the function signature, dedup key, log entry and file header - 9 more sites.
+[4] [C] Removed 12 orphan setting keys (8 pre-V2239 gate keys, boss_name_keywords, boss_keep_backdrop_when_absent, and 2 leftover V2236 flash keys). 8 of them were also being force-written to True on save/reset, so they had to be deleted in pairs or they would degrade into wild keys. 27 lines removed.
+[5] [D] Pruned 168 stale entries from the i18n table (655 -> 487). Deliberately strict: the source still has inline four-language dicts providing translations independently, and those entries are genuinely used by the UI even though they bypass the shared translation helper, so all 16 of them were kept. Only entries absent from every string literal in the source were deleted.
+[6] [D, bugfix] Fixed 5 missed i18n wirings: "Not set" (4 places) and "Press a key combination..." (1 place) were hardcoded Chinese and stayed Chinese when switching to English / Traditional Chinese / Japanese. Now routed through the shared translation helper.
+[7] [E] Removed 3 dead constants; removed 2x fm2 = QFontMetrics(f2), which built a throwaway font-metrics object for every buff card on every frame (the V2073 usage was replaced long ago) - real per-frame overhead. Normalized 4 throwaway variables. Dead-assignment audit: 24 -> 13 (the rest are conventional tuple-unpack placeholders, kept on purpose).
+[8] No UI is touched and no player-visible feature is removed. Unused imports: 0. Constant-condition dead branches: 0. Missing translations: 0.
 
 == v23.13 ==
 
@@ -350,152 +473,6 @@ https://raw.githubusercontent.com/Dangoooooo613/GBFR_BuffTimerIndicator/main/ver
 
 调试数据模式（不开游戏也能测 UI）新增「各类别注入数量」：全 Buff / Boss 两模块的「调试数据」页各加 4 个数量框——普通 Buff / Debuff / 永续 / 尾声，分别控制注入多少个该类假 buff。
 · 默认即给混合（全 Buff 8 普通+2Debuff+1永续+1尾声，Boss 5+1+1+1），一开调试就看到各种可能性；Debuff 调试条目现能被正确归类为 debuff 渲染（之前因统一覆盖字典恒判非 debuff 而看不到）。拖动实时生效。
-== v23.06 ==
-修复 V2304 调试数据模式下「全 Buff / Boss 模块空白、核心模块正常」的真因
-· 根因：调试假 buff 的 sid 是 0xD001/D101（53249/53505），远超你为正常游戏设的 status_id_max（常见 3000），被数值门限整批丢弃；核心模块用 active_buffs 字典不查该门限故正常。
-· 修法：调试态下 render_allbuff / render_bossbuff 直接跳过所有门限与过滤开关，保证假 buff 一定全显，不受任何门限值影响；同时移除 V2305 误加的「自动排布到屏幕中央」按钮（位置本就在屏内，与空白无关）。
-== v23.05 ==
-修复 V2304「调试数据」看不到模块的问题
-· 模块默认坐标（核心 y=568、全Buff y=1114、Boss y=8）常被任务栏盖住或落在屏幕外，开启调试数据后全Buff和Boss的假数据其实在后台渲染、但桌面上看不到。
-· 调试数据页顶部新增「📌 自动排布5模块到屏幕中央」按钮，一键把五个模块（核心 / 翻滚 / 能力 / 全Buff / Boss）按顺序竖排在屏幕中央可见区域，立刻能对照假数据调外观。
-
-== v23.04 ==
-新增「调试数据」：不开游戏也能在桌面上调所有模块的外观
-· 位置：设置 → 全局 → 常规 → 调试数据。打开总开关后，五个模块（核心检测 / 全 Buff / Boss Buff / 能力冷却 / 翻滚）立刻显示一整套假数据。
-· 通用参数：显示文本（默认「测试带编码」）、倒计时（默认 8.88）、角色状态、是否战斗中、专精（无 / 觉醒 / 真谛 / 秘义）。
-· 核心：buff 数量 0–24（默认 3）、单层开关、满层开关（默认开）、层数、最大层数（默认 8）、觉醒 / 真谛 / 秘义 标记。
-· 全 Buff / Boss：张数（默认 12 / 8）、层数、最大层数、永续开关；能力冷却：槽数 0–4、已就绪数（默认 1）、冷却上限（默认 30.0 秒）；翻滚：次数 0–7。
-· 所有假 buff 与技能名统一显示为设定文本，不走 buff 名表 / 技能名表，方便一眼看出长文本会不会挤爆排版。
-· 26 个选项全部实时生效（拖动即变）；关掉总开关立即回到读游戏的正常模式。
-
-== v23.03 ==
-尖刺明暗渐变更细腻：平滑过渡 + 方向和强度跟随投影 XY
-· 硬边保留：亮面和暗面仍是两坨色块、中间硬边分界（棱锥/钻石的立体感来源），不做平滑过渡。
-· 方向跟随：渐变方向 = 投影 XY 的方向（光从哪边打过来，哪边就亮）。光斜着照时根部和尖端也会产生明暗差。
-· 强度跟随：渐变强度 = 投影 XY 的大小。偏移越大对比越强；XY 都是 0 时自动变回纯色。
-
-== v23.02 ==
-修复「3D 效果」标签页另一个隐蔽 bug：12 根尖刺亮/暗方向错位
-· 问题：12 根尖刺在圆周上径向朝向，但两种风格一直用世界坐标方向画渐变，所以只有最上方那根尖刺方向是对的，其他编号的亮/暗位置全错。
-· 修法：身体渐变跟着每根尖刺的局部朝向旋转，光从哪边来，亮面就在那一侧。影子方向保持世界坐标不变——定向光的世界方向是固定的。
-
-== v23.01 ==
-「3D 效果」标签页改为实时生效
-· 问题：该页共 20 个选项，其中 15 个改动后必须关闭设置窗口才生效——拖动滑块或勾选开关时主界面看不到任何变化，只能靠猜。
-· 涉及：投影开关与偏移 X/Y、投影不透明度、暗描边开关与暗度、两分面明暗因子、边缘高光带明暗与宽度、底部阴影暗度与高度、小球明暗因子。
-· 修复：为这 15 个选项补上即时生效，现在调参可以边拖边看效果。
-· 说明：本版只处理 3D 标签页这一处，没有动其他设置项。
-
-== v23.00 ==
-修复「随游戏前后台自动切换」：切后台不隐藏 + 回前台只出两个模块
-· 症状①：切到后台时，两个 buff 模块照样出现（另外三个正常隐藏）。
-· 症状②：切回前台时，只剩这两个 buff 模块，核心／翻滚／能力三个模块出不来。
-· 根因：模块窗口的显隐判断分散在四处、彼此覆盖。负责前后台的定时器（250 毫秒）刚把窗口藏好，另一处只认「模块开关」、完全不知道游戏是否在前台的代码就会把它们又显示出来——后台期间只要进出战斗或训练场状态翻一下（或改一下设置）就会触发。
-· 于是那两个模块一直可见，「有窗口可见」这个判断恒为真，回前台时的「全部显示」动作因条件不成立被跳过，另外三个模块就再也出不来了。
-· 修法：把显隐判断收敛为单一裁决入口，明确优先级——游戏在后台时一律隐藏，其次才看模块开关。四处调用点改为只登记「意图」，不再各自直接操作窗口。
-· 附带修复：标题栏最小化按钮原先是裸循环隐藏、不登记意图，导致点了最小化后会被自动弹回。
-
-== v22.64 ==
-修复 V2263 的崩溃问题 + 新增构建前自检脚本
-· 问题：新增的「3D 效果」设置子页用到了 QStackedWidget，但导入列表里漏了它，导致一打开设置对话框就报 NameError 并退出。
-· 修复：在 PySide6.QtWidgets 的导入列表中补上 QStackedWidget。
-· 新增：通用「未定义名」检查脚本，构建前自动扫描源码里「用了却没定义/没导入」的名字。实测把导入删掉后能精确报出出错行，杜绝同类漏导入问题。
-
-== v22.63 ==
-尖刺/小球立体感改为「可调风格」架构：核心检测模块新增「3D 效果」子页。
-· 尖刺 5 种立体风格：纯色 / 中线高光(V2262) / 斜向两分面（最像 3D 棱锥·钻石）/ 边缘宽高光带 / 底厚阴影
-· 小球 2 种风格：纯色 / 径向球化（推荐）
-· 通用投影：启用开关 + 偏移 X/Y + 不透明度（0-255）
-· 通用暗描边：启用开关 + 宽度（0.0-3.0px）+ 暗度（100-200）
-· 各风格独立参数（随下拉动态显隐、实时生效，可在线对比调参，无需重新构建）
-· 默认改为「斜向两分面」+ 投影偏移 (4,5) + 不透明度 120
-· 新增 20 个设置键、39 条三语文案
-
-== v22.62 ==
-【尖刺/小球立体感重构：统一光源 + 小球球化 + 投影】
-1) 现象：此前尖刺填充用了「根部压暗→原色→尖端提亮」的大跨度线性渐变（暗 135% / 亮 140%），导致你设定的尖刺色只在 42% 长度处出现，根与尖都被染色，整体看起来"不是纯色、有渐变"。
-2) 修复：改为「统一光源」模型（光来自左上），尖刺改为**纯色填充**你给定的颜色，仅叠加：①沿中线一条 1px 凸起高光线（lighter 128）②1px 暗描边（darker 150）③整根尖刺向右下偏移的半透明投影——颜色保真度从约 60% 提升到约 95%，同时保留立体/厚度感。
-3) 装饰小球：由原本单纯 darker(110) 平涂，改为**径向渐变球化**（左上高光 lighter 160 → 基色 → 边缘 darker 125），立刻呈现圆球质感。
-4) 圆环：新增整环向右下偏移的半透明暗环投影，与尖刺/小球共用同一光源方向，"浮起"厚度更一致。
-5) 新层出现时的白色外扩闪光动画不受影响，仍为瞬时动画。未改动任何设置键 / UI / i18n。
-== v22.61 ==
-【修正圆环外勾边偏薄、且数值较小时不显示的问题】
-1) 现象：把「外勾边」调到某个数值时，圆环上的勾边明显比尖刺和装饰小球上的更细；而且数值调到 1 或 2 时，圆环上完全看不到勾边，要调到 3 以上才出现。
-2) 原因：圆环勾边原本是贴着圆环中心线画的，而圆环本体（带阴影边的那一层）会更晚绘制、直接盖在上面。圆环本体比勾边宽，于是把勾边整个吃掉了大半——数值小的时候全被盖住，数值大了也只剩一小条。尖刺和装饰小球是实心的，只会盖住勾边靠内的一半，所以看起来正常。
-3) 修复：把圆环勾边挪到圆环外沿再来画，让它露在外面的宽度与尖刺、装饰小球完全一致。现在数值 1 起就能看到，且三者粗细一致。
-
-== v22.60 ==
-【新增门限：剩余时间 > 持续时间时丢弃】
-1) 主控全 Buff 与 Boss Buff 两个模块的「门限」页各新增一条**可勾选**规则：「⑤ 剩余时间 > 持续时间丢弃」，默认开启。
-2) 作用：正常情况下剩余时间不可能比持续时间还长。一旦出现这种情况，基本可以断定读到的是脏数据或异常残留，勾选后直接丢弃该条，不显示。
-3) 例外：永续 buff（显示为无穷符号）不受此限——它的持续时间记录可能是 0，而剩余时间残留正数，这是正常现象，不会被误杀。
-4) 不需要时可在门限页取消勾选，该条检查即被跳过。
-
-== v22.59 ==
-【修复「恢复默认」把配置冲掉的问题 + 按最新配置重新烘焙】
-1) 修复「点恢复默认后，Buff 启用/禁用页里所有勾选框都被勾上」。原因不是烘焙出错——烘焙进默认值的配置完全正确——而是重置代码里有三处写死的值绕过了默认值表：
-   · Buff 专精勾选：重置时被无条件全部勾上（而不是按你配置里实际的勾选状态还原）。现已改为逐项还原。
-   · 全局快捷键：三项被写死成一组固定值，会把你配好的组合键冲掉，其中「锁定窗口」「打开设置」两个还会被一并禁用。现已改为按默认值还原。
-   · 标题栏对齐：写死为「靠左」，你当前设置恰好也是靠左所以一直没暴露。现已改为按默认值还原。
-2) 已对「恢复默认」与「读取设置」两处代码做全量复查（合计 650 余行），除以上三处外，再无其它绕过默认值表的写死赋值。
-3) 同时用你**当前最新的配置**重新烘焙了一遍默认值（界面语言仍固定为简体中文，不跟随快照）。现在点「恢复默认」，结果应当与你最后一次打开软件时的状态一致。
-
-== v22.58 ==
-【恢复默认的语言改回简体中文】
-1) 上一版把你的配置完整烘焙为默认值时，语言这一项被一并烘成了「日文」（因为烘焙时你正在使用日文界面）。
-2) 已按你的要求改回：点「恢复默认」时，界面语言统一回到**简体中文**。
-3) 除语言外的其余全部设置保持不变，仍然是你烘焙进去的那一份配置。
-
-== v22.57 ==
-【把当前配置完整烘焙为默认值】
-1) 应玩家要求，将你当前正在使用的这份配置（软件目录下的 overlay_settings.json，共 359 项）**完整烘焙进程序内置的默认值表**。今后点「恢复默认」，就会精确恢复成这份配置，而不再是一套出厂的通用参数。
-2) 比对结果：内置默认值原本 351 项，你的配置有 359 项——你的配置完整覆盖了内置默认值（没有遗漏任何一项），并多出 8 项运行时新增的设置。其中 **179 项的数值与旧默认值不同**，已逐项烘焙，没有遗漏。
-3) 顺带修复一处「恢复默认」的漏网问题：核心、翻滚、能力三个模块的缩放比例，原本在恢复默认时被写死成 100%，不会跟随默认值（例如你调过的核心模块 73% 会被冲掉）。现在改为与其它两个模块一致，统一读取默认值。
-
-== v22.56 ==
-【Buff 编号勘误：混沌转换】
-1) 修正一处编号记录错误：「混沌转换」此前被登记为 编号 129（0x81），正确的编号应为 **148（0x94）**。判断依据是软件运行期自动记录的未知 buff 清单——里面实际出现的是 148（0x94），而 129（0x81）在游戏里从未出现过。
-2) 已将内置名称表中该条目的编号改正，四种语言的名称（混沌转换 / 混沌輪迴 / Chaos Shift / ケイオシフト）与属性（单层、非角色专属）全部原样保留，条目总数不变。
-3) 重要提示：软件目录下的「补充命名文件」（buff_attrs_unknown.json）优先级高于内置名称表。如果你之前的版本在运行目录里已经留下过 148（0x94）的占位记录，它会把新表里的正确名字盖掉——遇到「改了却不生效」的情况，把该文件删除即可，重启软件后会自动重建，里面仍然未知的编号不会丢失。
-
-== v22.55 ==
-【切换语言不生效——系统性修复】
-1) 玩家反馈：切成日文后，设置面板里「好多选项、好多文本仍然是中文」。逐项排查后结论是——数据层其实是干净的（界面翻译表 566 条四语全非空、buff 名 119 条四语齐全、下拉选项 19 个里 16 个在翻译表内、另 3 个是语言名本就不该翻译、源码零硬编码中文），问题全部出在代码。
-2) 主因：切语言时的文本刷新逻辑遍历了标签、复选框、按钮、分组框四类控件，却「从不遍历下拉框的选项文字」——所以标签正确变成日文了，而下拉框里的「按出现时间 / 居中 / 靠左 / 靠右 / 顶部对齐 / 底部对齐」仍然是中文。现已新增通用下拉选项翻译：遍历所有下拉框，只改显示文字、不动选项的绑定值，且仅当该文字在翻译表内时才修改（角色名、buff 名等数据项会自动跳过，不会被误伤）。
-3) 三处手工写死的刷新代码会把日文/繁体强制写回中文（例如「圆环」在日文下本应显示「円環」，旧代码却写死成中文），已删除，改由上面的通用逻辑统一处理。
-4) 切换语言下拉框时，此前只刷新设置窗口自身的文字，没有把新语言推送给主界面。现已补上推送，切换后立即生效。
-5) 五个模块窗口各自持有一份「启动时拷贝」的设置快照，此前只有「设置面板实时拖动」这一条路径会回写它，而「设置窗口关闭」的两条分支都不经过 → 模块内读取语言的路径（例如 buff 名称）永远停留在启动时的旧值。现已在设置变化后统一回写，修掉「必须重启软件才生效」的问题。
-
-== v22.54 ==
-[About page · 'Important memory addresses & data' panel i18n completed]
-1) A player reported the panel did not switch languages. Investigation: the static offset reference table (21 lines) was **raw hardcoded strings** with no `_tr()` at all, so it always displayed Chinese regardless of the selected language; the live-section header and the mastery fallback 'unidentified' were also raw Chinese.
-2) Fix: wrapped all 21 static lines in `_tr()` (the `"─"*64` separator is pure symbols, left untranslated); wrapped the live header and the three mastery names (Insight/Essence/Crux) plus the 'unidentified' fallback in `_tr()`.
-3) Added 23 keys to i18n.json with zh_tw / en / ja (no zh — `_tr(zh)` returns the key itself as a fallback when lang=="zh", matching the 21 existing panel keys).
-4) Technical data (hex offsets / version numbers / field names mgr, record, pptr, node_id) is **kept verbatim** in every language; only the Chinese descriptive parts are translated, so developers comparing offsets are not confused by translation.
-5) Verified: the 21 pre-existing live-section keys (e.g. 'Module base    = ') already had all three translations and were not duplicated. i18n audit REAL MISSING=0.
-
-== v23.07 ==
-[All Buff / Boss modules now show a stats bar at the top: live counts of Total · Debuff · Infinite · Tail-end]
-1) Total = buffs that passed the gates; Debuff = is-debuff flag; Infinite = the infinite (permanent) flag; Tail-end = non-infinite buffs whose remaining/initial is below the countdown tail-end warning threshold.
-2) The bar takes a fixed height (1 point smaller than the name font); the grid shifts down and the module window grows by that height, so the text is never clipped.
-== v23.15 ==
-[1] Second redundancy-cleanup pass: still dead-code-only removal, plus a fix for a batch of stale log line numbers that actively misled debugging. Zero behaviour change, pixel-identical rendering;
-[2] [G] Removed 4 never-called functions (63 lines). The "Gates" page defines 3 local factories in each of its two mirrored allbuff / boss scopes; two of them - the greyed-out "fixed" checkbox and the fixed value-row - have had zero callers ever since V2243 turned the four gates into toggleable options. Only the note-label factory is still used;
-[3] [H] Removed 4 write-only internal fields: an obsolete dodge-icon cache, a quest-manager scan base address (4 writes, 0 reads), a value named ui_scale that all three module windows rewrite on every single frame while nothing in the whole app ever reads it (real scaling goes through a different pair of values - removing it also drops 3 useless attribute writes per frame), and an update-dialog handle that was only ever set to None;
-[4] [I] Fixed 55 hardcoded line numbers inside log messages. Entries like "swallowed exception @line 4604" were typed in by hand years ago; the file has since grown from roughly 6,000 to 13,800 lines, so all 55 now point at the wrong place - off by 4 to more than 2,000 lines, and 3 of them were never filled in at all (literally "@line 0"). The number is dropped rather than corrected: the entry already carries a full traceback with the real file, line and function, and it points at the raising line instead of the handler, which is both more accurate and impossible to let go stale again;
-[5] [Tooling] Added three self-audit scripts (dead functions / dead attributes / duplicated blocks) and fixed a check that would have deleted live translations: the orphan test compared raw source text against the translation table, but a newline is the two characters \n in source versus a real newline in the table, so every multi-line string was reported as unused (6 false positives, all of them actually in use). It now compares real string values parsed from the AST - false positives went to zero and no key was removed;
-[6] Re-audit: dead functions 0, dead attributes 0, dead constants 0, unused imports 0, orphan setting keys 0, orphan translation keys 0, missing translations 0. All 5 duplicated blocks are the deliberately mirrored allbuff / boss structures - 0 merge candidates. Source 13874 -> 13825 lines.
-
-== v23.14 ==
-[1] A~E tier cleanup after a full redundancy audit: removes only dead code that was computed but never used, plus 5 missed i18n wirings. Zero behavior change, pixel-identical rendering.
-[2] [A] Removed 4 dead assignments + 1 duplicated assignment in the Boss module: ex_excl / ex_mast (Boss exclusive/mastery filtering has been an unconditional drop since V2226, and the Boss side never had any matching UI control, so both setting keys are removed as well), g_conflict (stack-conflict check is hardcoded), g_durmax (the one that actually works is boss_gate_duration_max_with_infinite_exemption), and a duplicated g_e_durmax read.
-[3] [B] Removed 6 leftover Windows API declarations from V2019/V2020 plus the _SHELL_CLASS_NAMES constant. They were declared but never called; foreground detection only ever used get_foreground_pid(). The planned EnumWindows cross-check was never wired up (the enum_state diagnostic field, permanently "n/a", is the proof). 24 lines removed, plus the leftover enum_state dead parameter: permanently "n/a" yet threaded through the function signature, dedup key, log entry and file header - 9 more sites.
-[4] [C] Removed 12 orphan setting keys (8 pre-V2239 gate keys, boss_name_keywords, boss_keep_backdrop_when_absent, and 2 leftover V2236 flash keys). 8 of them were also being force-written to True on save/reset, so they had to be deleted in pairs or they would degrade into wild keys. 27 lines removed.
-[5] [D] Pruned 168 stale entries from the i18n table (655 -> 487). Deliberately strict: the source still has inline four-language dicts providing translations independently, and those entries are genuinely used by the UI even though they bypass the shared translation helper, so all 16 of them were kept. Only entries absent from every string literal in the source were deleted.
-[6] [D, bugfix] Fixed 5 missed i18n wirings: "Not set" (4 places) and "Press a key combination..." (1 place) were hardcoded Chinese and stayed Chinese when switching to English / Traditional Chinese / Japanese. Now routed through the shared translation helper.
-[7] [E] Removed 3 dead constants; removed 2x fm2 = QFontMetrics(f2), which built a throwaway font-metrics object for every buff card on every frame (the V2073 usage was replaced long ago) - real per-frame overhead. Normalized 4 throwaway variables. Dead-assignment audit: 24 -> 13 (the rest are conventional tuple-unpack placeholders, kept on purpose).
-[8] No UI is touched and no player-visible feature is removed. Unused imports: 0. Constant-condition dead branches: 0. Missing translations: 0.
-
 == v23.13 ==
 
 - The embedded default PNG for dodges 1-5 is replaced with a new image (the old "shrimp" icon is gone).
@@ -522,14 +499,40 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 · Defaults to a mix (All-Buff: 8 normal + 2 debuff + 1 permanent + 1 tail-end; Boss: 5+1+1+1) so you see every possibility the moment debug is on; debug Debuff entries are now correctly classified as debuff for rendering (previously the unified override dict forced non-debuff, so they never showed). Changes apply live.
 2) Both Buff modules (All Buff / Boss) now get 4 'count cap' options on the Category Display tab: Max Normal Buffs / Max Debuffs / Max Permanent / Max Tail-end (range 0–99, 0 = no limit).
 3) Applied after gates/exclusions and before the grid truncation: the first N of each category are kept by current order; all four at 0 short-circuits with zero overhead (shows everything). Changes apply live as you drag.
+== v23.07 ==
+全 Buff / Boss 两模块顶部新增「统计条」：实时显示 共 N · Debuff · 永续 · 尾声 四项计数
+· 共 = 当前通过门限的 buff 总数；Debuff = 是否 debuff；永续 = 永续（infinite）标志；尾声 = 非永续且 剩余/初始 < 倒计时尾声警告阈值的 buff 数量。
+· 统计条占固定高度（字号比名称小 1 号），网格整体下移、模块窗口高度相应增加，文字不会被窗口底边切掉。
+== v23.07 ==
+[All Buff / Boss modules now show a stats bar at the top: live counts of Total · Debuff · Infinite · Tail-end]
+1) Total = buffs that passed the gates; Debuff = is-debuff flag; Infinite = the infinite (permanent) flag; Tail-end = non-infinite buffs whose remaining/initial is below the countdown tail-end warning threshold.
+2) The bar takes a fixed height (1 point smaller than the name font); the grid shifts down and the module window grows by that height, so the text is never clipped.
+== v23.06 ==
+修复 V2304 调试数据模式下「全 Buff / Boss 模块空白、核心模块正常」的真因
+· 根因：调试假 buff 的 sid 是 0xD001/D101（53249/53505），远超你为正常游戏设的 status_id_max（常见 3000），被数值门限整批丢弃；核心模块用 active_buffs 字典不查该门限故正常。
+· 修法：调试态下 render_allbuff / render_bossbuff 直接跳过所有门限与过滤开关，保证假 buff 一定全显，不受任何门限值影响；同时移除 V2305 误加的「自动排布到屏幕中央」按钮（位置本就在屏内，与空白无关）。
 == v23.06 ==
 [Fixes the real cause of V2304 Debug Data showing blank All Buff / Boss modules while Core worked]
 1) Root cause: debug fake buffs use sids 0xD001/D101 (53249/53505), far above the status_id_max you set for normal play (commonly 3000), so they were dropped entirely by the numeric gates; Core uses the active_buffs dict and skips that gate, hence it worked.
 2) Fix: in debug mode render_allbuff / render_bossbuff skip all gates and filter switches, so fake buffs always show regardless of any gate value; also removes the mistaken V2305 'snap to screen center' button (positions were already on-screen and unrelated to the blank issue).
 == v23.05 ==
+修复 V2304「调试数据」看不到模块的问题
+· 模块默认坐标（核心 y=568、全Buff y=1114、Boss y=8）常被任务栏盖住或落在屏幕外，开启调试数据后全Buff和Boss的假数据其实在后台渲染、但桌面上看不到。
+· 调试数据页顶部新增「📌 自动排布5模块到屏幕中央」按钮，一键把五个模块（核心 / 翻滚 / 能力 / 全Buff / Boss）按顺序竖排在屏幕中央可见区域，立刻能对照假数据调外观。
+
+== v23.05 ==
 [Fixes the V2304 Debug Data feature where modules were invisible]
 1) Default module positions (core y=568, All Buff y=1114, Boss y=8) often land under the taskbar or off-screen, so the All Buff and Boss fake data was being rendered in the background but not visible on the desktop.
 2) New button at the top of the Debug Data page labeled "📌 Snap 5 modules to screen center" - one click stacks all five modules (Core / Dodge / Ability / All Buff / Boss) vertically and centered in the visible screen area, putting the fake data right in front of you for live layout tuning.
+
+== v23.04 ==
+新增「调试数据」：不开游戏也能在桌面上调所有模块的外观
+· 位置：设置 → 全局 → 常规 → 调试数据。打开总开关后，五个模块（核心检测 / 全 Buff / Boss Buff / 能力冷却 / 翻滚）立刻显示一整套假数据。
+· 通用参数：显示文本（默认「测试带编码」）、倒计时（默认 8.88）、角色状态、是否战斗中、专精（无 / 觉醒 / 真谛 / 秘义）。
+· 核心：buff 数量 0–24（默认 3）、单层开关、满层开关（默认开）、层数、最大层数（默认 8）、觉醒 / 真谛 / 秘义 标记。
+· 全 Buff / Boss：张数（默认 12 / 8）、层数、最大层数、永续开关；能力冷却：槽数 0–4、已就绪数（默认 1）、冷却上限（默认 30.0 秒）；翻滚：次数 0–7。
+· 所有假 buff 与技能名统一显示为设定文本，不走 buff 名表 / 技能名表，方便一眼看出长文本会不会挤爆排版。
+· 26 个选项全部实时生效（拖动即变）；关掉总开关立即回到读游戏的正常模式。
 
 == v23.04 ==
 [New Debug Data page: tune every module on your desktop without launching the game]
@@ -541,10 +544,21 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 6) All 26 options apply live (drag and see it change); turning the master switch off returns to normal game-reading mode instantly.
 
 == v23.03 ==
+尖刺明暗渐变更细腻：平滑过渡 + 方向和强度跟随投影 XY
+· 硬边保留：亮面和暗面仍是两坨色块、中间硬边分界（棱锥/钻石的立体感来源），不做平滑过渡。
+· 方向跟随：渐变方向 = 投影 XY 的方向（光从哪边打过来，哪边就亮）。光斜着照时根部和尖端也会产生明暗差。
+· 强度跟随：渐变强度 = 投影 XY 的大小。偏移越大对比越强；XY 都是 0 时自动变回纯色。
+
+== v23.03 ==
 [Smoother spike shading: gradient direction and strength now follow the shadow X/Y]
 1) Hard edge kept: the bright and dark faces remain two colour blocks with a hard facet edge between them (that is what gives the prism/diamond look) - no smoothing is applied.
 2) Direction follows the light: the gradient axis is the shadow X/Y direction, so whichever side the light comes from is lit. When light arrives at an angle, the base and tip of each spike also pick up a brightness difference.
 3) Strength follows the offset: a larger shadow offset means stronger contrast; when X and Y are both 0 (or the shadow is disabled) it falls back to a flat colour.
+
+== v23.02 ==
+修复「3D 效果」标签页另一个隐蔽 bug：12 根尖刺亮/暗方向错位
+· 问题：12 根尖刺在圆周上径向朝向，但两种风格一直用世界坐标方向画渐变，所以只有最上方那根尖刺方向是对的，其他编号的亮/暗位置全错。
+· 修法：身体渐变跟着每根尖刺的局部朝向旋转，光从哪边来，亮面就在那一侧。影子方向保持世界坐标不变——定向光的世界方向是固定的。
 
 == v23.02 ==
 [Fixes another hidden bug on the 3D Effect tab: bright/dark sides swapped on most spikes]
@@ -553,11 +567,27 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 3) About the shadow: the shadow offset stays in world coordinates — a directional light is fixed in world space, so all shadows correctly fall in the same direction.
 
 == v23.01 ==
+「3D 效果」标签页改为实时生效
+· 问题：该页共 20 个选项，其中 15 个改动后必须关闭设置窗口才生效——拖动滑块或勾选开关时主界面看不到任何变化，只能靠猜。
+· 涉及：投影开关与偏移 X/Y、投影不透明度、暗描边开关与暗度、两分面明暗因子、边缘高光带明暗与宽度、底部阴影暗度与高度、小球明暗因子。
+· 修复：为这 15 个选项补上即时生效，现在调参可以边拖边看效果。
+· 说明：本版只处理 3D 标签页这一处，没有动其他设置项。
+
+== v23.01 ==
 [The 3D Effect tab now applies changes live]
 1) Problem: that page has 20 options, and 15 of them only took effect after closing the settings dialog — nothing changed on screen while dragging a slider or ticking a toggle, so you had to guess.
 2) Affected: shadow toggle and offset X/Y, shadow alpha, outline toggle and darkness, two-tone light/dark factors, edge band light/dark/width, bottom shadow darkness/height, and the bead light/dark factors.
 3) Fix: those 15 options now apply instantly, so you can tune while watching the effect.
 4) Note: this version only touches the 3D Effect tab; no other settings were changed.
+
+== v23.00 ==
+修复「随游戏前后台自动切换」：切后台不隐藏 + 回前台只出两个模块
+· 症状①：切到后台时，两个 buff 模块照样出现（另外三个正常隐藏）。
+· 症状②：切回前台时，只剩这两个 buff 模块，核心／翻滚／能力三个模块出不来。
+· 根因：模块窗口的显隐判断分散在四处、彼此覆盖。负责前后台的定时器（250 毫秒）刚把窗口藏好，另一处只认「模块开关」、完全不知道游戏是否在前台的代码就会把它们又显示出来——后台期间只要进出战斗或训练场状态翻一下（或改一下设置）就会触发。
+· 于是那两个模块一直可见，「有窗口可见」这个判断恒为真，回前台时的「全部显示」动作因条件不成立被跳过，另外三个模块就再也出不来了。
+· 修法：把显隐判断收敛为单一裁决入口，明确优先级——游戏在后台时一律隐藏，其次才看模块开关。四处调用点改为只登记「意图」，不再各自直接操作窗口。
+· 附带修复：标题栏最小化按钮原先是裸循环隐藏、不登记意图，导致点了最小化后会被自动弹回。
 
 == v23.00 ==
 [Fixed auto show/hide on game focus: not hiding on blur, only two modules returning]
@@ -569,10 +599,26 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 6) Bonus fix: the title bar minimize button used a raw hide loop that recorded no intent, so windows could reappear on their own after minimizing. It now uses the same arbiter.
 
 == v22.64 ==
+修复 V2263 的崩溃问题 + 新增构建前自检脚本
+· 问题：新增的「3D 效果」设置子页用到了 QStackedWidget，但导入列表里漏了它，导致一打开设置对话框就报 NameError 并退出。
+· 修复：在 PySide6.QtWidgets 的导入列表中补上 QStackedWidget。
+· 新增：通用「未定义名」检查脚本，构建前自动扫描源码里「用了却没定义/没导入」的名字。实测把导入删掉后能精确报出出错行，杜绝同类漏导入问题。
+
+== v22.64 ==
 [Fixes the v22.63 crash + adds a pre-build self-check script]
 1) Problem: the new "3D Effect" settings sub-tab used QStackedWidget, but it was missing from the PySide6.QtWidgets import list, so opening the settings dialog raised `NameError: name 'QStackedWidget' is not defined` and quit.
 2) Fix: added QStackedWidget to the import list.
 3) New: a generic "undefined name" checker (ast-based, scope-aware) that scans the source for names used but never defined or imported. It is run before every build. Verified by deleting the import — the checker then reports the exact offending lines, so this class of mistake cannot slip through again.
+
+== v22.63 ==
+尖刺/小球立体感改为「可调风格」架构：核心检测模块新增「3D 效果」子页。
+· 尖刺 5 种立体风格：纯色 / 中线高光(V2262) / 斜向两分面（最像 3D 棱锥·钻石）/ 边缘宽高光带 / 底厚阴影
+· 小球 2 种风格：纯色 / 径向球化（推荐）
+· 通用投影：启用开关 + 偏移 X/Y + 不透明度（0-255）
+· 通用暗描边：启用开关 + 宽度（0.0-3.0px）+ 暗度（100-200）
+· 各风格独立参数（随下拉动态显隐、实时生效，可在线对比调参，无需重新构建）
+· 默认改为「斜向两分面」+ 投影偏移 (4,5) + 不透明度 120
+· 新增 20 个设置键、39 条三语文案
 
 == v22.63 ==
 [Spike / bead 3D shading is now a selectable, tunable style system]
@@ -585,6 +631,13 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 7) Adds 20 new settings and 39 new localized strings (zh_tw / en / ja).
 
 == v22.62 ==
+【尖刺/小球立体感重构：统一光源 + 小球球化 + 投影】
+1) 现象：此前尖刺填充用了「根部压暗→原色→尖端提亮」的大跨度线性渐变（暗 135% / 亮 140%），导致你设定的尖刺色只在 42% 长度处出现，根与尖都被染色，整体看起来"不是纯色、有渐变"。
+2) 修复：改为「统一光源」模型（光来自左上），尖刺改为**纯色填充**你给定的颜色，仅叠加：①沿中线一条 1px 凸起高光线（lighter 128）②1px 暗描边（darker 150）③整根尖刺向右下偏移的半透明投影——颜色保真度从约 60% 提升到约 95%，同时保留立体/厚度感。
+3) 装饰小球：由原本单纯 darker(110) 平涂，改为**径向渐变球化**（左上高光 lighter 160 → 基色 → 边缘 darker 125），立刻呈现圆球质感。
+4) 圆环：新增整环向右下偏移的半透明暗环投影，与尖刺/小球共用同一光源方向，"浮起"厚度更一致。
+5) 新层出现时的白色外扩闪光动画不受影响，仍为瞬时动画。未改动任何设置键 / UI / i18n。
+== v22.62 ==
 [Spike / bead 3D shading rebuilt: unified light source, shaded beads, drop shadow]
 1) Symptom: the spike fill used a wide root-to-tip gradient (dark 135% at the root, your colour at 42%, light 140% at the tip), so your chosen colour only appeared partway along the spike and both ends were tinted. The result never looked like the solid colour you picked.
 2) Fix: switched to a unified light source model (light from upper-left). The spike is now filled with your exact colour, and depth comes only from three additions: a 1px raised highlight along the midline (lighter 128), a 1px dark outline (darker 150), and a translucent shadow copy offset down-right. Colour fidelity rises from roughly 60% to roughly 95% while keeping a sense of relief and thickness.
@@ -593,10 +646,23 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 5) The white outward flash animation when a new stack appears is unaffected. No settings, UI or i18n changes in this version.
 
 == v22.61 ==
+【修正圆环外勾边偏薄、且数值较小时不显示的问题】
+1) 现象：把「外勾边」调到某个数值时，圆环上的勾边明显比尖刺和装饰小球上的更细；而且数值调到 1 或 2 时，圆环上完全看不到勾边，要调到 3 以上才出现。
+2) 原因：圆环勾边原本是贴着圆环中心线画的，而圆环本体（带阴影边的那一层）会更晚绘制、直接盖在上面。圆环本体比勾边宽，于是把勾边整个吃掉了大半——数值小的时候全被盖住，数值大了也只剩一小条。尖刺和装饰小球是实心的，只会盖住勾边靠内的一半，所以看起来正常。
+3) 修复：把圆环勾边挪到圆环外沿再来画，让它露在外面的宽度与尖刺、装饰小球完全一致。现在数值 1 起就能看到，且三者粗细一致。
+
+== v22.61 ==
 [Fixed: ring outline looked thinner than the spike/bead outline and vanished at low values]
 1) Symptom: at the same outline width setting, the outline around the ring was noticeably thinner than the one on the spikes and the decorative beads. At width 1 or 2 it disappeared from the ring entirely and only showed up from 3 upwards.
 2) Cause: the ring outline was stroked along the ring's centre line, but the ring body (the layer with the shadow edge) is drawn afterwards and is wider - so it swallowed most of the stroke. At small widths it covered it completely; at larger widths only a sliver survived. Spikes and beads are solid shapes, so they only cover the inner half of their stroke, which is why they looked correct.
 3) Fix: the ring outline is now stroked around the outer edge of the ring instead, so the visible width matches the spikes and beads exactly. It is now visible from width 1 upwards, and all three are consistent.
+
+== v22.60 ==
+【新增门限：剩余时间 > 持续时间时丢弃】
+1) 主控全 Buff 与 Boss Buff 两个模块的「门限」页各新增一条**可勾选**规则：「⑤ 剩余时间 > 持续时间丢弃」，默认开启。
+2) 作用：正常情况下剩余时间不可能比持续时间还长。一旦出现这种情况，基本可以断定读到的是脏数据或异常残留，勾选后直接丢弃该条，不显示。
+3) 例外：永续 buff（显示为无穷符号）不受此限——它的持续时间记录可能是 0，而剩余时间残留正数，这是正常现象，不会被误杀。
+4) 不需要时可在门限页取消勾选，该条检查即被跳过。
 
 == v22.60 ==
 [New gate: drop entries whose remaining time exceeds their duration]
@@ -604,6 +670,15 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 2) Purpose: remaining time can never legitimately exceed total duration. When it does, the entry is almost certainly garbage or a stale slot - check this to discard it instead of displaying it.
 3) Exception: permanent buffs (shown with the infinity symbol) are exempt. Their duration field may read 0 while remaining holds a leftover positive value, which is normal and will not be filtered out.
 4) Uncheck it on the Gates page to skip this check entirely.
+
+== v22.59 ==
+【修复「恢复默认」把配置冲掉的问题 + 按最新配置重新烘焙】
+1) 修复「点恢复默认后，Buff 启用/禁用页里所有勾选框都被勾上」。原因不是烘焙出错——烘焙进默认值的配置完全正确——而是重置代码里有三处写死的值绕过了默认值表：
+   · Buff 专精勾选：重置时被无条件全部勾上（而不是按你配置里实际的勾选状态还原）。现已改为逐项还原。
+   · 全局快捷键：三项被写死成一组固定值，会把你配好的组合键冲掉，其中「锁定窗口」「打开设置」两个还会被一并禁用。现已改为按默认值还原。
+   · 标题栏对齐：写死为「靠左」，你当前设置恰好也是靠左所以一直没暴露。现已改为按默认值还原。
+2) 已对「恢复默认」与「读取设置」两处代码做全量复查（合计 650 余行），除以上三处外，再无其它绕过默认值表的写死赋值。
+3) 同时用你**当前最新的配置**重新烘焙了一遍默认值（界面语言仍固定为简体中文，不跟随快照）。现在点「恢复默认」，结果应当与你最后一次打开软件时的状态一致。
 
 == v22.59 ==
 [Fix "Reset to Defaults" overwriting your settings + re-bake from the latest config]
@@ -615,10 +690,22 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 3) Also re-baked the defaults from your **current, latest** configuration (interface language remains pinned to Simplified Chinese and does not follow the snapshot). "Reset to Defaults" should now reproduce exactly how the app looked the last time you opened it.
 
 == v22.58 ==
+【恢复默认的语言改回简体中文】
+1) 上一版把你的配置完整烘焙为默认值时，语言这一项被一并烘成了「日文」（因为烘焙时你正在使用日文界面）。
+2) 已按你的要求改回：点「恢复默认」时，界面语言统一回到**简体中文**。
+3) 除语言外的其余全部设置保持不变，仍然是你烘焙进去的那一份配置。
+
+== v22.58 ==
 [Reset-to-defaults language back to Simplified Chinese]
 1) When the previous version baked your configuration into the defaults, the language entry was baked in as "Japanese" - because you were running the Japanese UI at that moment.
 2) Changed back as requested: "Reset to Defaults" now returns the interface language to **Simplified Chinese**.
 3) Every other setting is untouched and still matches the configuration you baked in.
+
+== v22.57 ==
+【把当前配置完整烘焙为默认值】
+1) 应玩家要求，将你当前正在使用的这份配置（软件目录下的 overlay_settings.json，共 359 项）**完整烘焙进程序内置的默认值表**。今后点「恢复默认」，就会精确恢复成这份配置，而不再是一套出厂的通用参数。
+2) 比对结果：内置默认值原本 351 项，你的配置有 359 项——你的配置完整覆盖了内置默认值（没有遗漏任何一项），并多出 8 项运行时新增的设置。其中 **179 项的数值与旧默认值不同**，已逐项烘焙，没有遗漏。
+3) 顺带修复一处「恢复默认」的漏网问题：核心、翻滚、能力三个模块的缩放比例，原本在恢复默认时被写死成 100%，不会跟随默认值（例如你调过的核心模块 73% 会被冲掉）。现在改为与其它两个模块一致，统一读取默认值。
 
 == v22.57 ==
 [Bake current configuration into defaults]
@@ -627,10 +714,24 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 3) Also fixed a leak in the reset routine: the scale of the Core, Dodge and Skill modules was hardcoded to 100% on reset and ignored the defaults table (so e.g. your adjusted Core scale of 73% was lost). They now read from defaults like the other two modules already did.
 
 == v22.56 ==
+【Buff 编号勘误：混沌转换】
+1) 修正一处编号记录错误：「混沌转换」此前被登记为 编号 129（0x81），正确的编号应为 **148（0x94）**。判断依据是软件运行期自动记录的未知 buff 清单——里面实际出现的是 148（0x94），而 129（0x81）在游戏里从未出现过。
+2) 已将内置名称表中该条目的编号改正，四种语言的名称（混沌转换 / 混沌輪迴 / Chaos Shift / ケイオシフト）与属性（单层、非角色专属）全部原样保留，条目总数不变。
+3) 重要提示：软件目录下的「补充命名文件」（buff_attrs_unknown.json）优先级高于内置名称表。如果你之前的版本在运行目录里已经留下过 148（0x94）的占位记录，它会把新表里的正确名字盖掉——遇到「改了却不生效」的情况，把该文件删除即可，重启软件后会自动重建，里面仍然未知的编号不会丢失。
+
+== v22.56 ==
 [Buff ID correction: Chaos Shift]
 1) Fixed a wrongly recorded buff ID: "Chaos Shift" was previously registered as ID 129 (0x81); the correct ID is **148 (0x94)**. The evidence comes from the unknown-buff list the app records at runtime - 148 (0x94) actually appeared there, while 129 (0x81) never showed up in-game at all.
 2) The entry in the built-in name table has been moved to the correct ID. All four language names (simplified / traditional Chinese, English, Japanese) and its attributes (single-layer, not character-exclusive) are preserved unchanged; the total entry count is unchanged.
 3) Important: the supplemental naming file next to the executable (buff_attrs_unknown.json) takes priority over the built-in table. If an older version already left a placeholder record for 148 (0x94) in your run directory, it will override the corrected name. If the fix appears to have no effect, simply delete that file - the app rebuilds it on next start, and IDs that are still unknown are not lost.
+
+== v22.55 ==
+【切换语言不生效——系统性修复】
+1) 玩家反馈：切成日文后，设置面板里「好多选项、好多文本仍然是中文」。逐项排查后结论是——数据层其实是干净的（界面翻译表 566 条四语全非空、buff 名 119 条四语齐全、下拉选项 19 个里 16 个在翻译表内、另 3 个是语言名本就不该翻译、源码零硬编码中文），问题全部出在代码。
+2) 主因：切语言时的文本刷新逻辑遍历了标签、复选框、按钮、分组框四类控件，却「从不遍历下拉框的选项文字」——所以标签正确变成日文了，而下拉框里的「按出现时间 / 居中 / 靠左 / 靠右 / 顶部对齐 / 底部对齐」仍然是中文。现已新增通用下拉选项翻译：遍历所有下拉框，只改显示文字、不动选项的绑定值，且仅当该文字在翻译表内时才修改（角色名、buff 名等数据项会自动跳过，不会被误伤）。
+3) 三处手工写死的刷新代码会把日文/繁体强制写回中文（例如「圆环」在日文下本应显示「円環」，旧代码却写死成中文），已删除，改由上面的通用逻辑统一处理。
+4) 切换语言下拉框时，此前只刷新设置窗口自身的文字，没有把新语言推送给主界面。现已补上推送，切换后立即生效。
+5) 五个模块窗口各自持有一份「启动时拷贝」的设置快照，此前只有「设置面板实时拖动」这一条路径会回写它，而「设置窗口关闭」的两条分支都不经过 → 模块内读取语言的路径（例如 buff 名称）永远停留在启动时的旧值。现已在设置变化后统一回写，修掉「必须重启软件才生效」的问题。
 
 == v22.55 ==
 [Language switching not taking effect - systematic fix]
@@ -639,6 +740,14 @@ Debug-data mode (test UI without the game running) now has per-category injectio
 3) Three hand-hardcoded refresh blocks forced Japanese/Traditional Chinese back to Chinese (e.g. the ring timer style should render as the Japanese term, but old code pinned the Chinese word). Removed; the generic pass above now handles them correctly in all four languages.
 4) Changing the language drop-down previously refreshed only the settings window itself and never pushed the new language to the overlay. The push is now wired up, so switching takes effect immediately.
 5) Each of the five module windows keeps its own snapshot of settings copied at construction time. Only the "live drag in settings panel" path wrote back to it; neither branch of "settings dialog closed" went through that path, so anything reading language inside a module (e.g. buff names) stayed at the startup value. Settings are now written back uniformly after any settings change, fixing the "requires restart" behaviour.
+
+== v22.54 ==
+[About page · 'Important memory addresses & data' panel i18n completed]
+1) A player reported the panel did not switch languages. Investigation: the static offset reference table (21 lines) was **raw hardcoded strings** with no `_tr()` at all, so it always displayed Chinese regardless of the selected language; the live-section header and the mastery fallback 'unidentified' were also raw Chinese.
+2) Fix: wrapped all 21 static lines in `_tr()` (the `"─"*64` separator is pure symbols, left untranslated); wrapped the live header and the three mastery names (Insight/Essence/Crux) plus the 'unidentified' fallback in `_tr()`.
+3) Added 23 keys to i18n.json with zh_tw / en / ja (no zh — `_tr(zh)` returns the key itself as a fallback when lang=="zh", matching the 21 existing panel keys).
+4) Technical data (hex offsets / version numbers / field names mgr, record, pptr, node_id) is **kept verbatim** in every language; only the Chinese descriptive parts are translated, so developers comparing offsets are not confused by translation.
+5) Verified: the 21 pre-existing live-section keys (e.g. 'Module base    = ') already had all three translations and were not duplicated. i18n audit REAL MISSING=0.
 
 == v22.54 ==
 【关于页 · 「重要内存地址与数据」面板多语言补齐】
@@ -781,15 +890,6 @@ All five modules (core / roll / skill / main all-Buff / Boss) get the symmetric 
 The two hardened gates (hide 0.0/0.0, negative durations) remain always-on and cannot be turned off, as a safety net.
 All toggles default ON; old configs auto-migrate with no manual change.
 
-== v22.41 ==
-[List widget · "Remove" button layout hotfix]
-V2240 user screenshot reported the "Remove" button on every row of all 4 lists (blacklist + multi-instance × main + Boss) showed only the character "移" with the second character clipped off.
-Root cause: `_refresh_buff_list` uses QListWidget.setItemWidget to embed a custom row widget. Qt does NOT auto-stretch the widget to the item rect by default — the row's default Preferred size policy keeps sizeHint width → the label+button row gets compressed → setFixedWidth(64) effectively rendered only ~20-30 px.
-Fix:
-(1) Row widget now uses `setSizePolicy(Expanding, Preferred)` → forces it to fill the QListWidget item rect.
-(2) "Remove" button uses `setMinimumWidth(76) + setMaximumWidth(76)` (fixed-width with more headroom) + padding `2px 6px` → `3px 8px` + font-size `10 → 11` + `min-height: 22px` + `PointingHandCursor`.
-(3) `retranslate_ui` path unchanged (button text still `_tr("移除")`; zh / zh_tw / en / ja automatic).
-
 == v22.42 ==
 [List widget · full rewrite (replaces the failed V2241 attempt)]
 V2240 user screenshot reported the "Remove" button on every row of all 4 lists showed only "移"; V2241 tried setItemWidget + setSizePolicy(Expanding) to stretch it, but it still got clipped (user replied "still the same").
@@ -801,6 +901,35 @@ Fix: replaced the list container of all 4 lists (main blacklist / main multi-ins
   (4) row height uses setMinimumHeight(30) + QHBoxLayout natural height, no stretching/distortion.
 All 4 lists take effect simultaneously. retranslate_ui path unchanged (button text still _tr("移除"); zh / zh_tw / en / ja automatic).
 
+== v22.42 ==
+【名单展示框 · 彻底重做（移除 V2241 失败方案）】
+用户 V2240 截图反馈「4 个名单每行的『移除』按钮只显示『移』字」，V2241 用 setItemWidget + setSizePolicy(Expanding) 试图撑满，但实测仍被裁（用户回「还是这样」）。
+根因：QListWidget.setItemWidget 把 widget 渲染在 QListWidgetItem.sizeHint() 矩形里，sizeHint 默认 = widget 的 preferred 宽；setSizePolicy(Expanding) 在 setItemWidget 下**完全无效**（这是 V2241 失败的根因）。
+修法：把 4 个名单（主控黑名单 / 主控多次出现名单 / Boss 黑名单 / Boss 多次出现名单）的列表容器从「QListWidget + setItemWidget」整个换成「QScrollArea + 内层 QWidget + QVBoxLayout」：
+  ① _scroll.setWidgetResizable(True) + 内层 _inner（sizePolicy Expanding），让 _inner 宽度自动跟随 _scroll viewport 宽；
+  ② 行 widget 直接 _layout.insertWidget 到 QVBoxLayout，拿到 _inner 全宽（不受 item.sizeHint 限制），label 占满左侧、按钮 76px 完整显示在右侧；
+  ③ 空态改用居中暗灰 QLabel 占位（替代 V2237 的灰色 placeholder item），逻辑更干净；
+  ④ 行高用 setMinimumHeight(30) + QHBoxLayout 自然高度，不被拉伸变形。
+4 个名单同时生效。retranslate_ui 路径不变（按钮文字仍走 _tr("移除")，中文/繁中/英文/日文四语全自动）。
+
+== v22.41 ==
+[List widget · "Remove" button layout hotfix]
+V2240 user screenshot reported the "Remove" button on every row of all 4 lists (blacklist + multi-instance × main + Boss) showed only the character "移" with the second character clipped off.
+Root cause: `_refresh_buff_list` uses QListWidget.setItemWidget to embed a custom row widget. Qt does NOT auto-stretch the widget to the item rect by default — the row's default Preferred size policy keeps sizeHint width → the label+button row gets compressed → setFixedWidth(64) effectively rendered only ~20-30 px.
+Fix:
+(1) Row widget now uses `setSizePolicy(Expanding, Preferred)` → forces it to fill the QListWidget item rect.
+(2) "Remove" button uses `setMinimumWidth(76) + setMaximumWidth(76)` (fixed-width with more headroom) + padding `2px 6px` → `3px 8px` + font-size `10 → 11` + `min-height: 22px` + `PointingHandCursor`.
+(3) `retranslate_ui` path unchanged (button text still `_tr("移除")`; zh / zh_tw / en / ja automatic).
+
+== v22.41 ==
+【名单展示框 · 「移除」按钮排版热修】
+用户截图 V2240 反馈「4 个名单（黑名单 + 多次出现名单 × 主控 + Boss）每行的『移除』按钮只显示『移』字，『除』字被裁掉」。
+根因：`_refresh_buff_list` 用 `QListWidget.setItemWidget` 嵌入自定义行 widget，Qt 默认不会自动把 widget 撑满 item 矩形——row widget 默认 Preferred size policy → 保留 sizeHint 宽度，导致 label+button 的横向布局被压缩，`setFixedWidth(64)` 实际渲染只有 20~30px。
+修法：
+  ① row widget 加 `setSizePolicy(Expanding, Preferred)` → 强制填满 QListWidget item 矩形；
+  ②「移除」按钮改 `setMinimumWidth(76) + setMaximumWidth(76)`（等宽且更宽松量）+ padding `2px 6px → 3px 8px` + font-size `10 → 11` + `min-height: 22px` + `PointingHandCursor`；
+  ③ `retranslate_ui` 路径不变（按钮文字仍走 `_tr("移除")`，中文/繁中/英文/日文四语全自动）。
+
 == v22.40 ==
 [Core module · canvas width/height now adjustable]
 Added two knobs "Canvas width (0=auto)" / "Canvas height (0=auto)" (Settings → Circle card, range 0–4000, 0 shows "auto"):
@@ -809,6 +938,14 @@ Added two knobs "Canvas width (0=auto)" / "Canvas height (0=auto)" (Settings →
 3) A hard floor prevents clipping — width ≥ max(base 648, circle + both-side spikes/outline width), height ≥ auto-preview height × 1.35; too-small values are pulled back so the circle or buff names never get cut off.
 4) Orthogonal with the existing core_scale_percent / circle_radius (final size = user W/H × scale% × resolution scale).
 Both modules' layout logic unchanged for existing users.
+
+== v22.40 ==
+【核心模块 · 画布宽/高可调】
+新增「画布宽(0=自动)」/「画布高(0=自动)」两个旋钮（设置 → 圆环 卡片，范围 0–4000，0 显示「自动」）：
+① 默认 0 = 自动——完全沿用旧版自动计算逻辑，老用户无感、配置零变化；
+② 设 >0 时覆盖核心模块（尖刺圆 + 标题栏 + buff 名）画布尺寸，内容（圆/标题/buff 名）本就相对画布自适应，自动水平 + 垂直重居中；
+③ 强制下限防裁切——宽 ≥ max(基准宽 648, 圆 + 两侧尖刺/外描边所需宽)，高 ≥ 自动预览高度 × 1.35，设太小自动拉回，不会把圆或 buff 名切掉；
+④ 与现有 core_scale_percent / circle_radius 正交叠加（最终尺寸 = 用户宽高 × 缩放% × 分辨率缩放）。
 
 == v22.39 ==
 [Gates slim-down + duration cap made tunable on both buff modules]
@@ -822,6 +959,17 @@ Both modules' layout logic unchanged for existing users.
     render reads from settings dynamically; existing 9999 infinite exemption preserved; old configs auto-migrate.
 Both modules (main + Boss) get the symmetric change.
 
+== v22.39 ==
+【两个 buff 模块 · 门限瘦身 + 时长上限可调】
+①「NaN/Inf 检查」→ 保留；
+②「ID=0 不可能是永续」→ 保留；
+③ ③④⑤ 三条合并为一条：「任何 buff 的剩余或初始时间都不可能 ≤ 0」——
+    把「隐藏倒计时 0.0/0.0」「remaining/initial 任一 < 0 」「永续剩余不可能 ≤ 0」三条独立规则合并为更直白的一条
+    （render 端：remaining ≤ 0 且 < 9999 → 丢；initial ≤ 0 → 丢，9999 起仍为 V2216 永续豁免）；
+④「时长上限」改为可调数值：复选框永远开启（玩家无法取消），旁边新增 DoubleSpinBox（默认 10000.0 秒，范围 10.0–600000.0）——
+    render 端从 settings 动态读取上限，保留原 9999 永续豁免，旧 config 自动迁移无需手动改。
+两个模块（主控 + Boss）完全对称改动。
+
 == v22.38 ==
 • V2238 (22.38) hotfix：修复 V2237 的「4 个名单 UI 重做」让「设置」窗口打不开的崩溃——V2237 调用了 `QListWidget.setPlaceholderText(...)` 设置空态文案，但 PySide6 6.11.1 的 `QListWidget` 根本没有这个方法（那是 QLineEdit / QComboBox 的）。
 修法：(1) 主控 + Boss 两处 `_add_buff_list_group` 删除 `setPlaceholderText` 调用；
@@ -829,11 +977,21 @@ Both modules (main + Boss) get the symmetric change.
 (`Qt.NoItemFlags` + `QBrush(QColor("#5a6a85"))`)，跟真实数据行完全独立、不会污染 sizeHint。
 V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修一个外部错误调用。
 
+== v22.38 ==
+• V2238 (22.38) hotfix: fixes V2237's "4 buff-list UI rewrite" that bricked the Settings window——V2237 called `QListWidget.setPlaceholderText(...)` for empty-state text, but PySide6 6.11.1's `QListWidget` doesn't have that method at all (it's QLineEdit/QComboBox's).
+Fix: (1) Remove the `setPlaceholderText` calls in both Main + Boss `_add_buff_list_group`; (2) `_refresh_buff_list` now inserts a non-clickable / non-selectable dark-grey placeholder item (`Qt.NoItemFlags` + `QBrush(QColor("#5a6a85"))`) when the list is cleared and `_items` is empty, completely independent from real data rows, not polluting sizeHint.
+V2237's "unlock convergence-distance lower bound" feature itself is unchanged — this version is purely fixing an erroneous API call.
+
 == v22.37 ==
 • V2237 (22.37)：能力模块「聚散距离」下限解负——
   ① **UI SpinBox**：`聚散距离:` 下限由 20 放开到 -200（与 `能力名X/Y偏移` / `倒计时X/Y偏移` 同款对称风格），范围（-200, 200），可输入负值让 4 个技能菱形向画布中心靠拢甚至完全重叠。
   ② **render_skill 去除「防菱形覆盖中心」兜底**：原 `spread = max(spread, half_diag + 8)` 强制 spread 不低于菱形半对角线+8，造成 spread 输入 -50/0 等值完全无效。现改为 spread 直接生效——spread=0 时 4 菱形全堆在中心，spread=-N 时则更密集重叠。
   ③ **recalc_layout 画布尺寸兜底由 half_diag+8 改 0**：画布可能容纳不下完全重叠的菱形，但保证画布尺寸永不为负（程序不会崩溃）；DEFAULT_SETTINGS["skill_cd_spread"]=90 默认不变。
+== v22.37 ==
+• V2237 (22.37): release the lower bound of the ability module's "spread distance" —
+  1) **UI SpinBox**: the `Spread Distance:` control's minimum drops from 20 to -200 (mirroring the existing `Skill Name X/Y Offset` and `Timer X/Y Offset` controls' symmetric style). Range is now (-200, 200). You can now enter negatives to pull all 4 skill diamonds toward — or fully onto — the canvas centre.
+  2) **render_skill removes the "anti-overlap" clamp**: the previous `spread = max(spread, half_diag + 8)` forced the spread to stay at least half a diagonal + 8 px, which made inputs like -50 or 0 do nothing. The clamp is gone — spread now takes effect as-is. spread=0 collapses all 4 diamonds onto the centre; spread=-N even more so.
+  3) **recalc_layout canvas-dimension floor changes from half_diag+8 to 0**: the canvas may be smaller than the full overlapped cluster, but its size is guaranteed non-negative (no crash). DEFAULT_SETTINGS["skill_cd_spread"]=90 stays the default.
 == v22.36 ==
 == v22.36 ==
 • V2236 (22.36)：清理 + 整治三件套——
@@ -841,6 +999,14 @@ V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修�
   ② **4 个名单 UI 重做**：主控黑名单 / 主控多次出现名单 / Boss 黑名单 / Boss 多次出现名单，从「QScrollArea + 垂直均分(stretch)」改为「小框(QGroupBox)包裹 QListWidget + 每行 setItemWidget + Native 滚动条」。内部列表自然高度、超出即滚动，不再撑爆 GroupBox、行也不再叠成一团。4 个名单同时生效。
   ③ **门限全外露**：主控 + Boss「门限」子标签上半段新增「已固化的门限（永远开启，不可关闭）」6 条 disabled 复选框，显式列出所有固化门限——NaN/Inf 检查 / status_id=0 不可能是永续 / 隐藏倒计时 0.0/0.0 / remaining 或 initial 任一 <0 舍弃 / **⑤ 永续 buff 的 remaining 不可能 ≤0【V2236 新增】** / 时长上限 10000s（含 9999 永续豁免）。下方原有可调数值门限（status_id / sub_id 上限 / 层数上限 / 最小剩余 / 最小初始 / 最小出现持续）保留。render 端新增两条硬编码检查：`if sid_i==0 and infinite: continue` 与 `if infinite and remaining<=0.0 and remaining<9999.0: continue`。
   ④ **卡片居中复核**：两个 buff 模块小模块的进度条与文字（drawText / addText / bar_x / by 公式）确认已是严格水平 + 垂直居中，并加 V2236 居中复核注释。
+
+== v22.36 ==
+== v22.36 ==
+• V2236 (22.36): cleanup + 3 fixes——
+  1) **Removed the "All-Buff submodule flash" feature**: added in V2107, it flashed the submodule. User reported "if I don't tick this flash option, the main All-Buff module just vanishes" — the root cause was a stale variable throwing in a path whose exception was swallowed by paintEvent's try/except, blanking the whole module. Keeping it only confused players and could flicker, so it is fully removed: the flash_apply_allbuff_submodule / boss_flash_apply_allbuff_submodule keys are dropped from DEFAULT_SETTINGS, the 3 corresponding checkboxes in the settings panel are removed, and the flash animation timer/fields are gone.
+  2) **Rebuilt all 4 list UIs**: Main blacklist / Main multi-occurrence / Boss blacklist / Boss multi-occurrence. Changed from "QScrollArea + vertical stretch (evenly distributed)" to "small frame (QGroupBox) wrapping a QListWidget + per-row setItemWidget + Native scrollbar". The inner list uses natural row heights and scrolls when overflowing; it no longer blows up the GroupBox and rows never overlap. All 4 lists updated together.
+  3) **All gates now exposed**: the upper part of the "Gates" sub-tab for both Main and Boss gets 6 disabled "baked-in gates (always on, cannot disable)" checkboxes that explicitly list every baked-in gate — NaN/Inf check / status_id=0 can't be infinite / hide 0.0/0.0 countdown / drop if remaining or initial < 0 / **⑤ an infinite buff's remaining can't be <=0 [NEW in V2236]** / duration cap 10000s (with 9999 infinite exemption). The adjustable numeric gates below (status_id / sub_id cap / stack cap / min remaining / min initial / min appearance duration) are kept. Two hard-coded checks added at the render side: `if sid_i==0 and infinite: continue` and `if infinite and remaining<=0.0 and remaining<9999.0: continue`.
+  4) **Card centering review**: confirmed the progress bar and text in both buff-module submodules (drawText / addText / bar_x / by formulas) are strictly horizontally + vertically centered, and added a V2236 centering-review comment.
 
 == v22.35 ==
 • V2235 (22.35)：彻底根治「主控全 Buff 空白」低级绘制 bug——V2234 的自动防裁切没解决问题，说明根因不在裁切而在绘制层。V2235 三条硬改：
@@ -852,6 +1018,16 @@ V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修�
      现在改为「每个字段独立 try/except + lambda 包裹」，任何字段异常降级为 err:ExceptionType，整个 dump 调用不会因为一个字段而失败；下次跑就能立刻看到完整的诊断字段（win_geo / layout / cards / alpha）。
   ③ **保留 V2234 的自动防裁切逻辑不动**：移动整个模块到屏幕内保证底框/边框可见，但绘制层低级错误仍可能在裁切消失后继续表现为空白。
 
+== v22.35 ==
+• V2235 (22.35): final fix for the low-level rendering bug behind "Main All-Buff blank" - V2234's auto-clamp didn't solve it, so the root cause is in the rendering layer rather than the clip. V2235 ships three hard changes:
+  1) **Render sanity bands**: at the very start of _draw_allbuff_card (right after painter.save), draw three glaring horizontal bars (red 255,0,0 / blue 0,128,255 / green 0,220,90) covering the top 1~14px of the card.
+     - If you can see the bands -> the render pipeline reaches the card layer; the issue is in backing_col / name / stacks / bar colors.
+     - If you cannot see the bands -> painter state, outer coordinate system, or widget clipping is broken (not in this function).
+     This is the spirit of the user's quote "spend more time on the lower-level logic errors": for any future draw-pipeline issue, this is the first thing to wire up.
+  2) **Dump atomicity**: previously, the dict literal at line 8790 - if any single field's evaluation raised, the whole _dump_allbuff_buffs call was swallowed by the outer except, leaving the dump file with whatever the LAST successful run had written. That is exactly why V2234's dump came out without win_geo / layout / cards / alpha and I mistakenly concluded V2234 had not been run.
+     Now each field is wrapped in its own try/except + lambda, with any field-level error downgrading to err:ExceptionType. The whole dump call cannot fail because of one bad field; the next run will surface the full diagnostic fields immediately.
+  3) **V2234's auto-clamp is kept as-is**: it keeps the backdrop / border visible by clamping the whole module onto the screen, but a low-level rendering error can still produce a blank card even with the clip gone.
+
 == v22.34 ==
 • V2234 (22.34)：V2233 自愈逻辑上线后实测发现，「主控全 Buff 空白」的真正根因不是 pptr 失效，而是「窗口被屏底物理裁切」——
   1) 位置按 1920 宽度归一化保存，res_scale = max(1.0, 屏宽/1920)。当显示器为 2560×1440 时，res_scale=1.333，原本 1030 的归一化 y 放大为 1373，看似距屏底（1440）还有 67px 余量；
@@ -860,10 +1036,22 @@ V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修�
   4) 卡片主体（名称/层数/时间/进度条）正好落在 canvas 30~60px 区段——恰是被裁掉的 16~43px 区间内，视觉上只见底框/边框，看不到 buff 名字与倒计时，与「主控无值、Boss 正常」完全一致。
   修法：在 _refresh_window_geometries 末尾新增「自动防裁切」：窗口下沿超出可用区时，把 y 向上回退到 max(屏顶, 屏底-窗口高)，让整窗完整落在屏幕内。同步处理水平溢出（左/右）但优先级低于位置主动选择——玩家故意拖到屏外的情况尊重原意、不主动回拉。V2233 的两个 dump（_dump_allbuff_buffs 渲染级 / _dump_allbuff_source 数据源级）与「pptr 失效时自愈」逻辑（_pptr_broken 标志 + 3 秒节流 AOB 重解）一并保留。
 
+== v22.34 ==
+• V2234 (22.34): After V2233's self-healing went live, the real root cause of "Main All-Buff blank" turned out NOT to be a stale pptr but a physical off-screen clip:/n  1) Positions are saved normalized to a 1920-wide canvas; res_scale = max(1.0, screen_w/1920). On a 2560x1440 monitor that is 1.333, so a stored y of 1030 becomes 1373 - seemingly 67px clear of the screen bottom (1440);
+  2) With valign=bottom + vmargin=-40, the y is pushed another 40px to 1413, leaving only 27px of room;
+  3) The canvas height is bh(=56) * disp_h(=1.333) ~= 75px, but the Qt window has already been clipped 16px by the screen bottom, so the actual window_h is only 59px;
+  4) The card body (name / stacks / time / bar) sits in the canvas 30~60px band - exactly inside the 16~43px clip range, so the user only ever sees the backdrop / border, never the buff name or timer. This matches the reported "Main empty, Boss fine" symptom perfectly.
+  Fix: a new auto-clamp at the end of _refresh_window_geometries: when the window's bottom edge goes past the available area, the y is pulled up to max(screen_top, screen_bottom - window_h) so the whole window fits on screen. Horizontal overflow (left/right) is handled the same way but with a lower priority than explicit placement - if the user has deliberately dragged a window off-screen, the auto-clamp leaves it alone. V2233's two dumps (_dump_allbuff_buffs render-level / _dump_allbuff_source data-source-level) and the pptr self-healing logic (_pptr_broken flag + 3s AOB-rescan throttle) are kept in place.
+
 == v22.33 ==
 • V2233 (22.33)：修复「Boss 模块有值、主控全 Buff 模块始终空白」。两个模块的数据源不对称：Boss 走 read_boss_buffs(module_base)，module_base 由 get_module_info 直接取得、永远正确；主控走 read_overlay_data(self.pptr)，pptr 来自 ptr 缓存 / AOB 反解，可能失效（缓存陈旧但解出恰好非 0 的垃圾值也会被信任；AOB 误命中）→ char_base = 0 或垃圾地址 → read_overlay_data 返回 no_char、all_buffs_list 为空 → 主控全 Buff 永远空白，而 Boss 照常有值。
   - 自愈：检测到 status == no_char、或 status == ok 但 charid_hash 与 char_type 全为 0（说明 char_base 是垃圾地址）时，删除 ptr 缓存并重新 AOB 反解 pptr，成功后立即用新指针重读一次快照，主控模块随即恢复显示（节流 3 秒一次，避免每帧做 80MB 全模块扫描拖垮帧率）。
   - 诊断旁路：新增 _dump_allbuff_buffs，每秒把「过滤后 items + 过滤前 raw + 定位链路上下文（pptr / char_base / charid_hash / char_type / pl_id / boss_actor / boss_buff_count）」写到 EXE_DIR/last_allbuff_buffs.json，与既有的 last_boss_buffs.json 完全对称，用于区分三类根因：数据源为空 / 门限丢光 / 渲染未执行。
+
+== v22.33 ==
+• V2233 (22.33): Fixes "Boss module shows values but the Main All-Buff module is always empty". The two modules read from asymmetric sources: Boss uses read_boss_buffs(module_base), where module_base comes straight from get_module_info and is ALWAYS correct; Main uses read_overlay_data(self.pptr), where pptr comes from the ptr cache / AOB reverse-resolve and CAN go stale (a stale cache is trusted whenever it happens to deref to any non-zero garbage value; AOB can also mis-hit) -> char_base becomes 0 or a garbage address -> read_overlay_data returns no_char with an empty all_buffs_list -> the Main All-Buff module stays blank forever while Boss keeps working.
+  - Self-healing: when status == no_char, OR status == ok but BOTH charid_hash and char_type are 0 (meaning char_base is a garbage address), the ptr cache is deleted and pptr is re-resolved via AOB; a fresh snapshot is then read immediately with the new pointer, restoring the Main module (throttled to once every 3s so the 80MB full-module scan can't tank the frame rate).
+  - Diagnostic bypass: new _dump_allbuff_buffs writes, every second, "post-filter items + pre-filter raw + pointer-chain context (pptr / char_base / charid_hash / char_type / pl_id / boss_actor / boss_buff_count)" to EXE_DIR/last_allbuff_buffs.json - fully symmetric with the existing last_boss_buffs.json - to tell apart three root causes: empty data source / everything dropped by gates / render never executed.
 
 == v22.32 ==
 • V2232 (22.32)：纠正 V2231 的错误放置——3 个 boss buff（sid=149/146/129）从「核心检测模块的角色配表」(i18n.json buffs) 移出，改放进「全局 buff 名表」(buff_attrs.json)，这才是 Boss 模块与全 Buff 模块真正读取名称的地方（经 _attr_for_sid → BUFF_ATTRS）。V2231 误把它们塞进每个角色的 bucket，既污染角色配表、又根本没解决 boss 显示问题（boss 名字不读 i18n.json 的 buffs）。
@@ -871,6 +1059,13 @@ V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修�
   - sid=146 (0x92) 纯白之境 / Proto-White World / 白堊境界 / 白亜の境界
   - sid=129 (0x81) 混沌转换 / Chaos Shift / 混沌輪迴 / ケイオシフト
   - 属性：单层、非专属、非 debuff。现在 boss 战读到这 3 个 sid 会显示正式四语名称，不再回落 0x0095/0x0092/0x0081。i18n.json 角色 buffs 恢复 119 条（删掉 V2231 误加的 87 条）；buff_attrs.json 新增 3 条（144→147）。代码逻辑无改动。
+
+== v22.32 ==
+• V2232 (22.32): Corrects V2231's misplacement - the 3 boss buffs (sid=149/146/129) are moved OUT of the core detection module's per-character profile table (i18n.json buffs) and INTO the global buff name table (buff_attrs.json), which is what the Boss module and All-Buff module actually read for names (via _attr_for_sid -> BUFF_ATTRS). V2231 wrongly injected them into every character's bucket - polluting the character profiles AND not fixing boss display at all (boss names don't come from i18n.json buffs).
+  - sid=149 (0x95) 世界裂痕 / Fractured World / 龜裂世界 / ワールドクラック
+  - sid=146 (0x92) 纯白之境 / Proto-White World / 白堊境界 / 白亜の境界
+  - sid=129 (0x81) 混沌转换 / Chaos Shift / 混沌輪迴 / ケイオシフト
+  - Attributes: single-layer, non-exclusive, non-debuff. Boss fights now show proper 4-language names for these sids instead of falling back to 0x0095/0x0092/0x0081. i18n.json character buffs reverted to 119 entries (87 wrongly-added removed); buff_attrs.json gained 3 entries (144->147). No source-code logic change.
 
 == v22.30 ==
 • V2230 (22.30)：代码审计清理版（功能与默认值完全不变，老用户升级零感）。
@@ -889,92 +1084,6 @@ V2237 的「聚散距离下限解负」功能本身不变，本版纯粹是修�
 - **V2228 (22.28)**: 给「主控的全Buff模块」与「Boss Buff模块」各新增「整屏对齐」设置（位于对应模块的「位置与缩放」子标签）：**水平方向** 自定义 / 靠左 / 居中 / 靠右，**垂直方向** 自定义 / 顶部对齐 / 居中 / 底部对齐，**默认均为「自定义」**（沿用原 X/Y 坐标自由定位，与旧版行为完全一致）。非自定义时，每次刷新窗口（模块缩放、分辨率变化、每行数量 / 行数变化）都会按**主屏可用区域**（已排除任务栏）重算该轴坐标——水平：靠左贴屏幕左缘、居中水平居中、靠右贴右缘；垂直：顶部对齐贴屏幕上缘、居中垂直居中、底部对齐贴屏幕下缘。两个模块独立计算、互不影响。V2227 的名单滚动条修复不受影响。
 
 - **V2227 (22.27)**: 修复「名单列表项多了就叠成一团」的**真正病根**。此前一直当成「高度不够、最后一行被裁」在治（V2221 加滚动区、V2225 把最大高度 180→220），实际是**容器被 QScrollArea 压扁**：滚动区用了 `setWidgetResizable(True)`，但内部容器没有 sizePolicy 约束，被强行压缩到可视高度，于是 N 行内容被塞进不足的空间、行高被挤压，buff 名与右侧「移除」按钮重叠（玩家截图：Boss 黑名单第 7 项仍叠在一起）。修法：给内部容器设 `setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)`，让它保持内容自然高度——**内容超出最大高度时才出现滚动条**，永不压缩；最大高度再放宽到 260px（约 7-8 行默认可见）。现在名单加到多少项都不会叠，超出即滚动。4 个名单（主控黑名单 / 主控多次出现名单 / Boss 黑名单 / Boss 多次出现名单）同时生效。
-
-== v22.41 ==
-【名单展示框 · 「移除」按钮排版热修】
-用户截图 V2240 反馈「4 个名单（黑名单 + 多次出现名单 × 主控 + Boss）每行的『移除』按钮只显示『移』字，『除』字被裁掉」。
-根因：`_refresh_buff_list` 用 `QListWidget.setItemWidget` 嵌入自定义行 widget，Qt 默认不会自动把 widget 撑满 item 矩形——row widget 默认 Preferred size policy → 保留 sizeHint 宽度，导致 label+button 的横向布局被压缩，`setFixedWidth(64)` 实际渲染只有 20~30px。
-修法：
-  ① row widget 加 `setSizePolicy(Expanding, Preferred)` → 强制填满 QListWidget item 矩形；
-  ②「移除」按钮改 `setMinimumWidth(76) + setMaximumWidth(76)`（等宽且更宽松量）+ padding `2px 6px → 3px 8px` + font-size `10 → 11` + `min-height: 22px` + `PointingHandCursor`；
-  ③ `retranslate_ui` 路径不变（按钮文字仍走 `_tr("移除")`，中文/繁中/英文/日文四语全自动）。
-
-== v22.42 ==
-【名单展示框 · 彻底重做（移除 V2241 失败方案）】
-用户 V2240 截图反馈「4 个名单每行的『移除』按钮只显示『移』字」，V2241 用 setItemWidget + setSizePolicy(Expanding) 试图撑满，但实测仍被裁（用户回「还是这样」）。
-根因：QListWidget.setItemWidget 把 widget 渲染在 QListWidgetItem.sizeHint() 矩形里，sizeHint 默认 = widget 的 preferred 宽；setSizePolicy(Expanding) 在 setItemWidget 下**完全无效**（这是 V2241 失败的根因）。
-修法：把 4 个名单（主控黑名单 / 主控多次出现名单 / Boss 黑名单 / Boss 多次出现名单）的列表容器从「QListWidget + setItemWidget」整个换成「QScrollArea + 内层 QWidget + QVBoxLayout」：
-  ① _scroll.setWidgetResizable(True) + 内层 _inner（sizePolicy Expanding），让 _inner 宽度自动跟随 _scroll viewport 宽；
-  ② 行 widget 直接 _layout.insertWidget 到 QVBoxLayout，拿到 _inner 全宽（不受 item.sizeHint 限制），label 占满左侧、按钮 76px 完整显示在右侧；
-  ③ 空态改用居中暗灰 QLabel 占位（替代 V2237 的灰色 placeholder item），逻辑更干净；
-  ④ 行高用 setMinimumHeight(30) + QHBoxLayout 自然高度，不被拉伸变形。
-4 个名单同时生效。retranslate_ui 路径不变（按钮文字仍走 _tr("移除")，中文/繁中/英文/日文四语全自动）。
-
-== v22.40 ==
-【核心模块 · 画布宽/高可调】
-新增「画布宽(0=自动)」/「画布高(0=自动)」两个旋钮（设置 → 圆环 卡片，范围 0–4000，0 显示「自动」）：
-① 默认 0 = 自动——完全沿用旧版自动计算逻辑，老用户无感、配置零变化；
-② 设 >0 时覆盖核心模块（尖刺圆 + 标题栏 + buff 名）画布尺寸，内容（圆/标题/buff 名）本就相对画布自适应，自动水平 + 垂直重居中；
-③ 强制下限防裁切——宽 ≥ max(基准宽 648, 圆 + 两侧尖刺/外描边所需宽)，高 ≥ 自动预览高度 × 1.35，设太小自动拉回，不会把圆或 buff 名切掉；
-④ 与现有 core_scale_percent / circle_radius 正交叠加（最终尺寸 = 用户宽高 × 缩放% × 分辨率缩放）。
-
-== v22.39 ==
-【两个 buff 模块 · 门限瘦身 + 时长上限可调】
-①「NaN/Inf 检查」→ 保留；
-②「ID=0 不可能是永续」→ 保留；
-③ ③④⑤ 三条合并为一条：「任何 buff 的剩余或初始时间都不可能 ≤ 0」——
-    把「隐藏倒计时 0.0/0.0」「remaining/initial 任一 < 0 」「永续剩余不可能 ≤ 0」三条独立规则合并为更直白的一条
-    （render 端：remaining ≤ 0 且 < 9999 → 丢；initial ≤ 0 → 丢，9999 起仍为 V2216 永续豁免）；
-④「时长上限」改为可调数值：复选框永远开启（玩家无法取消），旁边新增 DoubleSpinBox（默认 10000.0 秒，范围 10.0–600000.0）——
-    render 端从 settings 动态读取上限，保留原 9999 永续豁免，旧 config 自动迁移无需手动改。
-两个模块（主控 + Boss）完全对称改动。
-
-== v22.38 ==
-• V2238 (22.38) hotfix: fixes V2237's "4 buff-list UI rewrite" that bricked the Settings window——V2237 called `QListWidget.setPlaceholderText(...)` for empty-state text, but PySide6 6.11.1's `QListWidget` doesn't have that method at all (it's QLineEdit/QComboBox's).
-Fix: (1) Remove the `setPlaceholderText` calls in both Main + Boss `_add_buff_list_group`; (2) `_refresh_buff_list` now inserts a non-clickable / non-selectable dark-grey placeholder item (`Qt.NoItemFlags` + `QBrush(QColor("#5a6a85"))`) when the list is cleared and `_items` is empty, completely independent from real data rows, not polluting sizeHint.
-V2237's "unlock convergence-distance lower bound" feature itself is unchanged — this version is purely fixing an erroneous API call.
-
-== v22.37 ==
-• V2237 (22.37): release the lower bound of the ability module's "spread distance" —
-  1) **UI SpinBox**: the `Spread Distance:` control's minimum drops from 20 to -200 (mirroring the existing `Skill Name X/Y Offset` and `Timer X/Y Offset` controls' symmetric style). Range is now (-200, 200). You can now enter negatives to pull all 4 skill diamonds toward — or fully onto — the canvas centre.
-  2) **render_skill removes the "anti-overlap" clamp**: the previous `spread = max(spread, half_diag + 8)` forced the spread to stay at least half a diagonal + 8 px, which made inputs like -50 or 0 do nothing. The clamp is gone — spread now takes effect as-is. spread=0 collapses all 4 diamonds onto the centre; spread=-N even more so.
-  3) **recalc_layout canvas-dimension floor changes from half_diag+8 to 0**: the canvas may be smaller than the full overlapped cluster, but its size is guaranteed non-negative (no crash). DEFAULT_SETTINGS["skill_cd_spread"]=90 stays the default.
-== v22.36 ==
-== v22.36 ==
-• V2236 (22.36): cleanup + 3 fixes——
-  1) **Removed the "All-Buff submodule flash" feature**: added in V2107, it flashed the submodule. User reported "if I don't tick this flash option, the main All-Buff module just vanishes" — the root cause was a stale variable throwing in a path whose exception was swallowed by paintEvent's try/except, blanking the whole module. Keeping it only confused players and could flicker, so it is fully removed: the flash_apply_allbuff_submodule / boss_flash_apply_allbuff_submodule keys are dropped from DEFAULT_SETTINGS, the 3 corresponding checkboxes in the settings panel are removed, and the flash animation timer/fields are gone.
-  2) **Rebuilt all 4 list UIs**: Main blacklist / Main multi-occurrence / Boss blacklist / Boss multi-occurrence. Changed from "QScrollArea + vertical stretch (evenly distributed)" to "small frame (QGroupBox) wrapping a QListWidget + per-row setItemWidget + Native scrollbar". The inner list uses natural row heights and scrolls when overflowing; it no longer blows up the GroupBox and rows never overlap. All 4 lists updated together.
-  3) **All gates now exposed**: the upper part of the "Gates" sub-tab for both Main and Boss gets 6 disabled "baked-in gates (always on, cannot disable)" checkboxes that explicitly list every baked-in gate — NaN/Inf check / status_id=0 can't be infinite / hide 0.0/0.0 countdown / drop if remaining or initial < 0 / **⑤ an infinite buff's remaining can't be <=0 [NEW in V2236]** / duration cap 10000s (with 9999 infinite exemption). The adjustable numeric gates below (status_id / sub_id cap / stack cap / min remaining / min initial / min appearance duration) are kept. Two hard-coded checks added at the render side: `if sid_i==0 and infinite: continue` and `if infinite and remaining<=0.0 and remaining<9999.0: continue`.
-  4) **Card centering review**: confirmed the progress bar and text in both buff-module submodules (drawText / addText / bar_x / by formulas) are strictly horizontally + vertically centered, and added a V2236 centering-review comment.
-
-== v22.35 ==
-• V2235 (22.35): final fix for the low-level rendering bug behind "Main All-Buff blank" - V2234's auto-clamp didn't solve it, so the root cause is in the rendering layer rather than the clip. V2235 ships three hard changes:
-  1) **Render sanity bands**: at the very start of _draw_allbuff_card (right after painter.save), draw three glaring horizontal bars (red 255,0,0 / blue 0,128,255 / green 0,220,90) covering the top 1~14px of the card.
-     - If you can see the bands -> the render pipeline reaches the card layer; the issue is in backing_col / name / stacks / bar colors.
-     - If you cannot see the bands -> painter state, outer coordinate system, or widget clipping is broken (not in this function).
-     This is the spirit of the user's quote "spend more time on the lower-level logic errors": for any future draw-pipeline issue, this is the first thing to wire up.
-  2) **Dump atomicity**: previously, the dict literal at line 8790 - if any single field's evaluation raised, the whole _dump_allbuff_buffs call was swallowed by the outer except, leaving the dump file with whatever the LAST successful run had written. That is exactly why V2234's dump came out without win_geo / layout / cards / alpha and I mistakenly concluded V2234 had not been run.
-     Now each field is wrapped in its own try/except + lambda, with any field-level error downgrading to err:ExceptionType. The whole dump call cannot fail because of one bad field; the next run will surface the full diagnostic fields immediately.
-  3) **V2234's auto-clamp is kept as-is**: it keeps the backdrop / border visible by clamping the whole module onto the screen, but a low-level rendering error can still produce a blank card even with the clip gone.
-
-== v22.34 ==
-• V2234 (22.34): After V2233's self-healing went live, the real root cause of "Main All-Buff blank" turned out NOT to be a stale pptr but a physical off-screen clip:/n  1) Positions are saved normalized to a 1920-wide canvas; res_scale = max(1.0, screen_w/1920). On a 2560x1440 monitor that is 1.333, so a stored y of 1030 becomes 1373 - seemingly 67px clear of the screen bottom (1440);
-  2) With valign=bottom + vmargin=-40, the y is pushed another 40px to 1413, leaving only 27px of room;
-  3) The canvas height is bh(=56) * disp_h(=1.333) ~= 75px, but the Qt window has already been clipped 16px by the screen bottom, so the actual window_h is only 59px;
-  4) The card body (name / stacks / time / bar) sits in the canvas 30~60px band - exactly inside the 16~43px clip range, so the user only ever sees the backdrop / border, never the buff name or timer. This matches the reported "Main empty, Boss fine" symptom perfectly.
-  Fix: a new auto-clamp at the end of _refresh_window_geometries: when the window's bottom edge goes past the available area, the y is pulled up to max(screen_top, screen_bottom - window_h) so the whole window fits on screen. Horizontal overflow (left/right) is handled the same way but with a lower priority than explicit placement - if the user has deliberately dragged a window off-screen, the auto-clamp leaves it alone. V2233's two dumps (_dump_allbuff_buffs render-level / _dump_allbuff_source data-source-level) and the pptr self-healing logic (_pptr_broken flag + 3s AOB-rescan throttle) are kept in place.
-
-== v22.33 ==
-• V2233 (22.33): Fixes "Boss module shows values but the Main All-Buff module is always empty". The two modules read from asymmetric sources: Boss uses read_boss_buffs(module_base), where module_base comes straight from get_module_info and is ALWAYS correct; Main uses read_overlay_data(self.pptr), where pptr comes from the ptr cache / AOB reverse-resolve and CAN go stale (a stale cache is trusted whenever it happens to deref to any non-zero garbage value; AOB can also mis-hit) -> char_base becomes 0 or a garbage address -> read_overlay_data returns no_char with an empty all_buffs_list -> the Main All-Buff module stays blank forever while Boss keeps working.
-  - Self-healing: when status == no_char, OR status == ok but BOTH charid_hash and char_type are 0 (meaning char_base is a garbage address), the ptr cache is deleted and pptr is re-resolved via AOB; a fresh snapshot is then read immediately with the new pointer, restoring the Main module (throttled to once every 3s so the 80MB full-module scan can't tank the frame rate).
-  - Diagnostic bypass: new _dump_allbuff_buffs writes, every second, "post-filter items + pre-filter raw + pointer-chain context (pptr / char_base / charid_hash / char_type / pl_id / boss_actor / boss_buff_count)" to EXE_DIR/last_allbuff_buffs.json - fully symmetric with the existing last_boss_buffs.json - to tell apart three root causes: empty data source / everything dropped by gates / render never executed.
-
-== v22.32 ==
-• V2232 (22.32): Corrects V2231's misplacement - the 3 boss buffs (sid=149/146/129) are moved OUT of the core detection module's per-character profile table (i18n.json buffs) and INTO the global buff name table (buff_attrs.json), which is what the Boss module and All-Buff module actually read for names (via _attr_for_sid -> BUFF_ATTRS). V2231 wrongly injected them into every character's bucket - polluting the character profiles AND not fixing boss display at all (boss names don't come from i18n.json buffs).
-  - sid=149 (0x95) 世界裂痕 / Fractured World / 龜裂世界 / ワールドクラック
-  - sid=146 (0x92) 纯白之境 / Proto-White World / 白堊境界 / 白亜の境界
-  - sid=129 (0x81) 混沌转换 / Chaos Shift / 混沌輪迴 / ケイオシフト
-  - Attributes: single-layer, non-exclusive, non-debuff. Boss fights now show proper 4-language names for these sids instead of falling back to 0x0095/0x0092/0x0081. i18n.json character buffs reverted to 119 entries (87 wrongly-added removed); buff_attrs.json gained 3 entries (144->147). No source-code logic change.
 
 == v22.30 ==
 • V2230 (22.30): Code-audit cleanup release (no functional or default changes - zero impact for existing users).
@@ -1115,6 +1224,52 @@ V2237's "unlock convergence-distance lower bound" feature itself is unchanged �
 - **V2068 (20.68)**: All-Buff module — fixed the deeper "NaN-to-zero" root cause that V2067 had not fully resolved. `read_exstatus_buffs` had been writing NaN/Inf duration fields as 0 (GBFR stores NaN for infinite / pending buffs). Those buffs entered `all_buffs_filtered` and were then killed by the render gate's `min_initial_time < 0.05s` and `min_remaining_time < 0.05s` checks, leaving the whole All-Buff module blank (the Core module is unaffected, as it does not read `initial`/`remaining`). Now matches `GBFR_BuffMonitor._parse_statusbase`: the reader discards any buff with NaN/Inf duration at parse time (`continue` skip). The render also adds a `not infinite` guard to `min_initial_time` for defense. All V2067's 5+5 numeric gates / `BUFF_ATTRS` whitelist / 5 legacy Filter toggles are unchanged — the Indicator and the Monitor are now behaviorally identical with matching gate settings. Version +1 (V2067 → V2068, title bar reports 20.68), schema unchanged; built `GBFR_CooldownIndicator_V2068.exe`.
 - **V2068 (20.68)**：全 Buff 模块——修复 V2067 未完全解决的「NaN 归零误杀」真凶。`read_exstatus_buffs` 把 NaN/Inf 时长字段（GBFR 中永续/触发型 buff 常为 NaN）归零成 0 写入字典，这些 buff 进入 `all_buffs_filtered` 后被 render 的「最小初始时间 0.05s」「最小剩余时间 0.05s」门限全部误杀——全 Buff 模块空白（核心区不受影响，核心区不读 `initial`/`remaining`）。本次按 GBFR_BuffMonitor 的 `_parse_statusbase` 行为接管——reader 直接把 NaN/Inf 时长的 buff 整条 discard（continue 跳过）；render 同步给 `min_initial_time` 加 `not infinite` 守卫生效。所有 V2067 的 5+5 数值门限 / `BUFF_ATTRS` 白名单 / 5 个老过滤开关保持不变——monitor 与指示器「门限一致设置」完全同款行为。版本号 +1（V2067 → V2068，标题栏自报 20.68），schema 不变；构建 `GBFR_CooldownIndicator_V2068.exe`。
 
+- **V2329 (23.29)**: Added the **Emblasque Gauge** for Beatrix (PL2600) — a purple progress bar with percentage drawn right below the core module's spiked circle. It reads memory **only** when all three conditions hold: the character is Beatrix, you are in a quest, and the current mastery is ticked; otherwise it touches no memory at all (zero cost in town or with any other character). Locator chain verified on a live game: global block pointer array = module base + 0x7B89E08 + index * 0x40 (the RVA is a compile-time constant, so it survives restarts) -> block 4 (a 256MB object pool, covering 92% of hits) -> scan it for the vtable fingerprint (base + 0x6147120) -> accept only when the display object is purple (0.86, 0.18, 1.0) and sized 200x200, which is a unique match across the whole process -> read +0x28 for the 0~1 float. Four levels: L0 reads the locked address directly (<1 ms), L1 scans only block 4 (~1 s, the main path), L2 scans all 8 blocks, then cool down 1.5 s and retry; scanning is sliced into 4MB chunks so the UI never stutters. The Beatrix group in Settings > Character buff order now ends with an "Emblasque Gauge" row whose three mastery checkboxes default to on and apply instantly. While not yet located it shows "Waiting" instead of 0%% — the game recycles that UI object when the gauge is empty, so "not found" must never be read as "gauge empty". Version +1 (V2328 -> V2329, title bar reports 23.29), schema unchanged; built `GBFR_CooldownIndicator_V2329.exe`.
+- **V2329（23.29）**：新增**贝能表**——贝阿朵丽丝（PL2600）专属的恩布拉斯科槽（Emblasque Gauge），在核心模块尖刺圆正下方以紫色进度条 + 百分比实时显示。只有「角色是贝阿朵丽丝 + 处于任务中 + 当前专精已勾选」三个条件全部满足时才读取内存，否则一次都不读（在城镇或使用其他角色时零开销）。定位链路经实机验证：全局块指针数组 = 模块基址 + 0x7B89E08 + 索引×0x40（RVA 为编译期常量，重开游戏不变）→ 4 号块（256MB 对象池，实测覆盖 92%% 命中）→ 块内按 vtable 指纹（基址 + 0x6147120）搜索 → 判据为显示对象紫色 (0.86, 0.18, 1.0) 且尺寸 200×200（全进程唯一解）→ 读 +0x28 得 0~1 浮点。四级定位：L0 直读已锁定地址（<1 毫秒）、L1 只扫 4 号块（约 1 秒，主力）、L2 扫描全部 8 个块、失败后冷却 1.5 秒重来；扫描按 4MB 分片，不卡界面。设置面板「角色 Buff 顺位」的贝阿朵丽丝组末尾新增「贝能表」一行，三个专精勾选框默认全开、改动即时生效。未定位到时显示「等待中」而不是 0%%——槽为 0 时游戏会回收该 UI 对象，「扫不到」绝不能被读成「槽是空的」。版本号 +1（V2328 → V2329，标题栏自报 23.29），schema 不变；构建 `GBFR_CooldownIndicator_V2329.exe`。
+
+- **V2330 (23.30)**: The Emblasque Gauge (Beatrix / PL2600) now triggers on "in combat" instead of "in a quest". It only searches while you are actually fighting -- in the training area, or inside a quest while the flow enum is not an idle/results state (0x6 co-op and 0xc battle count as combat; 0x0 idle and 0x1b results do not) -- and stops when you return to town or the quest enters a non-combat sub-state. The other two conditions are unchanged: character must be Beatrix and the gauge row must be ticked for your current mastery. Added a 10s grace period so results screens, loot pickups and cutscenes no longer interrupt the scan; it only stops and clears after 10 full seconds. Status text is now split into "Scanning" and "Waiting".
+- **V2330 (23.30)**: 贝能表（贝阿朵丽丝 / PL2600）的启用条件由「在任务中」改为「战斗中」。只有真正打起来才开始搜索——在训练场，或在任务中且流程枚举不属于空闲 / 结算状态（0x6 联机、0xc 战斗算战斗；0x0 空闲、0x1b 结算不算）；回城镇或任务内进入非战斗子状态时停止搜索。另外两个条件不变：角色必须是贝阿朵丽丝、且当前专精已勾选贝能表。新增 10 秒宽限，结算 / 拾宝 / 过场不再打断搜索，超过 10 秒才停止并清空。状态文案细分为「搜索中」与「等待中」。
+- **V2331 (23.31)**: Fixed the Emblasque Gauge losing its connection mid-quest and having to re-scan. It now latches: once combat starts it keeps reading and scanning for the whole quest, so results screens, loot pickups and cutscenes no longer interrupt it. It only stops after you have truly left (not in a quest AND not in the training area) for more than 5 seconds, which guards against loading screens. The Beatrix check and the mastery checkbox still stop it immediately. `EMB_GRACE_SEC` is replaced by `EMB_LEAVE_SEC`.
+- **V2331 (23.31)**: 修复贝能表「连上一会儿就中断、又要重新扫描」。改为上锁语义：打起来之后就一直连着，结算 / 拾宝 / 过场都不再打断，只有真正离开（不在任务里且不在训练场）超过 5 秒才停止（5 秒用于防加载过场误判）。角色为贝阿朵丽丝与专精勾选这两个条件不满足时仍立即停止。常量 EMB_GRACE_SEC 由 EMB_LEAVE_SEC 取代。
+- **V2332 (23.32)**: The Emblasque Gauge is now an ordinary single-layer buff instead of a separate bar under the spiked circle. It is named "Emblasque Gauge", shows an integer 0-100 (100 = full), and shares the render path with Id's hidden gauge and Ferry's Transmigration's Grace - so it can be dragged in the buff order and takes part in group colouring. Also added the two-colour gradient mode: the buffs shown together in the core module form a group whose start colour is the first buff's colour and end colour is the last buff's, with the ones between interpolated by position. Interpolation space is selectable per group (RGB straight line / HSV around the centre / HSL softer lightness).
+- **V2332 (23.32)**: 恩布拉斯科槽改为普通的单层 buff，不再是尖刺圆下方的独立进度条。名字「恩布拉斯科槽」，圈内显示 0~100 的整数（满槽 100），与伊德隐藏槽、芙劳「转世的恩宠」共用渲染路径，可在角色 Buff 顺位里拖动排序、可参与群组配色。另新增群组「双色渐变」模式：核心模块同屏的 buff 构成一个群组，起始色取第一个 buff 的颜色、终点色取最后一个 buff 的颜色，中间按位置插值；插值色彩空间每个群组独立可选（RGB 直线 / HSV 绕中心 / HSL 亮度更柔）。
+- **V2333 (23.33)**: Fixed the Emblasque Gauge disappearing from the buff list when the gauge is 0. Previously the \ short-circuit dropped the whole buff entry when the game had reclaimed the UI object (which always happens at 0), so the gauge never entered the sequence. Now it always enters the list (matching Id hidden gauge / Ferry Transmigration Grace: buff is always present, 0 = empty). Version +1 (V2332 → V2333, title bar reports 23.33), schema unchanged; built \.
+- **V2335 (23.35)**: 状态栏恩布拉斯科槽诊断改为无条件显示，任意角色都能看到 `恩布拉斯克槽[pl_id trigger]: state` —— trigger 直接告诉你 pl_id 是不是 PL2600 / 是否战斗中 / 专精是否勾选；state 来自 EmblasqueReader 的实时状态。下次指示器卡 0 时，标题栏自动打印诊断串。
+- **V2335 (23.35)**: - **V2335 (23.35)**: Status-bar diagnostic for the Emblasque Gauge is now shown unconditionally on every character. Format `Emblasque[<pl_id> <trigger>]: <state>` - trigger tells you directly whether pl_id is PL2600 / you are in combat / the mastery is checked; state comes from EmblasqueReader's live state. Next time the indicator is stuck on 0 the title bar prints the diagnostic string automatically.
+- **V2333 (23.33)**：修复恩布拉斯科槽在槽值为 0 时从 buff 序列消失的 bug。此前 \ 在游戏回收 UI 对象（槽为 0 时必然发生）时把整条 buff 跳过，导致恩布拉斯科槽永远不进序列。改为始终输出进序列（伊德隐藏槽/芙劳转世的恩宠语义：buff 一直在，0 = 空槽）。版本号 +1（V2332 → V2333，标题栏自报 23.33），schema 不变；构建 \。
+- **V2334 (23.34)**: Title bar status line now appends an Emblasque Gauge diagnostic segment when the character is Beatrix, showing the EmblasqueReader's current state / block scan progress / locked value live — to help diagnose issues like "the in-game gauge is full but the indicator is stuck at 0%%".
+- **V2334 (23.34)**：标题栏状态栏追加恩布拉斯科槽诊断段（角色=贝阿朵丽丝时显示），实时输出 EmblasqueReader 当前状态/块扫描进度/锁定值，便于排查「游戏里贝能表已满但指示器卡在 0%」类问题。
+- **V2335 (23.35)**: Status-bar diagnostic for the Emblasque Gauge is now shown unconditionally on every character. Format `Emblasque[<pl_id> <trigger>]: <state>` - trigger tells you directly whether pl_id is PL2600 / you are in combat / the mastery is checked; state comes from EmblasqueReader's live state. Next time the indicator is stuck on 0 the title bar prints the diagnostic string automatically.
+- **V2335 (23.35)**: 状态栏恩布拉斯科槽诊断改为无条件显示，任意角色都能看到 `恩布拉斯克槽[pl_id trigger]: state` —— trigger 直接告诉你 pl_id 是不是 PL2600 / 是否战斗中 / 专精是否勾选；state 来自 EmblasqueReader 的实时状态。下次指示器卡 0 时，标题栏自动打印诊断串。
+- **V2336 (23.36)**: The Emblasque Gauge scanner now runs in background threads (one per block, 8-way parallel, real parallel because rpm releases the GIL). V2336.1 split into two rounds - first round only spins up the top 4 high-priority blocks (5/6/7/4, the ones you actually hit), stopping on first hit; second round only fires if the first one finishes with no hit. Cold scan goes from ~4s (8 blocks serial) to ~0.5s (4 blocks parallel) + 1.5s cooldown in the rare miss case. Status-bar diagnostic now shows R{round} block{idxs} so you can see exactly which round is running on which blocks.
+- **V2336 (23.36)**：贝能表扫描改为后台多线程并行（每块一个线程，rpm 释放 GIL 真正并行）。V2336.1 加分轮启动：第一轮只起前 4 个高优先级块（5/6/7/4，命中即停），整轮失败后再起剩余 4 块。冷启动从「8 块串行约 4 秒」降到「4 块并行约 0.5 秒」+ 1.5 秒冷却（仅在 4 块全落空时）。诊断段加 R{round} 块{idxs} 字段，可直接看到当前在第几轮扫哪几个块。
+- **V2337 (23.37)**: Fixed index-alignment bug in V2336. EmblasqueReader._read_blocks used to drop null entries with `if v: out.append(v)`, which shifted indices so EMB_BLOCK_PRIORITY no longer matched the real block array indices (when any slot was unallocated, blocks[5] would actually be the address of slot 6, breaking both the priority scan and the diagnostic). Now returns a fixed-length 8-element list with None placeholders; _start_bg filters null blocks with `if blocks[i]` but idxs still reports the original indices so the diagnostic stays accurate.
+- **V2337 (23.37)**：修 V2336 索引错位 bug。_read_blocks 之前用 `if v: out.append(v)` 压缩 null 槽，导致 EMB_BLOCK_PRIORITY 下标与块指针数组下标错位（一旦某块未分配，blocks[5] 实际是块[6] 的地址，优先级扫描和诊断显示都会错）。改为 8 元素定长、None 占位；_start_bg 过滤时 `if blocks[i]`，但 idxs 仍报告原始下标，诊断段保持真实。
+- **V2338 (23.38)**: Removed the Emblasque Gauge diagnostic line from the title-bar status bar (ok% / scan block[idxs] / wait seconds / idle condition). Parallel scanning is now stable, so this on-screen debug string is no longer needed. EmblasqueReader reading and the "Emblasque Gauge" buff display are unchanged.
+- **V2338 (23.38)**：移除标题栏状态栏的恩布拉斯科槽诊断段（ok% / scan 块[idxs] / wait 秒 / idle 条件）。并行扫描已稳定，不再需要这条现场排查字符串；EmblasqueReader 读取与「恩布拉斯科槽」buff 显示逻辑不变。
+- **V2341 (23.41)**: Emblasque Gauge fused into Emblasque Power. The 'Emblasque Power' buff (sid 102) gets an emb_gauge_host flag; when present and the gauge reading is available, the gauge's two-phase countdown (rising % / falling 38s) is attached to its inner layer — outer keeps Emblasque Power's own stack count, inner shows an inset countdown ring + bottom time text. Appears whenever Emblasque Power appears. Standalone 'Emblasque Gauge' buff unchanged (V2340 single-layer).
+- **V2342 (23.42)** — 恩布拉斯科槽 下降沿时间 = 38 × 当前 gauge 值
+- **V2343 (23.43)** — 主线程 RPM 加 80ms 硬性超时，修复「到第 10 层就卡死」（游戏进程短暂冻结时主线程同步 ReadProcessMemory 在 Windows 内核排队等待，期间 Qt UI 全冻）。`rpm()` 主线程分支走「线程池 + `future.result(80ms 超时)`」，失败读下次扫描重试。后台 reader 线程保留同步无超时（避免 deadline miss 误判对象池为不可读）。**V2342 (23.42)** — 恩布拉斯科槽 下降沿时间 = 38 × 当前 gauge 值；恩布拉斯克之力 融合修复（之前被构造覆盖）；主线程不再阻塞（持久 reader 线程承接全部 RPM）。
+- **V2349**: Batched ExStatus reads - one trip per block instead of one per field. 58 -> 10 cross-process calls per actor (-83%). No functional change.
+- **V2348**: Removed dead code left over from V2347 (-43 lines); dead-method audit is clean. No behaviour change.
+- **V2347**: Completely removed the Emblasque gauge subsystem (-459 lines); main line back to V2327 + RPM circuit breaker. Beatrix's gauge is no longer shown.
+- **V2346**: Real freeze fix (RPM circuit breaker, 5ms worst case per tick) + revert of the V2345 background scan; new "Emblasque gauge scan" master switch (off by default).
+- **V2345 (23.45)** — All game-memory reading moved off the main thread. The main thread was issuing ~256 ReadProcessMemory calls per frame (player + boss, 16 slots x 8 fields); even with a 5 ms timeout per call, a game stall left a 1.3 s+ UI freeze window. The whole scan now runs on a single background thread and the main thread only renders, so a game stall blocks only that thread and the UI stays smooth (data at most one frame behind). The 8-thread timeout insurance pool is now never created. Idle cadence: 0.5 s with no game, 0.25 s while out-of-combat hiding is active, full scan_ms speed in combat.
+- **V2344 (23.44)** — Boss module main-thread stall eliminated: synchronous find_boss_actor (4096 × 3 RPM) was re-firing every 1.5s and could block the main thread for up to 121s in stall scenarios (V2343 rpm 80ms timeout couldn't survive 1536 worker-pool rounds). New `_ensure_boss_bg_search()` dispatches a daemon worker on cache miss → main thread runs 0 RPM. `_BOSS_CACHE_TTL` 1.5s → 30s (boss doesn't switch mid-fight).
+- **V2349**：ExStatus 读取批量化 —— 一趟搬完整块，替代「一个字段跑一趟」。单角色 58 → 10 次跨进程调用（-83%），功能零变化，纯性能优化。
+- **V2348**：清理 V2347 遗留的死代码（-43 行），死方法审计归零；功能与 V2347 完全一致。
+- **V2347**：彻底移除恩布拉斯克槽 / 贝能表整套代码（-459 行），主干回到 V2327 + RPM 熔断；贝阿朵丽丝的槽不再显示。
+- **V2346**：卡死根治（RPM 熔断，每拍最坏 5ms）+ 回退 V2345 后台 scan；新增「贝能表扫描」总开关（默认关闭，关闭后为 V2327 轻量路径）。
+- **V2345 (23.45)** — 数据读取整体后台化，主线程不再碰游戏内存。此前主线程每帧亲自读取约 256 次内存（玩家与 Boss 各 16 槽 × 8 字段），即便每次套 5 毫秒超时，游戏卡顿（专精终阶动画等）时仍有 1.3 秒以上的界面冻结窗口。现在整个扫描由全进程唯一的一个后台线程执行，主线程只负责渲染：游戏卡住只卡后台线程，界面始终流畅（数据最多落后一帧）。附带效果：后台线程走同步读取，原先 8 线程的超时保险池根本不会被创建。节拍按需降频：没开游戏 0.5 秒轮一次，非战斗隐藏时 0.25 秒，战斗中按设置的扫描间隔全速。
+- **V2344 (23.44)** — Boss 模块不再卡主线程。同步 find_boss_actor（4096 项 × 3 RPM）每 30s 触发一次，最坏阻塞 121 秒（V2343 rpm 80ms 超时仍撑不住 1536 轮 worker 排队）。新增 `_ensure_boss_bg_search()` 在 cache miss 时 spawn 后台 daemon，主线程零 RPM。`_BOSS_CACHE_TTL` 1.5s → 30s（boss 战斗中不切换）。
+
+- **V2342 (23.42)** — Emblasque fall time = 38 × current gauge value
+- **V2343 (23.43)** — Main thread RPM gets an 80ms hard timeout, fixing the "freezes at level 10" root cause (game-process transient stall makes synchronous ReadProcessMemory queue in the Windows kernel and freeze Qt UI). `rpm()`'s main-thread branch routes through `ThreadPoolExecutor` + `future.result(80ms timeout)`; failed reads retry next tick. Background reader thread stays synchronous (no deadline-miss false negatives on the object pool).**V2342 (23.42)** — Emblasque fall time = 38 × current gauge value (no wall-clock drift); Embrasque Unleashed fusion fix (was silently overwritten by later entry construction); main thread never blocks (persistent reader thread now owns all RPM).
+- **V2340 (23.40)**: Emblasque Gauge display now uses single-layer-buff semantics — copies i18n single_layer so it renders as a single-layer buff (countdown ring + countdown time text, no center number/gauge value). Rising phase: the ring fills by the 0~100 gauge ratio and the time text shows the percentage (1 decimal + %). Once a downward trend is detected (drop >1% below the peak), it immediately switches to a fixed 38s countdown, exactly matching other single-layer buffs (time text uses _fmt_dur + "s").
+- **V2341 (23.41)**：恩布拉斯克槽 融合进 恩布拉斯克之力。给「恩布拉斯克之力」(sid 102) 加 emb_gauge_host 标记；该 buff 在场且槽读数可用时，把恩布拉斯科槽的两相倒计时（上升% / 下降38s）挂到内层——外层仍是恩布拉斯克之力的层数，内层倒计时表画成 inset 内环 + 底部时间文本（% / 倒计时）。只要恩布拉斯克之力出现即出现。单独的「恩布拉斯科槽」buff 仍按 V2340 单层显示。
+- **V2340 (23.40)**：恩布拉斯科槽显示规则改为「单层 buff 性质」——复制 i18n 的 single_layer，走单层 buff 渲染（倒计时表 + 倒计时时间文本，不再画中心层数/浮点数字）。上升期：倒计时表按 0~100 槽值比例，时间文本显示百分比（保留 1 位小数 + %）。一旦检测到下降沿（较峰值回落 >1%），立即切换为固定 38s 倒计时，表现形式与别的单层 buff 完全一致（时间文本走 _fmt_dur + "s"）。
+- **V2339 (23.39)**: Faster Emblasque Gauge scanning. Removed the 2-round + 1.5s cooldown; now a single parallel sweep over all 8 blocks (hit-stops-others). Added VirtualQueryEx pre-pass to enumerate only committed+readable regions (fewer wasted RPM calls, and fixes a false-negative where an inaccessible page inside a 4/16MB chunk made the whole chunk read fail and get skipped → forced re-scan). Scan chunk raised 4MB→16MB (4× fewer RPM calls). Removed the now-dead `_scan` progress dict (per-chunk lock contention). Steady-state L0 direct read unchanged.
+- **V2339 (23.39)**：贝能表扫描提速。去掉「2 轮 + 1.5s 冷却」，改为一次性并行扫全部 8 块（命中即停其余）。新增 VirtualQueryEx 预扫只扫「已提交 + 可读」区域（减少无谓 RPM 调用，并修掉「碎片里夹一页不可访问导致整片 read 失败被跳过」的假阴性——那种假阴性会逼出重扫反而更慢）。扫描碎片 4MB→16MB（RPM 调用数 4× 减）。删除已无用的 `_scan` 进度字典（每碎片抢锁的死代码）。稳态 L0 直读不变。
 - **V2067 (20.67)**: All-Buff module — fixed the Gate's stack-conflict check. V2066's `cur_stacks>max_stacks` test lacked the `max_stacks>0` guard; GBFR reports `max_stacks==0` ("uncapped/undefined") for many buffs, so every buff with any stacks was wrongly dropped as a "stack conflict", leaving the whole All-Buff module blank. Now matches GBFR_BuffMonitor: conflict is only judged when `max_stacks>0`. Version +1 (V2066 → V2067, title bar reports 20.67), schema unchanged; built `GBFR_CooldownIndicator_V2067.exe`.
 - **V2067 (20.67)**：全 Buff 模块——修复「门限」层数矛盾检查。V2066 的 `cur_stacks>max_stacks` 缺少 `max_stacks>0` 守卫；GBFR 大量 buff 的 max_stacks 为 0（无上限/未定义），导致所有有层数的 buff 被当成「层数矛盾」整批丢光，全 Buff 模块 Blank。现与 GBFR_BuffMonitor 一致——仅在 max_stacks>0 时才判矛盾。版本号 +1（V2066 → V2067，标题栏自报 20.67），schema 不变；构建 `GBFR_CooldownIndicator_V2067.exe`。
 

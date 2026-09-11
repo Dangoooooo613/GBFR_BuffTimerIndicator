@@ -1356,7 +1356,8 @@
         "zh": "恩布拉斯克之力",
         "zh_tw": "艾姆布拉斯解放",
         "en": "Embrasque Unleashed",
-        "ja": "エムブラスク解放"
+        "ja": "エムブラスク解放",
+        "always_show": true
       },
       {
         "sid": 42,
@@ -1368,6 +1369,32 @@
         "zh_tw": "造成傷害UP",
         "en": "Damage Dealt Up",
         "ja": "与ダメージUP"
+      },
+      {
+        "sid": 103,
+        "single_layer": true,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "is_synthetic": true,
+        "gauge_mode": "emblasque",
+        "zh": "恩布拉斯科槽",
+        "zh_tw": "恩布拉斯科槽",
+        "en": "Emblasque Gauge",
+        "ja": "アンブラスク槽"
+      },
+      {
+        "sid": 104,
+        "single_layer": false,
+        "awakening": true,
+        "truth": true,
+        "secret": true,
+        "is_synthetic": true,
+        "gauge_mode": "emblasque",
+        "zh": "恩布拉斯克之力+槽",
+        "zh_tw": "艾姆布拉斯解放+槽",
+        "en": "Embrasque Unleashed+Gauge",
+        "ja": "エムブラスク解放+槽"
       }
     ],
     "PL2700": [
@@ -4596,6 +4623,61 @@
       "zh_tw": "flow 狀態列舉 = ",
       "en": "flow state enum = ",
       "ja": "flow 状態列挙 = "
+    },
+    "普通Buff 数量:": {
+      "zh_tw": "普通Buff 數量:",
+      "en": "Normal Buff count:",
+      "ja": "通常バフ数:"
+    },
+    "Debuff 数量:": {
+      "zh_tw": "Debuff 數量:",
+      "en": "Debuff count:",
+      "ja": "デバフ数:"
+    },
+    "永续 数量:": {
+      "zh_tw": "永續 數量:",
+      "en": "Infinite count:",
+      "ja": "永続数:"
+    },
+    "尾声 数量:": {
+      "zh_tw": "尾聲 數量:",
+      "en": "End-of-Timer count:",
+      "ja": "終了前数:"
+    },
+    "调试时注入多少个「普通 Buff」假条目（非 debuff、非永续、剩余时间充足）。": {
+      "zh_tw": "除錯時注入多少個「普通 Buff」假條目（非 debuff、非永續、剩餘時間充足）。",
+      "en": "How many fake \"Normal Buff\" entries debug mode injects (not a debuff, not infinite, plenty of time left).",
+      "ja": "デバッグ時に注入する「通常バフ」のダミー項目数（デバフでも永続でもなく、残り時間に余裕があるもの）。"
+    },
+    "调试时注入多少个「Debuff」假条目（红色、按 debuff 样式渲染）。": {
+      "zh_tw": "除錯時注入多少個「Debuff」假條目（紅色、按 debuff 樣式渲染）。",
+      "en": "How many fake \"Debuff\" entries debug mode injects (red, rendered with the debuff style).",
+      "ja": "デバッグ時に注入する「デバフ」のダミー項目数（赤色、デバフのスタイルで描画）。"
+    },
+    "调试时注入多少个「永续（∞）」假条目（显示 ∞ 符号）。": {
+      "zh_tw": "除錯時注入多少個「永續（∞）」假條目（顯示 ∞ 符號）。",
+      "en": "How many fake \"Infinite (∞)\" entries debug mode injects (shown with the ∞ symbol).",
+      "ja": "デバッグ時に注入する「永続（∞）」のダミー項目数（∞ 記号で表示）。"
+    },
+    "调试时注入多少个「尾声」假条目（非永续、剩余时间已接近结束，触发尾声样式）。": {
+      "zh_tw": "除錯時注入多少個「尾聲」假條目（非永續、剩餘時間已接近結束，觸發尾聲樣式）。",
+      "en": "How many fake \"End-of-Timer\" entries debug mode injects (not infinite, nearly out of time, triggering the end-of-timer style).",
+      "ja": "デバッグ時に注入する「終了前」のダミー項目数（永続ではなく、残り時間がほぼ尽きて終了前のスタイルを発動するもの）。"
+    },
+    "斜向两分面（最像 3D 棱锥/钻石，V2264 风格）": {
+      "zh_tw": "斜向兩分面（最像 3D 稜錐/鑽石，V2264 風格）",
+      "en": "Diagonal two-tone (closest to a 3D pyramid/diamond, V2264 style)",
+      "ja": "斜め二面（3D ピラミッド/ダイヤに最も近い、V2264 スタイル）"
+    },
+    "沿尖刺左→右方向做硬边两分面（中间 0.48-0.52 窄过渡），模拟棱锥/钻石切面。": {
+      "zh_tw": "沿尖刺左→右方向做硬邊兩分面（中間 0.48-0.52 窄過渡），模擬稜錐/鑽石切面。",
+      "en": "Splits the spike into two hard-edged tones from left to right (narrow 0.48-0.52 transition) to mimic a pyramid/diamond facet.",
+      "ja": "スパイクを左→右方向にハードエッジの二面に分割（中央 0.48-0.52 の狭い遷移）し、ピラミッド/ダイヤの面を模します。"
+    },
+    "尚未添加": {
+      "zh_tw": "尚未新增",
+      "en": "Nothing added yet",
+      "ja": "まだ追加されていません"
     }
   }
 }

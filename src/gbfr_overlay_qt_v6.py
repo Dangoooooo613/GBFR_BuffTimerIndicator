@@ -21,6 +21,12 @@ import threading
 import time
 import logging
 logger = logging.getLogger("GBFR_Indicator")
+
+# V2371：失效自检（打着打着失效 → 自动重连重定位指针）相关参数。
+# 触发门槛：status!=ok 必须持续这么久才尝试自愈，避免过场/读盘瞬断误触发重连。
+RECOVERY_FAIL_TRIGGER_S = 1.5
+# 自愈冷却：两次强制重连之间至少间隔这么久，避免每帧 close+重连抖动。
+RECOVERY_COOLDOWN_S = 3.0
 from ctypes import wintypes
 
 import mastery_reader
@@ -120,8 +126,9 @@ def _load_buff_attrs():
     else:
         builtin = data
     # V2220：不再加载外部玩家字典 buff_attrs_user.json（已删除）。
-    # 数据来源 = 内置 buff_attrs.json（封进 exe，datas 注入）。
-    # 未知 buff 处理见 _unknown_buff_attr / _dump_unknown_buffs / _reload_user_attrs —— 外部补充文件可热更新改名。
+    # V2400：也不再加载/生成 buff_attrs_unknown.json（外部补充文件整体移除）。
+    # 数据来源**唯一** = 内置 buff_attrs.json（封进 exe，datas 注入）；
+    # 未收录的 sid 由 _unknown_buff_attr 兜底显示十六进制 ID。
     return builtin
 BUFF_ATTRS = _load_buff_attrs()
 
@@ -137,12 +144,12 @@ def _is_debuff(sid):
         return bool(entry.get("是否debuff", False))
     return sid >= 1000
 
-# ── V2209：未知 buff 显示 ID + 未知清单落盘 ────────────────────────────────
+# ── V2209：未知 buff 显示 ID ──────────────────────────────────────────────
 def _unknown_buff_attr(sid):
     """V2209：未收录进 buff_attrs.json 的未知 buff —— 合成一个最小 attr，
-    让主控全 Buff 与 Boss 两个模块都能把它显示出来（名称直接就是十六进制 ID，玩家可照抄去补录）。
+    让主控全 Buff 与 Boss 两个模块都能把它显示出来（名称直接就是十六进制 ID）。
     `_is_debuff(sid)` 自身有 sid>=1000 兜底，所以这里不必设「是否debuff」键。
-    `_unknown` 标记供 items.append 处判断要不要记进未知清单。"""
+    V2400：`_unknown` 标记仍保留（供 UI 侧识别「这是兜底项」），但不再有「未知清单落盘」。"""
     return {
         "名称":       "0x{:X}".format(sid),
         "繁中名":     "0x{:X}".format(sid),
@@ -153,38 +160,6 @@ def _unknown_buff_attr(sid):
         "单层": False,
         "_unknown": True,
     }
-
-# ── V2224：外部补充文件（buff_attrs_unknown.json）玩家可改名、保存即热更新 ──
-# 该文件既是「自动记录见过哪些未知 sid」的日志，也是「玩家可补充名字（含日文）的覆盖文件」。
-# 软件每帧按 mtime 检测文件变化，玩家在外部编辑器保存后下一帧（通常 <1 秒）即生效，无需重启/重装。
-# 键格式与 BUFF_ATTRS 一致："0x{sid:X}({sid})"；玩家填的字段（名称/繁中名/英文名/日文名/布尔标记）优先于内置。
-USER_ATTRS_FILE = os.path.join(EXE_DIR, "buff_attrs_unknown.json")
-USER_ATTRS = {}
-_USER_ATTRS_MTIME = [-1.0]
-
-def _reload_user_attrs(force=False):
-    """V2224：按 mtime 热加载外部补充文件到 USER_ATTRS。玩家保存文件后下一帧即生效。"""
-    global USER_ATTRS
-    try:
-        mtime = os.path.getmtime(USER_ATTRS_FILE)
-    except OSError:
-        mtime = -1.0
-    if (not force) and abs(mtime - _USER_ATTRS_MTIME[0]) < 1e-6:
-        return
-    _USER_ATTRS_MTIME[0] = mtime
-    try:
-        if mtime > 0 and os.path.isfile(USER_ATTRS_FILE):
-            with open(USER_ATTRS_FILE, encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, dict):
-                USER_ATTRS = data
-                return
-    except Exception:
-        logger.debug("swallowed exception", exc_info=True)
-    USER_ATTRS = {}
-
-# 模块加载时先热加载一次（文件不存在也安全）
-_reload_user_attrs(force=True)
 
 # ── V2304：调试数据模式的名称覆盖 ─────────────────────────────────────────
 # 「调试数据」选项卡开启后，全 Buff / Boss 两个模块的名字不再走 buff_attrs 查表，
@@ -212,148 +187,29 @@ def _debug_attr_override():
     }
 
 def _attr_for_sid(sid):
-    """V2224：取某 sid 的显示 attr——外部补充优先，其次内置，最后未知兜底（hex ID）。
+    """V2400：取某 sid 的显示 attr——内置表优先，未收录则兜底为十六进制 ID。
     V2304：调试数据模式下直接返回合成 attr（统一文本），完全跳过查表。
-    V2319：封堵「陈旧 unknown 记录盖掉正确内置名」的反馈环——若外部补充条目是自动记录的
-    兜底（名称为空 或 等于十六进制 ID，形如 0x94），而内置表已有真实名称，则改用内置；
-    否则（外部填了真名 / 内置也缺失）仍按原优先级。避免 0x94 类「一直显示十六进制」复发。"""
+    V2400：整体移除「外部补充文件 buff_attrs_unknown.json」这一层（自动记录 + mtime 热加载），
+    软件运行期不再产生该文件；内置 buff_attrs.json 是名称的唯一真源。"""
     if _DEBUG_ATTR.get("active"):
         return _debug_attr_override()
     key = "0x{:X}({})".format(sid, sid)
-    user = USER_ATTRS.get(key)
-    if user is not None:
-        _uname = (user.get("名称") or "").strip()
-        _hex = "0x{:X}".format(sid)
-        _stale = (_uname == "" or _uname.lower() == _hex.lower())
-        if not _stale:
-            return user
-        # 陈旧兜底条目：仅当内置也缺失时才用它，否则退回内置真实名
-        builtin = BUFF_ATTRS.get(key)
-        if builtin is None:
-            return user
-        return builtin
     builtin = BUFF_ATTRS.get(key)
     if builtin is not None:
         return builtin
     return _unknown_buff_attr(sid)
 
-# 未知 buff 观测记录：{sid: {"last": ts, "count": n}}
-_UNKNOWN_BUFF_SIDS = {}
-_UNKNOWN_LAST_DUMP = [0.0]
-
-def _note_unknown_buff(sid):
-    """V2209：render 端在 buff 通过全部门限、确定要显示时调用（避免把垃圾数据也记进来）。"""
-    e = _UNKNOWN_BUFF_SIDS.get(sid)
-    if e is None:
-        e = {"last": 0.0, "count": 0}
-        _UNKNOWN_BUFF_SIDS[sid] = e
-    e["last"] = time.time()
-    e["count"] += 1
-
-def _dump_unknown_buffs(force=False):
-    """V2224：把观测到的未知 sid 落盘到 EXE_DIR/buff_attrs_unknown.json（既是诊断日志，也是玩家补充文件）。
-    未知 buff 默认显示十六进制 ID；玩家可直接在该文件补 名称/繁中名/英文名/日文名，保存后下一帧即生效。
-    本文件亦供玩家核对「见过哪些不认识的 buff」、或向作者反馈 ID 以便补充进内置 buff_attrs.json。已有条目只更新观测次数/时间。
-    V2328：受 ENABLE_UNKNOWN_DUMP 总开关控制（默认关）——关闭时本函数直接返回，运行时不会自动产生/改写该文件。"""
-    if not ENABLE_UNKNOWN_DUMP:
-        return
-    if not _UNKNOWN_BUFF_SIDS:
-        return
-    now = time.time()
-    if not force and now - _UNKNOWN_LAST_DUMP[0] < 5.0:
-        return
-    _UNKNOWN_LAST_DUMP[0] = now
-    path = os.path.join(EXE_DIR, "buff_attrs_unknown.json")
-    out = {}
-    try:
-        if os.path.isfile(path):
-            with open(path, encoding="utf-8") as f:
-                _d = json.load(f)
-            if isinstance(_d, dict):
-                out = _d
-    except Exception:
-        out = {}
-    for sid, e in _UNKNOWN_BUFF_SIDS.items():
-        key = "0x{:X}({})".format(sid, sid)
-        rec = out.get(key)
-        if not isinstance(rec, dict):
-            rec = _unknown_buff_attr(sid)
-            rec.pop("_unknown", None)
-            rec["_note"] = ("未收录 buff（自动记录）。本文件即外部补充文件：你可直接把 名称/繁中名/英文名/日文名"
-                            "改成正确名字，保存后下一帧即生效（无需重启）；若不知是什么 buff，可连同此 ID 反馈给作者。")
-        rec["_last_seen"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(e["last"]))
-        rec["_seen_count"] = e["count"]
-        out[key] = rec
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(out, f, ensure_ascii=False, indent=2)
-    except Exception:
-        logger.debug("swallowed exception", exc_info=True)
-
-# V2212 debug：把过滤后的 boss items 节流 dump 到 EXE_DIR/last_boss_buffs.json（1 秒）
-# 玩家游戏暂停时也能直接读到 boss 身上当前 buff（不靠截游戏画面）。
-# 上一轮 V2211 测试时用户报告"按理应该有 4 个 buff，前两个未知"，
-# 但 ImageGrab.grab 截到的是暂停时主菜单遮住的画面，不是 boss 模块本身。V2212 加 dump 绕过截图。
-# 不影响显示逻辑，dump 是 read-only 旁路。
-_BOSS_LAST_DUMP = [0.0]
-def _sanitize_info(info):
-    """把 info 里的 NaN / ±Inf 转成 None，避免 json.dump 产出非法 JSON。"""
-    _d = {}
-    for k, v in (info or {}).items():
-        if isinstance(v, float) and (v != v or v in (float("inf"), float("-inf"))):
-            _d[k] = None
-        else:
-            _d[k] = v
-    return _d
-
-# V2319：调试 dump 总开关（默认关）。开启后才会写 last_boss_buffs.json / overlay_focus_log.txt。
-# V2328：未知 buff 清单 dump 总开关（默认关）——关闭后运行时不再自动创建/改写 EXE_DIR/buff_attrs_unknown.json。
-#   该文件本兼具「自动诊断日志」与「玩家外部改名补充文件」双重用途；关闭自动 dump 后，玩家仍可手动创建同名文件
-#   来补充未知 buff 名称（USER_ATTRS 热加载读取路径不受任何影响），只是程序不再主动产生/改写它。
-#   正常只应输出 overlay_settings.json / ptr_cache.txt 两份（不再产生 buff_attrs_unknown.json）。
-ENABLE_BOSS_BUFF_DUMP = False
-ENABLE_FOCUS_LOG = False
-ENABLE_UNKNOWN_DUMP = False
-
-def _dump_boss_buffs(items, raw=None):
-    """V2213 debug：dump 过滤**后**的 items + 过滤**前**的原始数据 raw。
-    两份对比就能看出「哪个 buff 被门限丢了」，而不是只能看到幸存者。
-    raw = render_bossbuff 的循环变量 buffs（read_boss_buffs 返回的 result_list）。"""
-    if not ENABLE_BOSS_BUFF_DUMP:
-        return
-    import json
-    now = time.time()
-    if now - _BOSS_LAST_DUMP[0] < 1.0:
-        return
-    _BOSS_LAST_DUMP[0] = now
-    path = os.path.join(EXE_DIR, "last_boss_buffs.json")
-    out = []
-    for sid, info, attr in items:
-        out.append({
-            "sid": int(sid),
-            "info": _sanitize_info(info),
-            "name": attr.get("名称") or "",
-            "unknown": bool(attr.get("_unknown")),
-        })
-    raw_out = None
-    if raw is not None:
-        raw_out = []
-        for _r in raw:
-            try:
-                _sid, _info = _r[0], _r[1]
-            except Exception:
-                continue
-            raw_out.append({"sid": int(_sid), "info": _sanitize_info(_info)})
-    try:
-        with open(path, "w", encoding="utf-8") as _f:
-            json.dump({"ts": now,
-                       "count": len(out),
-                       "raw_count": (len(raw_out) if raw_out is not None else None),
-                       "items": out,
-                       "raw": raw_out},
-                      _f, ensure_ascii=False, indent=2, default=str)
-    except Exception:
-        logger.debug("swallowed exception", exc_info=True)
+# ── V2400：运行期不再产生任何额外文件 ──────────────────────────────────────
+# 本版删除了四套「诊断落盘」功能，EXE_DIR 里现在只会出现两个文件：
+#   overlay_settings.json（设置）与 ptr_cache.txt（指针缓存）。
+# 已删除（整块移除，不留开关、不留死代码）：
+#   ① buff_attrs_unknown.json —— 未知 buff 自动记录 + mtime 热加载外部补充（曾在任何版本都会生成）
+#   ② last_boss_buffs.json    —— V2213 的 boss buff dump（ENABLE_BOSS_BUFF_DUMP，函数本就零调用）
+#   ③ emb_gauge_debug.txt     —— V2377 的恩布拉斯科槽读取链路埋点（ENABLE_EMB_GAUGE_DEBUG，
+#                                V2382 已关闭；它已完成使命，把「槽完全没法识别」定位到 3 个真因，
+#                                实测日志存档于 probe_out/emb_gauge_debug_v2380_verified.txt）
+#   ④ overlay_focus_log.txt   —— V2020 的窗口焦点诊断日志（ENABLE_FOCUS_LOG）
+# 若日后需要复查埋点，从 git 历史/备份目录取回对应版本即可，主干不再保留这些旁路代码。
 
 # V2211：V2117 固化三门限（NaN/Inf / sid=0 永续 / 0.0/0.0 永续无效）再追加第 4 项：
 #  `remaining < 0` 或 `initial < 0` 的 buff 直接丢弃。
@@ -391,8 +247,7 @@ def _dump_boss_buffs(items, raw=None):
 #     伊德隐藏槽(id_direct)、芙劳转世的恩宠(actor_timer)。它们 sid 是负数占位且互相冲突，
 #     不在 buff_attrs.json 的 sid 键空间，故外放字典用 "SP:{PL}:{idx}" 独立键，天然都是角色专属。
 #  ⑤ 主控全 Buff 模块也支持未知 buff：与 V2208 的 Boss 模块一致，未收录 buff 不再丢弃而显示其十六进制 ID；
-#     且**通过全部门限后**才记进未知清单，每 5 秒落盘 EXE_DIR/buff_attrs_unknown.json（玩家可在此补名，保存即生效）；
-#     落盘受 V2328 的 ENABLE_UNKNOWN_DUMP 总开关控制（默认关），关闭时运行时不再自动产生该文件。
+#     且**通过全部门限后**才记进未知清单，每 5 秒落盘 EXE_DIR/buff_attrs_unknown.json（玩家可在此补名，保存即生效）。
 # 版本号：标题栏与自动更新共用同一基线，与 release_notes / version.json 同步。
 # V2208：Boss Buff 模块对未收录进 buff_attrs.json 的未知 buff 不再直接丢弃——
 # 原本 render_bossbuff 在 `attr = BUFF_ATTRS.get(...)` 拿到 None 时 `continue` 掉，
@@ -486,7 +341,32 @@ _BUILD_NO = 2314  # V2314：全代码冗余彻底排查后的 A~E 级清理（�
 #   ⚠️ 行为零变化：以上全是「算了但不用」的死代码，删除不影响任何渲染结果，也不动任何 UI。
 #      注：get_settings() 里对 boss_gate_check_stack_conflict / boss_gate_duration_max 的 pop 保留
 #      （用于清理老 config 文件里的废弃键）。源码备份到 src_backups/2026-09-03_22-12-41_V2314/。
-_BUILD_NO = 2328  # V2328：关掉运行期自动产生的 buff_attrs_unknown.json。新增 ENABLE_UNKNOWN_DUMP 总开关（默认 False），_dump_unknown_buffs 首行即 `if not ENABLE_UNKNOWN_DUMP: return`——关闭后 tick() 虽仍每帧调用该函数，但运行时不再创建/改写 EXE_DIR/buff_attrs_unknown.json。玩家仍可手动建同名文件补充未知 buff 名称（USER_ATTRS 热加载读取路径不受影响）。顺带把运行期散落文件从「三份」收敛为「两份」（overlay_settings.json / ptr_cache.txt）。flow 枚举隐藏范围沿用 V2327（0x1~0xF、0x10、0x20+ 显示；0x0 与 0x11~0x1F 隐藏）。UI 视觉维持 V2321 状态。
+_BUILD_NO = 2370  # V2370：恩布拉斯科槽(单层 sid 103)与融合 buff「恩布拉斯克之力+槽」(sid 104)上升(充能中)百分比精确到小数点后两位（如 53.27%），下降(生效中)倒计时不变。单层胶囊与非单层胶囊两处显示逻辑同步修改。V2369 行为零回归。
+_BUILD_NO = 2376  # V2376：回退槽相关逻辑到 V2373 已知可用基线。根因：V2374 把融合 buff「恩布拉斯克之力+槽」(PL2600_10) 的 `single_layer` 由 False 改为 `(_fuse_stacks==0)`，导致之力 0 层时融合块强制切单层样式（丢掉用户视为"正常"的「层数+胶囊」外观，看起来像"槽不识别/恒为 0"）；V2375 又误判「块3/4含伪匹配对象」把 EMB_SCAN_BLOCKS 收窄为 [5,6,7] 并加 _miss_streak 容错，若槽对象落在块3/4 会直接读不到。经真实 exe 字节码比对：V2373 与 V2374 的槽读取器(update)/扫描(_scan_block)/全部渲染逐字节一致，唯一差异就是 PL2600_10 的 single_layer 这 8 字节。故本版撤销 V2374 single_layer 改动 + 撤销 V2375 两块误诊，完全回到 V2373 槽行为。V2375 行为零回归。源码备份到 `src_backups/<TS>_V2376/`。
+_BUILD_NO = 2377  # V2377：【诊断版】在 V2376（=V2373 槽基线）之上新增「恩布拉斯科槽读取链路」埋点：每 0.5s 把 status / is_pl2600 / in_combat / 读取器 state·addr·val·方向 / 扫描 pass·blocks_done·scanned_MB·RPM 成败数 / 最终注入的合成 buff 写入 exe 同目录 emb_gauge_debug.txt，用于把「槽恒为 0%」精确定位到 5 个断点之一（① 指针链没接上 ② 角色没认出 ③ 非战斗不启动扫描 ④ 扫不到对象 ⑤ 读数本身就是 0）。附本轮渲染实证结论：V2374 的 single_layer 动态化**不会**让槽变零——单层形态与始终正常的槽 buff 渲染逐像素完全相同，且 V2373 在「之力 0 层」时融合块反而是全空圆圈；故真因不在该处。埋点开关 ENABLE_EMB_GAUGE_DEBUG=True（正式发布前须改回 False）。源码备份到 `src_backups/<TS>_V2377/`。
+_BUILD_NO = 2378  # V2378：修复「软件一直卡 + 像一直在找槽的地址」。根因不在解耦（V2372→V2373 对读取器零影响），而在 EmblasqueGaugeReader 自身两处缺陷：① 线程世代竞争——`_start_scan()` 里的 `_stop_ev.clear()` 会把上一轮已被 `reset()` 打断的线程「解冻」，这些过期线程随后在 finally 里 decrement `_active_threads`/increment `_blocks_done`，把完成数错算到新一轮头上，令 `_maybe_finish_scan()` 在本轮线程还在跑时提前判 wait，下一轮再叠上来 → 扫描线程与 1.28GB 重扫不断堆积（=「一直卡、像一直在找地址」）。新增 `_scan_gen` 世代号：每轮扫描开始时 +1，线程只服务自己那一代，过期世代在块边界安静退出且不改动任何共享计数。② 重扫没有节流——只有「整轮跑完且未命中」才进退避，而 `reset()` 每拍抖动会打断轮次并【清零 _consec_fail】，退避永远停在 0.5s 档、形同虚设（V2377 就栽在这里）；新增 EMB_MIN_RESCAN_GAP=1.0s 硬闸（跨 reset 存活）+ _consec_fail 不再被 reset 清零 + 地址失效后不再「下一拍」就重扫 1.28GB；同时 EMB_FRESH_CONTEXT_SEC=2.0 保证「长时间离开后重新进入战斗」仍立即扫描（不白等）。保留 V2377 全部埋点并在日志新增 gap/gen/consec 三列。V2377 行为零回归。源码备份到 `src_backups/<TS>_V2378/`。
+_BUILD_NO = 2379  # V2379：修复「槽的 buff 完全没法识别 / 恒为 0%」。真因 = 扫描块优先级。取证：把独立版工具 GBFR_EmblasqueGauge V1.00~V1.04 的真实字节码逐个反编译对比——V1.00/V1.01/V1.02 **没有** EMB_SCAN_BLOCKS 常量（= 扫全部 8 块），**V1.03 首次引入 `EMB_SCAN_BLOCKS=(5,6,7)`** 并在 V1.04 沿用，且 V1.04 界面里带「扫描块（勾选要扫描的块 · 实时生效）」的逐块复选框 —— 即作者当年是**刻意排除**前面的块；而主干后来改成 `[3,4,5,6,7]`，把被排除的块又放了回来。5 个块并发抢锁时，若块 3/4 存在「vtable 指纹 + 紫色 disp + 200x200 全中、但 ctrl+0x28 槽值恒为 0」的伪对象，谁先命中完全取决于线程调度 → 同一份代码时好时坏（V2373 能用、V2374/V2375 不能，就是这种形态）。实证：造出「块 3 放伪对象 val=0.0 / 块 5 放真对象 val=0.5」两个判据全过的对象，旧顺序 [3,4,5,6,7] 跑 6 次 **6/6 锁到伪对象、读数全 0.0**；改为 [5,6,7,3,4] + 0.05s 错峰后 **6/6 锁到真对象、读数全 0.5**。修法**不删任何块**：优选块 `[5,6,7]` 先跑、兜底块 `[3,4]` 慢一拍（`EMB_WAVE_STAGGER=0.05`，新方法 `_scan_block_delayed` 错峰包装），保证「已知能命中的块」在时间上必定跑赢竞争，同时保留 3/4 覆盖（真在 3/4 也能兜到）。另修正一处自身笔误：`_scan_block` 内已有局部变量 `pos`（字节偏移），新形参改名 `prio` 以免覆盖。V2378 的世代号 `_scan_gen` / 重扫硬闸 `EMB_MIN_RESCAN_GAP` / 退避 `_backoff_delay` 全部保留。诊断日志新增 `hit_blk`（本轮命中块号）与 `blk_hits`（逐块指纹命中数 `5:2|6:0|3:9`）两列，打一场即可确认对象究竟在哪个块、伪对象在哪个块。⚠️ 本版仍为诊断版（ENABLE_EMB_GAUGE_DEBUG=True），正式发布前关闭。源码备份到 `src_backups/<TS>_V2379/`。
+_BUILD_NO = 2380  # V2380：修复「槽完全没法识别」并追回 V2379 的两处反向改动。① 【推翻 V2379 的伪对象论断】V2379 断言块 3/4 存在「指纹全中但槽值恒 0」的伪对象，并用一个自造仿真（把真对象放在块 5）去「证明」它——那是循环论证。反证 = 2026-09-08 实机实测（同一套判据、块[4] 内 vtable 命中 111 个）：值=0 的 109 个候选里一个紫色都没有、一个 200x200 都没有，紫色 200x200 全内存唯一 → 判据不会误锁。② 【块列表两处修正】(a) 拆穿显示基准：独立版工具源码 src/emblasque_gauge_simple.py L856 `QCheckBox("块%d" % i)` + L858 `setChecked(i in EMB_SCAN_BLOCKS)`，界面「块N」显示的就是下标 i 本身 → 它的 [5,6,7] 是 0-based，覆盖 {5,6,7}；(b) 与 09-08 实机实测的 {4}（块[4]=0x2EE43400000，偏移 0xD127000 完美对齐 0x70）取并集 = **{4,5,6}**，此即 EMB_SCAN_BLOCKS_PREFERRED=[4,5,6]。而历史 [3,4,5,6,7] 与 V2379 的 [5,6,7,3,4] **都漏了 idx=2**（同为 256MB 块），且 V2379 把唯一有实测支撑的 idx=4 排到最后 → 对象落在 2、或落在 4 却后启动，就是「完全没法识别」。故扫描集合改为 PREFERRED=[4,5,6] + FALLBACK=[3,2,7,0,1] = **8 块全覆盖**；错峰 0.05s 使 8 块最迟 0.35s 全部启动 = 等价覆盖全部块，**优先级只决定谁先跑、绝不漏块**（V2379 的 [5,6,7]+[3,4] 会漏 0/1/2）。③ 【地址失效后的等待是真凶】原代码在「地址失效」分支用 _backoff_delay() 计算等待，而该退避值来自「整轮未命中」计数，n=5 时即 8s、n=6 封顶 15s；而地址失效在实战中是常态（切场景 / 槽清零对象被回收 / 槽满重置），每失效一次白等 8~15 秒才重扫 → 直接表现为「槽完全没法识别、像一直在找地址」。改为固定 EMB_MIN_RESCAN_GAP=1.0s，失效后尽快重扫。④ 【退避上限 15s → 3s】09-08 实测确认「对象进战斗才创建、槽清零即回收」（槽=0 时全内存不存在紫色 200x200），故「扫不到」在战斗前段是正常状态而非故障；15s 上限意味着槽开始充能后最多 15 秒才被发现一次，实战就是「槽根本不识别」。卡顿的真正解药是 V2378 的 _scan_gen（线程堆积已根治），不依赖长退避。V2378 全部修复（世代号 / 硬闸 / 退避 / 新鲜上下文）保留。诊断日志 hit_blk+blk_hits 保留且现已覆盖 8 块：打一场即可由 hit_blk 直接读出「对象真实在哪个块」。⚠️ 本版仍为诊断版（ENABLE_EMB_GAUGE_DEBUG=True），正式发布前关闭。源码备份到 `src_backups/<TS>_V2380/`。
+_BUILD_NO = 2381  # V2381：恩布拉斯科槽的百分比由 2 位小数改为 1 位小数（用户实测 V2380 已修好槽识别，仅剩显示格式）。改两处渲染分支：① `_draw_center_text` 的单层资源槽分支（「之力」未生效时融合 buff 的单层形态）② 同函数的融合 buff 计时胶囊分支（「之力」生效后的多层形态）。两处 `f"{_pct:.2f}%"` → `f"{_pct:.1f}%"`，同时各加一行 V2381 注释。除显示精度外一切不变：槽值仍按 gauge_value 原样读取（不四舍五入回写），「上升显百分比 / 下降显倒计时」的方向判定不变，`timer_val_for_color` 仍固定 999.0 以保持胶囊配色不被误触发；胶囊宽度自适应（按文字实际宽度计算）会自动收窄，无需另调参数。本版不影响判据、扫描块与任何读取逻辑，V2380 的 8 块全覆盖 / 地址失效固定等 1.0s / 退避上限 3s / `_scan_gen` 世代号全部原样保留。⚠️ 本版仍为诊断版（ENABLE_EMB_GAUGE_DEBUG=True），正式发布前关闭。源码备份到 `src_backups/<TS>_V2381/`。
+_BUILD_NO = 2382  # V2382：正式版 —— 关闭诊断埋点（`ENABLE_EMB_GAUGE_DEBUG` True → False），并附本轮实测闭环验证结论。【关闭埋点】V2377 引入的 emb_gauge_debug.txt 埋点已完成使命（它把「槽完全没法识别」定位到 3 个真因），本版起不再写日志文件；常量与 `_emb_gauge_debug_dump()` 全部保留不删，以后要复查只需把开关改回 True。⚠️ 埋点本来就有 4MB 上限（超限即删除重写），所以此前不会有日志膨胀问题。【实测闭环验证】用户于 09:41–10:17 连续实战 36 分钟，留下 4136 条埋点样本（已归档 `probe_out/emb_gauge_debug_v2380_verified.txt`），据此把 V2380 的三条修复全部验证完毕：① 【最后的未知量「块身份是否漂移」已被钉死】`hit_blk` 时间线 = 块 5（09:41:45–09:44:21, addr 0x53b1ec04270）→ 块 4（09:44:39–09:57:43, addr 0x53b0d2b8ff0）→ 块 6（09:58:05–10:17:17, addr 0x53b2c007020）。**每个 addr 只属于一个块、跨块冲突 0 个** → 这是「对象被回收后在另一个块重建」，**不是**同一对象多副本竞争。故 V2379「调优先级让某块跑赢」的思路治不了本（没有副本可抢），只有「全覆盖 + 快速重扫」有效 —— 实测完全支持 V2380 的修法。② 【PREFERRED=[4,5,6] 被实测证实】对象落在这三块的样本 4093/4136 = **99.0%**，落在 PREFERRED **之外 0 行**；实测对象出现过的块恰为 {4,5,6}，与优选集合完全吻合（块 3 一直有 vtable 指纹却从未被锁定 = 判据正确排除了它）。③ 【发现延迟被量化】三次「未命中 → 首次锁定」的切换间隔分别为 **2s / 3s / 2s**（对比 V2379 最坏 15s）：对象一出现，2~3 秒内即被锁定。④ 【V2378 节流健康】gen 2→15（V2377 曾 300 次/10s）、consec 峰值 1（退避从未升档）、gap 恒 0（从未被硬闸限流）、threads 峰值 8（无堆积），卡顿彻底消除。⑤ 【槽识别正常】state=found 占 87.5%、status=ok 99.7%、is_pl2600 99.7%、槽值覆盖 0.0~1.0 共 896 个不同值、方向 up 71%/down 29% —— 「别的都行了」被数据证实。V2381 的槽百分比 1 位小数改动原样保留。源码备份到 `src_backups/<TS>_V2382/`。
+_BUILD_NO = 2400  # V2400：【清爽版·正式版】三件事 ——（A）运行期不再产生任何多余文件；（B）i18n 全量补全；（C）代码冗余清零。【A · 删除四套诊断落盘】用户红线：「程序目录只允许出现 overlay_settings.json 与 ptr_cache.txt」。此前 EXE_DIR 有 5 个落盘点，其中 `buff_attrs_unknown.json` 最讨厌 —— 它**没有任何开关，任何版本都会生成**。本版把四套诊断落盘功能**整块删除**（开关常量 + 文件名常量 + 函数 + 全部调用点，不留空壳、不留死代码）：① buff_attrs_unknown.json（V2304 未知 buff 自动记录 + mtime 热加载外部补充名 —— 「读取」能力也一并删除，`USER_ATTRS` / `_USER_ATTRS_MTIME` / `_reload_user_attrs()` 整链移除，`_attr_for_sid()` 收敛为「内置表 → hex 兜底」二级；buff 名称的唯一真源回归内置 `buff_attrs.json` 147 条）；② last_boss_buffs.json（V2213 boss buff dump，`_dump_boss_buffs` + `ENABLE_BOSS_BUFF_DUMP` + 其唯一调用点）；③ emb_gauge_debug.txt（V2377~V2382 恩布拉斯科槽读取链路埋点，已完成使命 —— 正是它把「槽完全没法识别」定位到 3 个真因，`_emb_gauge_debug_dump` + `ENABLE_EMB_GAUGE_DEBUG` + `EMB_GAUGE_DEBUG_FILE` + `_EMB_DBG_LAST` + `_EMB_DBG_ROWS` + `scan()` 里的 `self._emb_dbg` 快照全删）；④ overlay_focus_log.txt（V2019~V2382 窗口焦点诊断日志 `_append_focus_log()` + `_focus_log_ring` / `_focus_log_path` / 5 个调用点 + `self._last_fg`，⚠️ 前后台显隐逻辑 `_game_is_foreground` / `_sync_visibility_with_game_focus` 与它完全无关、未受影响）。另删 `_UNKNOWN_BUFF_SIDS` / `_UNKNOWN_LAST_DUMP` / `_note_unknown_buff` / `_dump_unknown_buffs`；EXE_DIR 派生常量只剩 SETTINGS_FILE 与 PTR_CACHE_FILE，全项目 `open(...,'w'/'a')` 只剩 3 处（含更新下载的 `*.part` 临时文件，写完即 os.replace）。【B · i18n】新增 tools/audit_i18n_full.py（5 项检查）与 tools/verify_dynamic_tr_v2400.py（动态键候选集核对）：补 10 个缺失键（「调试数据」页 4 个「数量:」标签 + 4 个注入数量 tooltip + 2 个尖刺风格项，此前英文/繁中/日文界面会残留中文）；删 5 个死键（色彩插值的 HSL / HSV / RGB / 双色渐变 / 插值色彩空间 —— 功能早已移除）；再补 1 个防御键「尚未添加」（`_refresh_buff_list` 空态占位的兜底默认值，4 个调用点都显式传参故当前不可达）。结果：ui 段 502 条，MISSING 0 / DEAD 0 / 裸中文 0 / 缺语 0，9 处动态 `_tr` 的 37 个候选键全部命中。【B2 · 修「更新日志面板永远空白」】`pick_lang_text()` 只认 dict 与 str，而 version.json 的 `changelog` 当时是**纯字符串数组** → 函数直接返回空串 → 无论检查更新成功与否，「设置 → 关于/更新」的更新日志框永远空白。本版给函数补上 list/tuple 分支（用空行拼接），并把 version.json 的 changelog 恢复成**三语 dict**（与 README 的既有约定、以及 GBFR_IndicatorPublisher.py 的写入格式一致，历史条目全部保留并补齐 zh_tw / en 历史）。【C · 去冗余】EmblasqueGaugeReader 的纯仪表簇（`_block_idx` / `_block_base` / `_bytes_total` / `_bytes_scanned` / `_scan_pass` / `_rpm_direct(_fail)` / `_rpm_scan(_fail)` / `_last_value` / `_reset_count` / `_vt_hits` / `_rej_*` / `_retry_wait` / `_blk_hits` / `_hit_blk` / `self._blocks`）与 `_count_rej()` / `telemetry()` / `set_scan_blocks()` 全删（全部「只写不读」）；顺带收益：1.28GB 扫描的内层 chunk 循环不再每块上一次锁。保留：`_active_threads` / `_blocks_done` / `_scan_gen` / `_consec_fail` / `_next_try` / `_next_scan_ok_ts` / `_last_scan_start` / `_allowed_off_ts` / `_order` / `_last_allowed` / `_scan_blocks`（参与状态机判定，不能删）；死方法 2 → 0、死属性 14 → 0、重复块 0（5 处是「主控 ↔ Boss」刻意对称，禁止合并）、设置项真孤儿 0/431。其余一切不变：恩布拉斯科槽读取（8 块全覆盖 + 地址失效固定等 1.0s + 退避上限 3s + `_scan_gen` 世代号）、槽百分比 1 位小数、融合 buff「恩布拉斯克之力+槽」的动态单层/多层形态、五个模块渲染，全部原样保留。源码备份到 `src_backups/<TS>_V2400/`。
+_BUILD_NO = 2401  # V2401：修「融合 buff『恩布拉斯克之力+槽』(PL2600_10) 层数变化时外层尖刺 + 装饰小球不闪光」的 bug（其余 buff 正常，只有它干巴巴直接出现）。真因是 scan() 里的执行顺序：尖刺闪光检测原本紧跟在「active_buffs = [真实 buff]」之后，而两个合成 buff（恩布拉斯科槽 PL2600_9 index=-1、融合块 PL2600_10 index=-2）是在同一个 scan() 的**末尾**才 append 进 active_buffs —— 于是它们的 bkey（PL2600_-1 / PL2600_-2）从未写入 _prev_buff_stacks 与 _spike_flash，渲染侧 _draw_spikes 里 `flash = self._spike_flash.get(bkey)` 恒为 None → flash_color=None → 走非闪光分支 → 尖刺不变白、不放大，顶端装饰小球同样不参与闪光。修法：把整块闪光检测（含 flash_apply_spikes=False 时的 _prev_buff_stacks 重建分支）移到合成 buff 注入之后执行，合成 buff 与真实 buff 从此走同一条闪光通道；原位置留一行指针注释，避免后续阅读困惑。安全性：恩布拉斯科槽 stacks 恒为 0（cur==prev==0）永不误触发；融合块 stacks=0 时是单层形态、本就不绘制尖刺，即使记录闪光也无视觉副作用；stacks 由 0 变正数时会正常触发一次「新增尖刺」闪光（与真实 buff 首次出现的行为一致）。零设置项改动、零 i18n 改动、零落盘改动，schema 与设置键完全不变。源码备份到 `src_backups/<TS>_V2401/`。
+_BUILD_NO = 2402  # V2402：把玩家配置烘焙进出厂默认（用户 2026-09-11 要求「把设置的值烘焙进 2401」）。
+#   DEFAULT_SETTINGS 共 431 项，与 dist/overlay_settings.json（475 项）逐键比对后烘焙 85 处：
+#   标量 67 项 + 3 个名单字典（buff_enabled 5 项 / buff_order 4 项 / buff_mastery 6 项）。
+#   【按用户决策排除 4 项运行时/环境值，保持原有出厂默认】
+#     ① skip_version —— 运行期"跳过此版本"记录（烘了会让所有玩家默认跳过该更新提示）；
+#     ② sync_exe_list —— 本机"同步外部 exe"路径（烘了会让玩家默认去启动作者本机路径）；
+#     ③ class_duration_max —— 实战学习出的峰值时长（非手动设置值）；
+#     ④ skill_cooldown_max —— 实战学习的技能冷却峰值表（用户选择让每个玩家自己学）。
+#   【未烘焙的 44 个 overlay 独有键】全部是历史残留键、源码零引用（V2312 净简化删掉的
+#     spike_3d_line_/band_/bottom_/ridge_face_/twotone_angle 风格参数、V2314 删的 8 个门限旧键 +
+#     boss_name_keywords/boss_keep_backdrop_when_absent/flash_apply_*_submodule/boss_exclude_*、
+#     V2400 删的 multi_buff_grad_space_*、debug_*_count 旧名、emblasque_* 三键）—— 不作为默认值引入，
+#     它们只会随旧配置文件存在，新玩家不会产生。
+#   【实现】逐行文本替换、只换值：保留缩进/逗号/行尾注释/嵌套结构，块行数与键顺序零变化。
+#   【reset_defaults 复核】仍走 DEFAULT_SETTINGS，无硬编码绕过（V2259 已修的三处保持修好）。
+#   源码备份到 src_backups/<TS>_V2402/。
 #   【G 级】4 个零调用的函数（共 63 行）——全是 V2239「灰色固化门限」工厂的残留。
 #     SettingsDialog.__init__ 里 allbuff / boss 两个对称作用域各定义了 3 个工厂：
 #     _gate_fixed_note（在用）+ _gate_fixed_checkbox / _gate_fixed_double_row（零调用）。
@@ -897,7 +777,17 @@ def _qt_sync_get(url, timeout_ms=15000, on_chunk=None, on_total=None, abort_chec
         return None, 0, str(e)
 
 def pick_lang_text(value, lang="zh"):
-    """按语言选取多语言文本：value 为 dict 时依次取 lang → zh → 第一个非空值；为 str 时原样返回。"""
+    """按语言选取多语言文本。
+
+    · value 为 dict     → 依次取 lang → zh → 第一个非空字符串值；
+    · value 为 str      → 原样返回；
+    · value 为 list/tuple → 把其中的字符串元素用空行拼接后返回（V2400 新增）。
+
+    V2400 说明：version.json 的 `changelog` 约定是**三语 dict**（README 与
+    GBFR_IndicatorPublisher.py 都按 dict 写），但主干这份一度退化成纯字符串数组，
+    而本函数此前不认数组 → 直接返回空串 → 「设置 → 关于/更新」的更新日志框
+    **无论检查更新成功与否永远是空白**。补上列表分支后，旧格式数据也能正常显示。
+    """
     if isinstance(value, dict):
         for key in (lang, "zh"):
             v = value.get(key)
@@ -909,6 +799,12 @@ def pick_lang_text(value, lang="zh"):
         return ""
     if isinstance(value, str):
         return value
+    if isinstance(value, (list, tuple)):
+        parts = []
+        for x in value:
+            if isinstance(x, str) and x.strip():
+                parts.append(x.strip())
+        return "\n\n".join(parts)
     return ""
 
 # ============================ EXE 同步（全局设置：启动时按路径共同启动，不监视、不杀进程）============================
@@ -1076,6 +972,384 @@ QUEST_TRAINING_TIMER_OFFSETS = (0xB20, 0xB28)
 # V2082：游戏 2.0.4 后旧值 0xc1dfd0 漂移；用独立工具 GBFR_OffsetFinder_V2 在 2.0.4 下实测出新值 0xC1E030。
 # 实测见 src_backups/2026-08-29_09-55-*/V2082_qm_delta_0xC1E030/。
 QM_DELTA = 0xC1E030
+
+# ===================== 恩布拉斯科槽读取（V2360 自 V1.04 移植）=====================
+# 贝阿朵丽丝（PL2600）专属资源槽。游戏 v2.0.5 实机确认：
+#   全局块指针数组 = module_base + 0x7B89E08 + idx*0x40
+#   块[4]（256MB 对象池）内搜 ctrl vtable 指纹 module_base + 0x6147120
+#   判据：disp 紫色 (0.86,0.18,1.0) 且尺寸 200x200 → ctrl+0x28 = float 0~1（槽占比）
+EMB_CTRL_VTAB_RVA = 0x6147120
+EMB_VAL_OFF = 0x28
+EMB_DISP_PTR = 0x60
+EMB_COL_R, EMB_COL_G, EMB_COL_B = 0x80, 0x84, 0x88
+EMB_W_OFF, EMB_H_OFF = 0xC8, 0xCC
+EMB_BLOCK_ARR_RVA = 0x7B89E08
+EMB_BLOCK_STRIDE = 0x40
+EMB_BLOCK_COUNT = 8                      # 全局块指针数组总槽位数（仍读全部槽位指针）
+# V2380 🔴 块优先级 + 全覆盖错峰启动（修订 V2379 的错误论断）
+#   【已被证伪】V2379 断言「块 3/4 存在判据全中、但槽值恒 0 的伪对象」。反证 = 2026-09-08 实机
+#        实测（同一套判据、块[4] 内 vtable 命中 111 个）：值=0 的 109 个候选里**一个紫色都没有、
+#        一个 200x200 都没有**，紫色 200x200 全内存唯一 → 判据不会误锁，不存在「伪对象」。
+#        （V2379 那个「6/6 锁到伪对象」的仿真，前提是自造的「真对象放在块 5」，属循环论证。）
+#   【真因 = 漏块 + 优先级背离实测】两条硬证据：
+#        ① 2026-09-08 实机实测：贝能表对象在 **idx=4**（块[4]=0x2EE43400000，偏移 0xD127000
+#           完美对齐 0x70 步长）。此项有字节级实测支撑，是全项目最强证据。
+#        ② 独立版工具 V1.03/V1.04 的 `EMB_SCAN_BLOCKS = [5,6,7]` 是 **0-based**：源文件
+#           L856 `QCheckBox("块%d" % i)` + L858 `setChecked(i in EMB_SCAN_BLOCKS)`，
+#           界面「块N」显示的就是下标 i 本身 → 它覆盖 {5,6,7}。与 ① 取并集 = {4,5,6}。
+#       而历史实现 `[3,4,5,6,7]` 与 V2379 的 `[5,6,7,3,4]` **都漏了 idx=2**（同样是 256MB 块），
+#        且 V2379 把唯一有实机实测支撑的 idx=4 排到了最后 → 对象落在 idx=2、或落在 4 却后启动，
+#        都表现为「槽完全没法识别」。
+#   【修法】不再猜「哪个块对」，而是**全覆盖 + 按证据强度排序 + 错峰**：
+#        全部 8 块都进扫描集合（永不漏），但让有实机实测的 idx=4 最先启动、5/6 紧随，其余兜底。
+#        错峰 0.05s ⇒ 最迟 0.35s 后 8 块全部在跑 = 等价「并发扫全部块」，**不会因优先级漏掉任何块**；
+#        而对象在 4/5/6 的常见情形下，第一块开跑 0.5s 内即命中并广播停止，后面的块来不及跑（省 IO）。
+EMB_SCAN_BLOCKS_PREFERRED = [4, 5, 6]        # ①② 证据并集：idx=4 实机实测命中；5/6 经 V1.03/V1.04 验证
+EMB_SCAN_BLOCKS_FALLBACK = [3, 2, 7, 0, 1]   # 其余全覆盖（含长期被漏的 idx=2）；7/0/1 是 40/61/0.3MB 小块，仅末位兜底
+EMB_SCAN_BLOCKS = EMB_SCAN_BLOCKS_PREFERRED + EMB_SCAN_BLOCKS_FALLBACK
+EMB_WAVE_STAGGER = 0.05                  # 相邻优先级的启动间隔（秒）；8 块全部启动共 0.35s，之后等价全覆盖并发
+EMB_PREFER_BLOCK = EMB_SCAN_BLOCKS_PREFERRED[0]   # 仅作兼容保留
+EMB_BLOCK_SIZE = 0x10000000          # 256MB
+EMB_SCAN_CHUNK = 16 * 1024 * 1024    # 每个扫描线程每次读 16MB（并发，不阻塞主循环）
+EMB_PURPLE = (0.86, 0.18, 1.0)
+EMB_PURPLE_TOL = 0.06
+EMB_SIZE = (200.0, 200.0)
+EMB_SIZE_TOL = 4.0
+EMB_RETRY_SEC = 0.5                  # 全部块都未命中后的首次冷却
+# V2377：连续未命中时的退避上限。V2380 由 15.0 下调至 3.0 ——
+#   09-08 实测已确认「对象进战斗才创建、槽清零即回收」（槽=0 时全内存不存在紫色 200x200 对象），
+#   因此「扫不到」在战斗前段是**正常状态**而不是故障。退避到 15s 意味着「槽开始充能（值变 >0）
+#   后，最多要 15 秒才会被发现一次」，实战表现就是「槽根本不识别 / 要等很久才跳出来」。
+#   卡顿的真正解药是 V2378 的世代号 _scan_gen（线程堆积已根治），不依赖长退避，故 3.0s 足够抑制空转。
+EMB_RETRY_MAX_SEC = 3.0
+# V2378：两轮扫描「启动」之间的硬性最小间隔（跨 reset 存活，不受打断影响）。
+#   症状「软件一直卡 + 像一直在找槽的地址」的机理：allowed(角色识别/战斗态/handle) 抖动时，
+#   reset() 会打断正在跑的扫描，下一拍立刻重开新一轮 → 等效「每拍重扫 1.28GB(5×256MB)」。
+#   指数退避只在「一轮完整跑完且未命中」时生效，被 reset 打断的轮次绕不过它，故加此下限。
+EMB_MIN_RESCAN_GAP = 1.0
+# V2378：非战斗/非目标角色离开超过该秒数后再进入 → 视为「新上下文」，
+#   退避归零且允许立即扫描（避免「刚进战斗要等 15 秒才第一次扫」）；
+#   短于此值的快速抖动不归零 —— 那正是要抑制的场景。
+EMB_FRESH_CONTEXT_SEC = 2.0
+EMB_NAME = {"zh": "恩布拉斯科槽", "zh_tw": "恩布拉斯科槽",
+            "en": "Emblasque Gauge", "ja": "アンブラスク槽"}
+# 贝阿朵丽丝 PL2600 的 charid xxhash32（PL2600 角色识别兜底，优先用 pl_id=="PL2600"）
+_BEATRIX_CHARID_HASH = 0x9A8AF295
+
+
+class EmblasqueGaugeReader(object):
+    """恩布拉斯科槽读取器（多线程并发扫描 + 锁定后单线程直读）。
+
+    用法：scan() 每帧调用 update(handle, base, allowed)。
+      allowed = 角色是 PL2600 且 战斗中。
+    allowed=False → 立刻 reset（停止所有后台扫描线程，零开销）。
+    allowed=True 且未锁定 → 启动【多线程并发扫描】：每个块一个守护线程，
+        同时读不同内存区间（重叠 ReadProcessMemory 的 I/O 等待），
+        任一线程命中即锁定地址并广播停止，其余线程在块边界退出。
+    allowed=True 且已锁定 → 主循环每帧只读 ctrl+0x28（1 次 RPM，<1ms），挂起扫描。
+
+    状态机（scan_state 标志位）：
+        idle     —— 挂起（未允许扫描 / 未启动 / 刚解锁重扫）
+        scanning —— 正在多线程读（活跃线程 N）
+        found    —— 已读完并锁定 · 挂起直读（每帧 1 次 RPM）
+        wait     —— 全部块未命中，冷却 EMB_RETRY_SEC 后自动重扫
+    """
+    def __init__(self, scan_blocks=None):
+        self._lock = threading.RLock()
+        self._stop_ev = threading.Event()
+        self._scan_blocks = list(scan_blocks) if scan_blocks else list(EMB_SCAN_BLOCKS)
+        self.reset()
+
+    def reset(self):
+        # V2378：本轮是不是「正在扫描中被强制打断」？（必须在清 state 之前判定）
+        #   被打断 = 这一轮既没跑完也没命中，等价于一次「未命中」，计入 _consec_fail
+        #   让退避在抖动场景真正升档（否则退避永远是 0.5 档）。正常「离开战斗」只会
+        #   触发一次（reset 后 state=idle，不会再重复触发），而 ≥2s 后重新进入会被
+        #   当作新上下文把退避归零，故不影响正常战斗的响应速度。
+        _aborted_scan = getattr(self, "state", None) == "scanning"
+        # 通知任何正在运行的扫描线程立即停止（它们会在块边界检查并退出）
+        self._stop_ev.set()
+        self.addr = 0
+        self.value = None
+        self.state = "idle"          # idle / scanning / found / wait
+        self._scan_threads = []
+        self._active_threads = 0
+        self._order = None
+        self._blocks_done = 0
+        self._next_try = 0.0
+        self._last_allowed = False
+        self.direction = "up"      # 恩布拉斯科槽方向：up=充能中(显百分比) / down=生效中(显倒计时)
+        # ---- V2378：跨 reset 存活的字段（刻意不在此处清零）----
+        # _consec_fail：连续未命中轮数（指数退避）。只在【命中】【重设扫描块】
+        #   【长时间离开后重新进入(≥EMB_FRESH_CONTEXT_SEC)】时归零。
+        #   若在 reset 里清零，allowed 每拍抖动就会让退避永远停在第一档 0.5s，
+        #   退避形同虚设 —— 这正是「一直卡」的成因之一（V2377 版就栽在这里）。
+        # _scan_gen：扫描世代号。每轮扫描开始时 +1；线程只服务自己那一代，
+        #   过期线程在块边界安静退出且【不改动任何共享计数】。修复的竞争：
+        #   _start_scan 里的 _stop_ev.clear() 会把上一轮已被 reset 打断的线程
+        #   「解冻」，它们随后在 finally 里 decrement _active_threads / increment
+        #   _blocks_done，把统计算到新一轮头上 → _maybe_finish_scan 提前判 wait，
+        #   而新一轮线程其实还在跑 → 下一轮又叠上来 → 线程数与 1.28GB 重扫不断堆积。
+        # _last_scan_start / _next_scan_ok_ts：重扫硬闸（见 EMB_MIN_RESCAN_GAP）。
+        # _allowed_off_ts：最近一次「不允许扫描」的时刻（判「新上下文」用）。
+        self._consec_fail = getattr(self, "_consec_fail", 0)
+        if _aborted_scan:
+            self._consec_fail += 1
+        self._scan_gen = getattr(self, "_scan_gen", 0) + 1
+        self._last_scan_start = getattr(self, "_last_scan_start", 0.0)
+        self._next_scan_ok_ts = getattr(self, "_next_scan_ok_ts", 0.0)
+        self._allowed_off_ts = getattr(self, "_allowed_off_ts", 0.0)
+
+    def _backoff_delay(self):
+        """V2378：当前应采用的退避秒数。_consec_fail=1 → EMB_RETRY_SEC(0.5s)，之后 1/2/3 封顶。
+
+        下限固定为 EMB_MIN_RESCAN_GAP（硬闸），所以任何路径都不会低于它。
+        统一由「一轮跑完未命中」与「一轮被 reset 打断」两条路径共同推动。
+        V2380：上限由 15s 下调至 EMB_RETRY_MAX_SEC=3s（槽=0 时对象本就不存在，
+        长时间不扫会直接导致「槽开始充能后迟迟不被发现」）。
+        """
+        n = max(1, getattr(self, "_consec_fail", 1))
+        d = min(EMB_RETRY_SEC * (2 ** (n - 1)), EMB_RETRY_MAX_SEC)
+        return max(d, EMB_MIN_RESCAN_GAP)
+
+    @property
+    def found(self):
+        return self.state == "found" and self.value is not None
+
+    def update(self, handle, base, allowed, now=None):
+        _prev_allowed = self._last_allowed
+        self._last_allowed = bool(allowed)
+        if now is None:
+            now = time.time()
+        if not allowed or not handle or not base:
+            if not allowed:
+                self._allowed_off_ts = now   # V2378：记录「离开」时刻（判新上下文用）
+            if self.state != "idle":
+                self.reset()
+            return
+        # V2378：长时间离开(≥EMB_FRESH_CONTEXT_SEC)后再进入 → 视为新上下文：
+        #   退避归零 + 允许立即扫描（否则「刚进战斗要等十几秒才第一次扫」）；
+        #   快速抖动(<该值)不归零，交由下面的硬闸抑制。
+        if (not _prev_allowed) and (now - self._allowed_off_ts) >= EMB_FRESH_CONTEXT_SEC:
+            self._consec_fail = 0
+            self._next_scan_ok_ts = 0.0
+        # 已锁定：L0 直读（1 次 RPM/拍）
+        if self.state == "found" and self.addr:
+            v = read_f32(handle, self.addr + EMB_VAL_OFF)
+            if v is not None and -0.01 <= v <= 1.01:
+                v = max(0.0, min(1.0, v))
+                prev = self.value
+                # 方向判定（供恩布拉斯科槽显示用）：仅明显上升/下降时翻转，持平沿用上次，避免抖动
+                if prev is not None:
+                    if v > prev + 1e-4:
+                        self.direction = "up"
+                    elif v < prev - 1e-4:
+                        self.direction = "down"
+                self.value = v
+                return
+            # 地址失效（切场景/对象被回收）→ 解锁，下拍重扫
+            self.addr = 0
+            self.value = None
+            with self._lock:
+                self.state = "idle"
+            # V2378：失效后不要「下一拍」就重扫 1.28GB。RPM 偶发抖动会让这里连续
+            #   失效 → 连续整轮重扫 → 表现就是「软件一直卡、像一直在找槽的地址」。
+            #   强制至少等 EMB_MIN_RESCAN_GAP，之后仍会正常重扫（不影响换场景后重定位）。
+            # V2380 🔴 此处**绝不能**用 _backoff_delay()：那个指数退避的值来自「整轮扫描未命中」
+            #   计数，一旦累积到 n=5 就是 8s、n=6 就是封顶 15s。而「地址失效」在实战里是**常态**
+            #   （切场景 / 槽清零后对象被回收 / 槽满重置），每失效一次就白等 8~15 秒才重扫
+            #   → 直接表现为「槽完全没法识别、像一直在找地址」。失效后只需固定间隔就能尽快重扫。
+            self._next_scan_ok_ts = max(self._next_scan_ok_ts, now + EMB_MIN_RESCAN_GAP)
+            return
+        # 冷却中：等待重试
+        if self.state == "wait":
+            if now >= self._next_try:
+                with self._lock:
+                    self.state = "idle"
+            else:
+                return
+        # idle → 启动多线程并发扫描
+        if self.state == "idle":
+            # V2378 硬闸：距上一次「扫描启动」不足 EMB_MIN_RESCAN_GAP 秒则本拍不启动。
+            #   这是抑制「reset 抖动 → 每拍重扫 1.28GB」的最后一道保险（不受 reset 影响）。
+            if now < self._next_scan_ok_ts:
+                return
+            self._start_scan(handle, base, now)
+            return
+        # scanning → 后台线程在跑，主循环仅轮询，无需动作
+
+    # ---------- 内部 ----------
+    def _read_blocks(self, handle, base):
+        out = []
+        for i in range(EMB_BLOCK_COUNT):
+            v = read_u64(handle, base + EMB_BLOCK_ARR_RVA + i * EMB_BLOCK_STRIDE)
+            out.append(v if v else None)
+        return out
+
+    def _start_scan(self, handle, base, now):
+        if not self._scan_blocks:
+            # 一个块都没勾选：保持挂起，不发起扫描
+            with self._lock:
+                self.state = "idle"
+            return
+        blocks = self._read_blocks(handle, base)
+        order = list(self._scan_blocks)
+        with self._lock:
+            # V2378：进入新一轮「世代」。上一代仍在跑的线程会在块边界识别到
+            #   _scan_gen != gen 而安静退出，且不碰任何共享计数（修复竞争）。
+            self._scan_gen += 1
+            gen = self._scan_gen
+            self._last_scan_start = now
+            # V2378 关键：闸门要在【启动】这一刻就落下，而不是等一轮跑完才落。
+            #   否则「本轮被 reset 打断 → 从未跑完 → 闸门从未落下 → 下一拍立刻重开」，
+            #   抖动场景仍会退化成每拍重扫 1.28GB（指数退避也失效，因为退避值被 reset 清零）。
+            self._next_scan_ok_ts = max(self._next_scan_ok_ts, now + self._backoff_delay())
+            self._order = order
+            self._blocks_done = 0
+            self._active_threads = 0
+            self._stop_ev.clear()   # 放行：允许后台线程开始扫描
+            self.state = "scanning"
+            self._scan_threads = []
+        # V2380：按【证据强度错峰】启动。order 已由 EMB_SCAN_BLOCKS 保证是
+        #   「优选块(4,5,6) 在前、兜底块(3,2,7,0,1) 在后」。第 pos 个线程延迟 pos*EMB_WAVE_STAGGER
+        #   秒再开始扫，于是优选块在时间上必定先于兜底块拿到锁 —— 对象在 4/5/6 时第一块
+        #   0.5s 内即命中并广播停止，后面的块根本来不及跑（省 IO）。
+        #   🔴 关键：8 块【全部】都会启动（最迟 0.35s 后），所以优先级只影响「谁先跑」，
+        #   绝不会因为排序而漏掉任何块 —— 这一点是 V2379 的 [5,6,7]+[3,4] 没做到的。)
+        for pos, idx in enumerate(order):
+            t = threading.Thread(
+                target=self._scan_block_delayed,
+                args=(handle, base, idx, blocks[idx], gen,
+                      pos * EMB_WAVE_STAGGER, pos, len(order)),
+                daemon=True)
+            with self._lock:
+                self._scan_threads.append(t)
+                self._active_threads += 1
+            t.start()
+
+    def _scan_block_delayed(self, handle, base, idx, block_base, gen, delay, prio, prio_total):
+        """V2379/V2380：错峰包装。delay>0 时先等一会；等待期间若本轮已过期/已命中就直接放弃。"""
+        if delay > 0:
+            deadline = time.time() + delay
+            while time.time() < deadline:
+                if self._stop_ev.is_set() or self._scan_gen != gen or self.state != "scanning":
+                    with self._lock:
+                        if self._scan_gen != gen:
+                            return
+                        # 本轮仍有效但已不需要我（已 found / 被停）→ 归还 -1，让 finish 判定成立
+                        self._active_threads -= 1
+                        self._blocks_done += 1
+                        self._maybe_finish_scan()
+                    return
+                time.sleep(0.01)
+        self._scan_block(handle, base, idx, block_base, gen, prio, prio_total)
+
+    def _scan_block(self, handle, base, idx, block_base, gen, prio=None, prio_total=None):
+        if not block_base:
+            with self._lock:
+                # V2378：世代已过期（被 reset 或被新一轮取代）→ 直接退出，不动共享计数
+                if self._scan_gen != gen:
+                    return
+                if self._stop_ev.is_set() and self.state != "found":
+                    return
+                self._active_threads -= 1
+                self._blocks_done += 1
+                self._maybe_finish_scan()
+            return
+        try:
+            off = 0
+            while off < EMB_BLOCK_SIZE:
+                if self._stop_ev.is_set() or self._scan_gen != gen:
+                    return
+                chunk = min(EMB_SCAN_CHUNK, EMB_BLOCK_SIZE - off)
+                data = rpm_long(handle, block_base + off, chunk)
+                if data is None:
+                    off += chunk
+                    continue
+                pat = struct.pack("<Q", base + EMB_CTRL_VTAB_RVA)
+                pos = data.find(pat)
+                while pos != -1:
+                    if self._stop_ev.is_set() or self._scan_gen != gen:
+                        return
+                    a = block_base + off + pos
+                    v, ok = self._check(handle, base, a)
+                    if ok:
+                        with self._lock:
+                            if self.state != "found":
+                                self.addr = a
+                                self.value = v
+                                self.state = "found"
+                                # V2378：命中即清退避/硬闸，恢复正常响应速度
+                                self._consec_fail = 0
+                                self._next_scan_ok_ts = 0.0
+                        self._stop_ev.set()   # 广播：其余线程停止
+                        return
+                    pos = data.find(pat, pos + 8)
+                off += chunk
+        finally:
+            with self._lock:
+                # V2378：过期世代（被 reset 或被新一轮取代）→ 不更新任何共享计数。
+                #   否则会把上一轮的完成数错算到新一轮头上，令 _maybe_finish_scan
+                #   在本轮线程还在跑时提前判 wait，下一轮再叠上来 → 线程/IO 持续堆积。
+                if self._scan_gen != gen:
+                    return
+                # 被强制停止（reset）→ 不更新完成计数，避免误判 finish
+                if self._stop_ev.is_set() and self.state != "found":
+                    return
+                self._active_threads -= 1
+                self._blocks_done += 1
+                self._maybe_finish_scan()
+
+    def _maybe_finish_scan(self):
+        if self.state == "found":
+            return
+        n = len(self._order) if self._order else 0
+        if self._active_threads <= 0 and self._blocks_done >= n:
+            self.state = "wait"
+            # V2377：连续未命中 → 指数退避（0.5s → 1 → 2 → 4 → 8 → 15 封顶）。
+            #   原逻辑是固定 0.5s，找不到对象时会每 0.5 秒重扫 1.28GB（5×256MB），
+            #   表现为「软件一直卡、像一直在找槽的地址」。命中 / 允许状态变化时归零。
+            self._consec_fail = getattr(self, "_consec_fail", 0) + 1
+            _delay = self._backoff_delay()
+            self._next_try = time.time() + _delay
+            # V2378：同一延迟也写进「扫描启动硬闸」，这样即使中途被 reset 打断
+            #   （reset 不碰 _next_scan_ok_ts），下一轮也不会提前启动 → 退避真正生效。
+            self._next_scan_ok_ts = max(self._next_scan_ok_ts, time.time() + _delay)
+
+    def _check(self, handle, base, addr):
+        """判据：vtable 指纹 + disp 紫色 + 200x200。返回 (值, 是否命中)。
+
+        V2400：V2377 的 _rej_* 拒绝原因计数（_count_rej 与 6 处调用）已删除 ——
+        它是诊断埋点的配套仪表，唯一读者是被删掉的 telemetry()。判据本身逐字未改。
+        """
+        if read_u64(handle, addr) != base + EMB_CTRL_VTAB_RVA:
+            return (None, False)
+        disp = read_u64(handle, addr + EMB_DISP_PTR)
+        if not disp:
+            return (None, False)
+        r = read_f32(handle, disp + EMB_COL_R)
+        g = read_f32(handle, disp + EMB_COL_G)
+        b = read_f32(handle, disp + EMB_COL_B)
+        if r is None or g is None or b is None:
+            return (None, False)
+        if not (abs(r - EMB_PURPLE[0]) <= EMB_PURPLE_TOL
+                and abs(g - EMB_PURPLE[1]) <= EMB_PURPLE_TOL
+                and abs(b - EMB_PURPLE[2]) <= EMB_PURPLE_TOL):
+            return (None, False)
+        w = read_f32(handle, disp + EMB_W_OFF)
+        h = read_f32(handle, disp + EMB_H_OFF)
+        if w is None or h is None:
+            return (None, False)
+        if not (abs(w - EMB_SIZE[0]) <= EMB_SIZE_TOL
+                and abs(h - EMB_SIZE[1]) <= EMB_SIZE_TOL):
+            return (None, False)
+        return (read_f32(handle, addr + EMB_VAL_OFF), True)
+
+    # V2400：已删除 telemetry()（37 行）。它是 V2377 诊断埋点的取数口，
+    # 唯一消费者是已删除的 _emb_gauge_debug_dump()；删后全文 0 引用。
+    # V2400：已删除 set_scan_blocks()（9 行）。它是「实时改扫描块」的入口，
+    # 但 V2380 起 EMB_SCAN_BLOCKS 已是 8 块全覆盖，且全文 0 引用。
+
 
 # 角色类型字节值 → 名称 (zh / en)
 # 来源: CE实测 [玩家]+0x1FD 字节值；这里按十六进制记录
@@ -1517,6 +1791,10 @@ def rpm(handle, addr, size):
     if not ok or nread.value != size:
         return None
     return buf.raw
+
+def rpm_long(handle, addr, size):
+    """恩布拉斯科槽扫描用（大块同步读，无熔断）；EmblasqueGaugeReader 复用主 rpm。"""
+    return rpm(handle, addr, size)
 
 def read_u32(handle, addr):
     b = rpm(handle, addr, 4)
@@ -2041,6 +2319,11 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
 
     if profile:
         for idx, bc in enumerate(profile["buffs"]):
+            # V2362：合成型 buff（如恩布拉斯科槽 is_synthetic=True）不参与常规渲染，
+            # 仅由 scan() 末尾的注入逻辑按 reader 命中结果生成。否则会在「Buff启用/禁用」
+            # 面板里既留一个（无实时数据的）空槽，又由注入再生成一个 → 出现重复的"两个槽"。
+            if bc.get("is_synthetic"):
+                continue
             rs = bc.get("raw_source")
             entry = None
             # 条件生效：龙人化仅龙人态、神威一体仅神威一体态
@@ -2162,6 +2445,7 @@ def read_overlay_data(handle, pptr, raw_locked=None, duration_max=None):
                     "index": idx, "zh": bc["zh"], "zh_tw": bc.get("zh_tw", bc["zh"]), "en": bc["en"], "ja": bc.get("ja", bc["zh"]),
                     "stacks": stacks, "max_stacks": max_stacks, "timer": timer, "timer_max": timer_max,
                     "timer_display": bc.get("timer_display", "any_stack"),
+                    "sid": sid,  # V2368：补全 sid，供融合 buff 注入块检索恩布拉斯克之力(102)层数
                 }
             if entry is None:
                 continue
@@ -2247,32 +2531,32 @@ DEFAULT_SETTINGS = {
     "spike_bead_pos_percent": 9,
     "use_indicator_outline": False,
     "indicator_outline_width": 1,
-    "title_bar_color": "#000000",
+    "title_bar_color": "#2b1608",
     "title_bar_color_opacity": 70,
     "titlebar_font_size": 8,
     "title_align": "left",
     "titlebar_status_indent": 16,
     "circle_color_normal": "#ffd500",
     "circle_color_normal_opacity": 100,
-    "circle_color_lv7": "#f54fff",
+    "circle_color_lv7": "#ff5a1f",
     "circle_color_lv7_opacity": 100,
     "spike_color_normal": "#ffd500",
     "spike_color_normal_opacity": 100,
-    "spike_color_lv7": "#f54fff",
+    "spike_color_lv7": "#ff5a1f",
     "spike_color_lv7_opacity": 100,
     # V2312：尖刺立体感——仅 2 种风格（flat / two_tone）+ 通用投影/暗描边。
     # V2311 留了 flat + highlight_line（错）；用户截图明确要 V2264 的两分面；本版把 highlight_line 改回 two_tone。
     "spike_3d_style": "two_tone",          # flat | two_tone — V2312 净简化（V2264 默认值 = two_tone）
     "spike_3d_shadow_enabled": True,
-    "spike_3d_shadow_offset_x": 4,        # 投影 X 偏移（像素）
-    "spike_3d_shadow_offset_y": 5,        # 投影 Y 偏移（像素）
+    "spike_3d_shadow_offset_x": 2,        # 投影 X 偏移（像素）
+    "spike_3d_shadow_offset_y": 2,        # 投影 Y 偏移（像素）
     "spike_3d_shadow_alpha": 120,         # 投影不透明度 0-255
     "spike_3d_outline_enabled": True,
-    "spike_3d_outline_width": 1.0,        # 暗描边宽度（像素）
-    "spike_3d_outline_dark": 150,         # 暗描边 darker 因子 100-200
+    "spike_3d_outline_width": 0.5,        # 暗描边宽度（像素）
+    "spike_3d_outline_dark": 140,         # 暗描边 darker 因子 100-200
     # V2312：two_tone（V2264 最简两分面）参数——左右两半硬边分界，中间 0.48-0.52 窄过渡，无光向参与。
-    "spike_3d_twotone_light": 130,        # two_tone 左半 lighter 因子 100-200
-    "spike_3d_twotone_dark": 110,         # two_tone 右半 darker 因子 50-150
+    "spike_3d_twotone_light": 104,        # two_tone 左半 lighter 因子 100-200
+    "spike_3d_twotone_dark": 106,         # two_tone 右半 darker 因子 50-150
     # V2263：小球立体感——2 种风格 + 可调参数
     "bead_3d_style": "radial_gradient",   # flat | radial_gradient
     "bead_3d_light": 160,                 # 高光 lighter 因子 100-250
@@ -2281,12 +2565,12 @@ DEFAULT_SETTINGS = {
     "arc_color": "#ffd500",
     "text_color": "#ffffff",
     "text_color_opacity": 100,
-    "dh_text_outline_color": "#000000",
-    "dh_text_outline_color_opacity": 50,
+    "dh_text_outline_color": "#2b1608",
+    "dh_text_outline_color_opacity": 100,
     "timer_text_color": "#ffffff",
     "timer_text_color_opacity": 100,
-    "indicator_outline_color": "#ffd500",
-    "indicator_outline_color_opacity": 54,
+    "indicator_outline_color": "#2b1608",
+    "indicator_outline_color_opacity": 100,
     "use_default_dodge_icon": True,
     "shrimp_img_path": "",
     "dodge_icon_scale_percent": 100,
@@ -2303,38 +2587,38 @@ DEFAULT_SETTINGS = {
     "roll_halign": "center",
     "roll_valign": "bottom",
     "roll_hmargin": 0,
-    "roll_vmargin": 128,
+    "roll_vmargin": 140,
     "skill_scale_percent": 100,
     "skill_halign": "right",
     "skill_valign": "bottom",
-    "skill_hmargin": 730,
-    "skill_vmargin": 60,
+    "skill_hmargin": 747,
+    "skill_vmargin": 64,
     "circle_pad_title": 0,
     "core_canvas_w": 0,
     "core_canvas_h": 0,
     "flash_color": "#ffffff",
-    "flash_scale": 150,
-    "flash_duration_ms": 167,
+    "flash_scale": 120,
+    "flash_duration_ms": 100,
     "flash_apply_spikes": True,
     "flash_apply_skill_ready": True,
     "flash_apply_dodge": True,
     "warning_size_scale": 0.96,
     "warning_outline_width": 0.13,
     "warning_corner_radius": 5,
-    "warning_outline_color": "#f54fff",
+    "warning_outline_color": "#ff5a1f",
     "warning_fill_color": "#ffd500",
     # V2313：第 6/7 次样式二选一——"triangle"=程序绘制警告三角形（旧行为，默认）；"image"=用 PNG 代替
-    "dodge_warning_mode": "triangle",
+    "dodge_warning_mode": "image",
     "use_default_dodge_warning_icon": True,
     "dodge_warning_image_path": "",
     "dodge_warning_icon_scale_percent": 100,
     "roll_orientation": "horizontal",
     "core_window_x": 0,
-    "core_window_y": 568,
+    "core_window_y": 484,
     "roll_window_x": 816,
-    "roll_window_y": 1006,
-    "skill_window_x": 1142,
-    "skill_window_y": 940,
+    "roll_window_y": 891,
+    "skill_window_x": 1190,
+    "skill_window_y": 826,
     "center_text_offset_x": 0,
     "center_text_offset_y": 3,
     "dh_text_outline_width": 3,
@@ -2344,8 +2628,8 @@ DEFAULT_SETTINGS = {
     "dh_text_outline_width_timer": 3,
     "text_color_timer": "#ffffff",
     "text_color_timer_opacity": 100,
-    "dh_text_outline_color_timer": "#000000",
-    "dh_text_outline_color_timer_opacity": 50,
+    "dh_text_outline_color_timer": "#2b1608",
+    "dh_text_outline_color_timer_opacity": 100,
     "icon_color": "#ffd500",
     "roll_icon_opacity": 100,
     "timer_center_offset_y": 0,
@@ -2471,11 +2755,13 @@ DEFAULT_SETTINGS = {
         "PL2600_1": False,
         "PL2600_2": False,
         "PL2600_3": False,
-        "PL2600_4": True,
-        "PL2600_5": True,
-        "PL2600_6": True,
-        "PL2600_7": True,
+        "PL2600_4": False,
+        "PL2600_5": False,
+        "PL2600_6": False,
+        "PL2600_7": False,
         "PL2600_8": False,
+        "PL2600_9": False,
+        "PL2600_10": True,
         "PL2700_0": True,
         "PL2700_1": True,
         "PL2700_2": False,
@@ -2591,12 +2877,14 @@ DEFAULT_SETTINGS = {
         "PL2600_0": 1,
         "PL2600_1": 2,
         "PL2600_2": 3,
-        "PL2600_3": 4,
-        "PL2600_4": 5,
-        "PL2600_5": 6,
-        "PL2600_6": 7,
+        "PL2600_3": 7,
+        "PL2600_4": 4,
+        "PL2600_5": 5,
+        "PL2600_6": 6,
         "PL2600_7": 8,
         "PL2600_8": 9,
+        "PL2600_9": 10,
+        "PL2600_10": 11,
         "PL2700_0": 1,
         "PL2700_1": 2,
         "PL2700_2": 3,
@@ -3123,27 +3411,37 @@ DEFAULT_SETTINGS = {
         },
         "PL2600_4": {
             "awakening": False,
-            "truth": True,
+            "truth": False,
             "secret": False
         },
         "PL2600_5": {
             "awakening": False,
-            "truth": True,
+            "truth": False,
             "secret": False
         },
         "PL2600_6": {
             "awakening": False,
-            "truth": True,
+            "truth": False,
             "secret": False
         },
         "PL2600_7": {
             "awakening": False,
-            "truth": True,
+            "truth": False,
             "secret": False
         },
         "PL2600_8": {
             "awakening": False,
             "truth": False,
+            "secret": False
+        },
+        "PL2600_9": {
+            "awakening": False,
+            "truth": False,
+            "secret": False
+        },
+        "PL2600_10": {
+            "awakening": False,
+            "truth": True,
             "secret": False
         },
         "PL2700_0": {
@@ -3223,34 +3521,71 @@ DEFAULT_SETTINGS = {
     "multi_buff_color_mode_3": "monochrome",
     "multi_buff_mono_span_3": 15,
     "multi_buff_scale_4": 95,
-    "multi_buff_hgap_4": 135,
+    "multi_buff_hgap_4": 120,
     "multi_buff_dy_4": -53,
     "multi_buff_ext_color_4": False,
     "multi_buff_int_color_4": False,
     "multi_buff_color_mode_4": "monochrome",
     "multi_buff_mono_span_4": 15,
-    "multi_buff_scale_5": 82,
-    "multi_buff_hgap_5": 92,
-    "multi_buff_dy_5": 22,
-    "multi_buff_ext_color_5": False,
+    "multi_buff_scale_5": 90,
+    "multi_buff_hgap_5": 99,
+    "multi_buff_dy_5": 49,
+    "multi_buff_ext_color_5": True,
     "multi_buff_int_color_5": False,
     "multi_buff_color_mode_5": "monochrome",
-    "multi_buff_mono_span_5": 15,
+    "multi_buff_mono_span_5": -5,
+    # V2362：6 槽布局（仅当 active_buffs 含合成型 buff 时启用），数值比 5 槽略小以容纳第 6 个圆
+    "multi_buff_scale_6": 72,
+    "multi_buff_hgap_6": 80,
+    "multi_buff_dy_6": 18,
+    "multi_buff_ext_color_6": False,
+    "multi_buff_int_color_6": False,
+    "multi_buff_color_mode_6": "monochrome",
+    "multi_buff_mono_span_6": 15,
+    # V2363：7~10 槽布局（贝阿朵丽丝等 buff 较多的角色）——scale 随个数递减、hgap 随个数递增，保证不重叠且可见
+    "multi_buff_scale_7": 66,
+    "multi_buff_hgap_7": 94,
+    "multi_buff_dy_7": 16,
+    "multi_buff_ext_color_7": False,
+    "multi_buff_int_color_7": False,
+    "multi_buff_color_mode_7": "monochrome",
+    "multi_buff_mono_span_7": 15,
+    "multi_buff_scale_8": 61,
+    "multi_buff_hgap_8": 106,
+    "multi_buff_dy_8": 15,
+    "multi_buff_ext_color_8": False,
+    "multi_buff_int_color_8": False,
+    "multi_buff_color_mode_8": "monochrome",
+    "multi_buff_mono_span_8": 15,
+    "multi_buff_scale_9": 56,
+    "multi_buff_hgap_9": 118,
+    "multi_buff_dy_9": 14,
+    "multi_buff_ext_color_9": False,
+    "multi_buff_int_color_9": False,
+    "multi_buff_color_mode_9": "monochrome",
+    "multi_buff_mono_span_9": 15,
+    "multi_buff_scale_10": 52,
+    "multi_buff_hgap_10": 130,
+    "multi_buff_dy_10": 13,
+    "multi_buff_ext_color_10": False,
+    "multi_buff_int_color_10": False,
+    "multi_buff_color_mode_10": "monochrome",
+    "multi_buff_mono_span_10": 15,
     "show_buff_name": True,
     "buff_name_font_size": 8,
     "buff_name_offset_x": 0,
     "buff_name_offset_y": 6,
     "buff_name_bg_width": -4,
     "buff_name_color": "#ffffff",
-    "buff_name_color_opacity": 90,
+    "buff_name_color_opacity": 100,
     "show_core_module": True,
     "show_roll_module": True,
     "show_skill_cd_module": True,
     "skill_cd_size": 24,
     "skill_cd_spread": 39,
     "skill_cd_color": "#ffd500",
-    "skill_cd_capsule_bg": "#000000",
-    "skill_cd_capsule_border": "#000000",
+    "skill_cd_capsule_bg": "#2b1608",
+    "skill_cd_capsule_border": "#2b1608",
     "skill_cd_text_color": "#ffffff",
     "skill_cd_show_name": True,
     "skill_cd_name_font_size": 7,
@@ -3263,15 +3598,15 @@ DEFAULT_SETTINGS = {
     "skill_cd_timer_offset_y": 0,
     "skill_cd_name_color": "#ffffff",
     "skill_cd_bg_opacity": 5,
-    "skill_cd_sector_opacity": 90,
-    "skill_cd_border_opacity": 90,
-    "skill_cd_capsule_opacity": 80,
+    "skill_cd_sector_opacity": 100,
+    "skill_cd_border_opacity": 100,
+    "skill_cd_capsule_opacity": 100,
     "skill_cd_border_scale": 1.35,
     "skill_cd_breath_enabled": True,
     "skill_cd_breath_color": "#ffffff",
-    "skill_cd_breath_color_opacity": 50,
+    "skill_cd_breath_color_opacity": 48,
     "skill_cd_breath_freq": 1.5,
-    "skill_cd_breath_soft": 0.1,
+    "skill_cd_breath_soft": 0.0,
     "skill_cd_breath_scale": 1.0,
     "skill_cooldown_max": {
         "AB_PL0400_05": 19.999998092651367,
@@ -3372,9 +3707,9 @@ DEFAULT_SETTINGS = {
     "update_download_url": "",
     "custom_palette": [
         "#ff1764",
-        "#ffffff",
+        "#d400ff",
         "#f32f2c",
-        "#ffffff",
+        "#009980",
         "#ff80a0",
         "#ffffff",
         "#f552f5",
@@ -3383,9 +3718,9 @@ DEFAULT_SETTINGS = {
         "#ffffff",
         "#f54fff",
         "#ffffff",
+        "#ff5a1f",
         "#ffffff",
-        "#ffffff",
-        "#ffffff",
+        "#2b1608",
         "#ffffff"
     ],
     "global_hotkey_show_enabled": True,
@@ -3400,8 +3735,8 @@ DEFAULT_SETTINGS = {
     "grace_max": 20.0,
     "pos_res_normalized": True,
     "show_allbuff_module": True,
-    "allbuff_window_x": 305,
-    "allbuff_window_y": 1114,
+    "allbuff_window_x": 225,
+    "allbuff_window_y": 996,
     "allbuff_scale_percent": 80,
     "allbuff_halign": "center",
     "allbuff_valign": "bottom",
@@ -3422,16 +3757,16 @@ DEFAULT_SETTINGS = {
     "allbuff_time_color": "#ffffff",
     "allbuff_bar_color": "#ffd500",
     "allbuff_bar_color_opacity": 100,
-    "allbuff_bar_width": 70,
+    "allbuff_bar_width": 80,
     "allbuff_bar_height": 14,
     "allbuff_bar_frame_thickness": 1,
-    "allbuff_backing_color": "#000000",
-    "allbuff_backing_color_opacity": 40,
-    "allbuff_backing_width": 75,
-    "allbuff_backing_height": 48,
+    "allbuff_backing_color": "#2b1608",
+    "allbuff_backing_color_opacity": 70,
+    "allbuff_backing_width": 80,
+    "allbuff_backing_height": 60,
     "allbuff_canvas_bg_opacity": 0,
-    "allbuff_element_spacing": 0,
-    "allbuff_row_height_extra": 0,
+    "allbuff_element_spacing": -1,
+    "allbuff_row_height_extra": -1,
     "allbuff_exclude_core": True,
     "allbuff_exclude_infinite": False,
     "allbuff_exclude_exclusive": True,
@@ -3548,10 +3883,10 @@ DEFAULT_SETTINGS = {
     ],
     "allbuff_warn_enabled": True,
     "allbuff_warn_threshold_pct": 18,
-    "allbuff_warn_color": "#ff80a0",
+    "allbuff_warn_color": "#ff0000",
     "allbuff_warn_color_opacity": 100,
     "show_boss_module": True,
-    "boss_window_x": 201,
+    "boss_window_x": 225,
     "boss_window_y": 8,
     "boss_scale_percent": 80,
     "boss_halign": "center",
@@ -3572,13 +3907,13 @@ DEFAULT_SETTINGS = {
     "boss_time_color": "#ffffff",
     "boss_bar_color": "#f54fff",
     "boss_bar_color_opacity": 100,
-    "boss_bar_width": 83,
-    "boss_bar_height": 11,
+    "boss_bar_width": 80,
+    "boss_bar_height": 14,
     "boss_bar_frame_thickness": 1,
-    "boss_backing_color": "#000000",
-    "boss_backing_color_opacity": 40,
+    "boss_backing_color": "#2b1608",
+    "boss_backing_color_opacity": 70,
     "boss_backing_width": 80,
-    "boss_backing_height": 64,
+    "boss_backing_height": 60,
     "boss_canvas_bg_opacity": 0,
     "boss_element_spacing": -1,
     "boss_row_height_extra": -1,
@@ -3609,14 +3944,14 @@ DEFAULT_SETTINGS = {
     "boss_gate_duration_max_with_infinite_exemption": 10000.0,
     "boss_warn_enabled": True,
     "boss_warn_threshold_pct": 20,
-    "boss_warn_color": "#ffd500",
+    "boss_warn_color": "#ff5a1f",
     "boss_warn_color_opacity": 100,
     "boss_debuff_name_color": "#ffd500",
     "boss_debuff_stacks_color": "#ffd500",
     "boss_debuff_time_color": "#ffffff",
     "boss_debuff_bar_color": "#ffd500",
     "boss_debuff_warn_enabled": True,
-    "boss_debuff_warn_color": "#ff80a0",
+    "boss_debuff_warn_color": "#ff0000",
     "boss_debuff_warn_color_opacity": 100,
     "boss_blacklist": [
         {
@@ -3748,7 +4083,7 @@ DEFAULT_SETTINGS = {
     "allbuff_debuff_time_color": "#ffffff",
     "allbuff_debuff_bar_color": "#f54fff",
     "allbuff_debuff_warn_enabled": True,
-    "allbuff_debuff_warn_color": "#ffd500",
+    "allbuff_debuff_warn_color": "#ff5a1f",
     "allbuff_debuff_warn_color_opacity": 100,
     "icon_color_opacity": 100,
     "arc_color_opacity": 100,
@@ -3763,7 +4098,7 @@ DEFAULT_SETTINGS = {
     "debug_status": "ok",               # 模拟状态：ok / no_char / no_game / init
     "debug_in_combat": True,            # 模拟「战斗中」（用于验证非战斗隐藏）
     "debug_mastery": "",                # 模拟专精：空 / awakening / truth / secret
-    "debug_core_buff_count": 3,         # 核心检测：buff 数量
+    "debug_core_buff_count": 2,         # 核心检测：buff 数量
     "debug_core_single_layer": False,   # 核心检测：是否单层 buff
     "debug_core_full_stacks": True,     # 核心检测：是否满层
     "debug_core_stacks": 1,             # 核心检测：非满层时的层数
@@ -3772,16 +4107,16 @@ DEFAULT_SETTINGS = {
     "debug_core_truth": False,          # 核心检测：标记为真谛专精 buff
     "debug_core_secret": False,         # 核心检测：标记为秘义专精 buff
     # V2309：调试注入各类别数量（替代原「卡片数量」+「是否永续」；直接控制每类假 buff 个数，方便离线调试呈现更多可能性）
-    "debug_allbuff_normal": 8,          # 全 Buff：普通 Buff 数量
-    "debug_allbuff_debuff": 2,          # 全 Buff：Debuff 数量
+    "debug_allbuff_normal": 2,          # 全 Buff：普通 Buff 数量
+    "debug_allbuff_debuff": 3,          # 全 Buff：Debuff 数量
     "debug_allbuff_perma": 1,           # 全 Buff：永续（∞）数量
-    "debug_allbuff_coda": 1,            # 全 Buff：尾声（接近结束）数量
+    "debug_allbuff_coda": 2,            # 全 Buff：尾声（接近结束）数量
     "debug_allbuff_stacks": 8,          # 全 Buff：层数
     "debug_allbuff_max_stacks": 8,      # 全 Buff：最大层数
-    "debug_boss_normal": 5,             # Boss：普通 Buff 数量
-    "debug_boss_debuff": 1,             # Boss：Debuff 数量
+    "debug_boss_normal": 2,             # Boss：普通 Buff 数量
+    "debug_boss_debuff": 3,             # Boss：Debuff 数量
     "debug_boss_perma": 1,              # Boss：永续（∞）数量
-    "debug_boss_coda": 1,               # Boss：尾声（接近结束）数量
+    "debug_boss_coda": 2,               # Boss：尾声（接近结束）数量
     "debug_boss_stacks": 8,             # Boss：层数
     "debug_boss_max_stacks": 8,         # Boss：最大层数
     "debug_skill_count": 4,             # 能力冷却：占用槽位数 0-4
@@ -8139,13 +8474,14 @@ class GBFROverlayQt(QObject):
         # V2324：任务内「非战斗隐藏」基于 flow 枚举判定，结果落在 quest_completed 标志位。
         self.quest_completed = False
         self.quest_flow_state = 0
-        self.in_quest = False
         self.status = "init"
         self.active_buffs = []
         self.dodge_count = 0
         self.char_type = 0
         self.charid_hash = 0
         self.pl_id = None
+        # V2360：恩布拉斯科槽读取器（贝阿朵丽丝 PL2600 专属）。每帧由 scan() 喂入 handle/base/allowed。
+        self.emblasque = EmblasqueGaugeReader()
         # V2063：buff 排序用——记录每个 sid 首次出现的 seq（monotonic），
         # 用于「按出现时间」排序；消失-再出现不重置 seq，原位补回。
         self._buff_first_seen_seq = {}
@@ -8158,10 +8494,8 @@ class GBFROverlayQt(QObject):
         # 当前所有同名游戏进程 PID 集合（V2018 引入）：用于「游戏是否在前台」判断
         # 见 find_game_pids() 与 _sync_visibility_with_game_focus() 注释。
         self._game_pids = set()
-        # V2018 焦点诊断：让用户能直观看到当前 GetForegroundWindow 的 PID vs game_pids。
-        # 写入 overlay_focus_log.txt（最近 200 行环形），便于确认前后台识别是否生效。
-        self._focus_log_ring = []   # [dict(ts/ms/prev/fg/game_pids/self_pid/is_game_fg/action), ...] 环形 200 条
-        self._focus_log_path = None  # 由 __init__ 阶段后初始化为 dist 目录或 exe 同目录
+        # V2400：V2018 的焦点诊断环形缓冲（_focus_log_ring / _focus_log_path）已随
+        # overlay_focus_log.txt 一并删除。
 
         self._ooc_content_mult = 1.0
         self._ooc_content_hidden = False
@@ -8241,12 +8575,7 @@ class GBFROverlayQt(QObject):
         self._update_periodic_timer.timeout.connect(lambda: self.check_update())
         self._update_periodic_timer.start()
 
-        # V2018：焦点诊断 log 写到 exe 同目录（onefile 下用 sys.argv[0] 取得真实 exe 路径）。
-        try:
-            exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        except Exception:
-            exe_dir = os.getcwd()
-        self._focus_log_path = os.path.join(exe_dir, "overlay_focus_log.txt")
+        # V2400：V2018 的 _focus_log_path 初始化已删除（不再写 overlay_focus_log.txt）。
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
@@ -9003,12 +9332,16 @@ class GBFROverlayQt(QObject):
             else:
                 # 多buff差异化模式（最多同时监测 5 个）：
                 # 水平均匀分布（圆心 x 等间距居中）+ 垂直 Delta_Y 错位（+ΔY,-ΔY,+ΔY,-ΔY…）
-                cnt = min(n, 5)
+                # V2362：当 active_buffs 含合成型 buff（恩布拉斯科槽）时窗口扩到 6——
+                # 让合成 buff 始终可见，又不挤占 5 个真实 buff 名额（恩布拉斯克之力 order=8 不再被挤出）。
+                _emb_present = any(b.get("is_synthetic") for b in self.active_buffs)
+                _max_slots = 6 if _emb_present else 5
+                cnt = min(n, _max_slots)
                 cfg = self._multi_buff_cfg(cnt)
                 scale = cfg["scale"] / 100.0
                 hgap = cfg["hgap"]
                 dy = cfg["dy"]
-                shown = self.active_buffs[:5]
+                shown = self.active_buffs[:_max_slots]
                 rtl = self.settings.get("buff_order_direction", "ltr") == "rtl"
                 if rtl:
                     shown = list(reversed(shown))
@@ -9433,7 +9766,12 @@ class GBFROverlayQt(QObject):
     _MB_HUE_OFFSETS = {1: 180, 2: 60, 3: 240, 4: 120}
 
     def _multi_buff_cfg(self, cnt):
-        """返回某 buff 个数（2/3/4/5）对应的多buff布局配置。"""
+        """返回某 buff 个数对应的多buff布局配置。支持 2~10（贝阿朵丽丝等角色 buff 较多）；
+        未定义档位（如极端 >10）降级到 6 槽布局，避免 KeyError。"""
+        if cnt < 2:
+            cnt = 2
+        if f"multi_buff_scale_{cnt}" not in DEFAULT_SETTINGS:
+            cnt = 6
         k = lambda s: f"multi_buff_{s}_{cnt}"
         return {
             "scale": int(self.settings.get(k("scale"), DEFAULT_SETTINGS[k("scale")])),
@@ -10355,13 +10693,28 @@ class GBFROverlayQt(QObject):
                 self._draw_centered_outlined_text(painter, text, text_rect, font, text_color,
                                                   color_override=color_override)
             elif has_timer:
+                is_emb = buff.get("gauge_mode") == "emblasque"
                 timer_font_setting = int(self.settings.get("single_timer_font_size", DEFAULT_SETTINGS["single_timer_font_size"]))
                 if timer_font_setting > 0:
-                    timer_val = buff["timer"]
                     timer_y_offset = int(self.settings.get("single_timer_y_offset", DEFAULT_SETTINGS["single_timer_y_offset"]))
                     badge_pad = int(self.settings.get("single_timer_badge_width", DEFAULT_SETTINGS["single_timer_badge_width"]))
-                    timer_text = f"{self._fmt_dur(timer_val)}s"
-                    timer_color = ("#00bbbb" if color_override else "#ff4444") if timer_val < 3 else self._get_color("single_timer_text_color", color_override)
+                    if is_emb:
+                        # 恩布拉斯科槽：上升(充能中)显百分比，下降(生效中)显倒计时，统一在倒计时文本框内（不分两行）
+                        _gv = buff.get("gauge_value")
+                        if buff.get("gauge_dir") == "up":
+                            _pct = 100.0 if not isinstance(_gv, (int, float)) else max(0.0, min(100.0, float(_gv) * 100.0))
+                            # V2381：槽百分比改为 1 位小数（原 2 位小数，胶囊过宽且末位无意义）
+                            timer_text = f"{_pct:.1f}%"
+                            timer_val_for_color = 999.0
+                        else:
+                            _sv = buff.get("timer", 0.0)
+                            timer_text = "--" if not isinstance(_sv, (int, float)) else f"{self._fmt_dur(_sv)}s"
+                            timer_val_for_color = _sv
+                    else:
+                        timer_val = buff["timer"]
+                        timer_text = f"{self._fmt_dur(timer_val)}s"
+                        timer_val_for_color = timer_val
+                    timer_color = ("#00bbbb" if color_override else "#ff4444") if timer_val_for_color < 3 else self._get_color("single_timer_text_color", color_override)
                     timer_font_size = max(1, min(16, timer_font_setting + 1))
                     timer_font = QFont("Segoe UI", timer_font_size, QFont.Bold)
                     timer_metrics = QFontMetrics(timer_font)
@@ -10422,11 +10775,25 @@ class GBFROverlayQt(QObject):
             # 计时胶囊不受层数数字偏移影响，位置基于圆心
             timer_font_setting = int(self.settings.get("timer_font_size", 11))
             if timer_font_setting > 0:
-                timer_val = buff["timer"]
+                if buff.get("gauge_mode") == "emblasque":
+                    # V2368：融合 buff 胶囊按槽方向显示（up→百分比 / down→倒计时），中心已是层数
+                    _gv = buff.get("gauge_value")
+                    if buff.get("gauge_dir") == "up":
+                        _pct = 100.0 if not isinstance(_gv, (int, float)) else max(0.0, min(100.0, float(_gv) * 100.0))
+                        # V2381：槽百分比改为 1 位小数（与单层资源槽分支保持一致）
+                        timer_text = f"{_pct:.1f}%"
+                        timer_val_for_color = 999.0
+                    else:
+                        _sv = buff.get("timer", 0.0)
+                        timer_text = "--" if not isinstance(_sv, (int, float)) else f"{self._fmt_dur(_sv)}s"
+                        timer_val_for_color = _sv
+                    timer_color = ("#00bbbb" if color_override else "#ff4444") if timer_val_for_color < 3 else self._get_color("timer_text_color", color_override)
+                else:
+                    timer_val = buff["timer"]
+                    timer_text = f"{self._fmt_dur(timer_val)}s"
+                    timer_color = ("#00bbbb" if color_override else "#ff4444") if timer_val < 3 else self._get_color("timer_text_color", color_override)
                 timer_y_offset = int(self.settings.get("lv7_timer_y_offset", 0))
                 badge_pad = int(self.settings.get("lv7_timer_badge_width", DEFAULT_SETTINGS["lv7_timer_badge_width"]))
-                timer_text = f"{self._fmt_dur(timer_val)}s"
-                timer_color = ("#00bbbb" if color_override else "#ff4444") if timer_val < 3 else self._get_color("timer_text_color", color_override)
                 timer_font_size = max(1, min(16, timer_font_setting + 1))
                 timer_font = QFont("Segoe UI", timer_font_size, QFont.Bold)
                 timer_metrics = QFontMetrics(timer_font)
@@ -10785,12 +11152,10 @@ class GBFROverlayQt(QObject):
         if not hasattr(self, "_buff_ever_shown"):
             self._buff_ever_shown = set()
         _ever_shown = self._buff_ever_shown
-        # V2224：每帧按 mtime 热加载外部补充文件（玩家保存后 <1 秒生效）
-        _reload_user_attrs()
         for sid, info in buffs:
             attr = _attr_for_sid(sid)
-            # V2224：attr 已按「外部补充 > 内置 > 未知兜底(hex ID)」三优先级取好；
-            # _unknown 标记（仅未知兜底时存在）供下方 items.append 处决定是否记进未知清单。
+            # V2400：attr = 内置表优先、未收录则 hex 兜底（外部补充文件已删除）。
+            # _unknown 标记（仅 hex 兜底时存在）保留，供 UI 侧识别「这是兜底项」。
             # V2116：黑名单 sid 永不显示（在所有门限/开关之前生效，玩家最强制最强的过滤）
             if sid in _multi_buff_blacklist:
                 continue
@@ -10930,10 +11295,6 @@ class GBFROverlayQt(QObject):
                 continue
             _seen_content_fp.add(_fp)
             items.append((sid, _info2,  attr))
-            # V2209：能走到这里的 buff 已通过全部门限；此时若是未收录的未知 buff，
-            # 记进未知清单（每 5 秒落盘 buff_attrs_unknown.json，诊断日志，不提供外部改名通道）。
-            if attr.get("_unknown"):
-                _note_unknown_buff(sid)
         # V2063：根据排序方式选 key
         # 「按出现时间」= 首次出现得越早越靠前；新出现 buff 自动排到末尾。
         # V2076 修复：消失-再出现的 buff **重新**分配 seq（清空原 seq_map 项），
@@ -11550,11 +11911,9 @@ class GBFROverlayQt(QObject):
         if not hasattr(self, "_bossbuff_ever_shown"):
             self._bossbuff_ever_shown = set()
         _ever_shown = self._bossbuff_ever_shown
-        # V2224：每帧按 mtime 热加载外部补充文件（玩家保存后 <1 秒生效）
-        _reload_user_attrs()
         for sid, info in buffs:
             attr = _attr_for_sid(sid)
-            # V2224：attr 已按「外部补充 > 内置 > 未知兜底(hex ID)」三优先级取好；
+            # V2400：attr = 内置表优先、未收录则 hex 兜底（外部补充文件已删除）。
             # `_is_debuff(sid)` 自身有 sid>=1000 兜底，因此兜底 attr 不必设「是否debuff」键。
             # V2116：黑名单 sid 永不显示（在所有门限/开关之前生效，玩家最强制最强的过滤）
             if sid in _boss_blacklist:
@@ -11689,12 +12048,6 @@ class GBFROverlayQt(QObject):
                 continue
             _seen_content_fp.add(_fp)
             items.append((sid, _info2,  attr))
-            # V2209：能走到这里的 buff 已通过全部门限；此时若是未收录的未知 buff，
-            # 记进未知清单（每 5 秒落盘 buff_attrs_unknown.json，诊断日志，不提供外部改名通道）。
-            if attr.get("_unknown"):
-                _note_unknown_buff(sid)
-        # V2213 debug：每 1 秒 dump 过滤后 items + 过滤前原始数据 buffs（对比看哪个被门限丢了）
-        _dump_boss_buffs(items, buffs)
         # V2063：根据排序方式选 key
         # 「按出现时间」= 首次出现得越早越靠前；新出现 buff 自动排到末尾。
         # V2076 修复：消失-再出现的 buff **重新**分配 seq（清空原 seq_map 项），
@@ -12468,7 +12821,6 @@ class GBFROverlayQt(QObject):
             self._sync_out_of_combat_visibility()
             self._sync_mouse_transparency()
             self._update_tray_tooltip()
-            _dump_unknown_buffs()   # V2209：未知 buff 清单定期落盘（内部自带 5 秒节流）
             # 生存兜底：scan_ms 非整数绝不能让定时器停摆，否则会『读一次就卡死』
             try:
                 # V2304：调试数据模式下没有 handle，但仍要按 scan_ms 快刷，
@@ -12483,7 +12835,12 @@ class GBFROverlayQt(QObject):
             for w in self._all_windows():
                 w.update()
         except Exception:
-            # 生存兜底：任何 tick 异常都绝不让定时器停摆，否则会『读一次就卡死』
+            # V2371：生存兜底 + 失效自愈——任何 tick 异常都绝不让定时器停摆；
+            # 同时若游戏在跑但最近曾成功读取过角色，则节流触发一次指针重定位(forced)。
+            try:
+                self._maybe_auto_recover(forced=True)
+            except Exception:
+                logger.debug("auto-recover in tick fallback failed", exc_info=True)
             try:
                 self.timer.start(500)
             except Exception:
@@ -12567,10 +12924,8 @@ class GBFROverlayQt(QObject):
         own_pid = os.getpid()
         fg_allowed = game_pids | {own_pid}
         if not fg_allowed:
-            self._last_fg = None
             return False
         fg = get_foreground_pid()
-        self._last_fg = fg
         # 前台 = 前台窗口属于游戏进程 或 工具自身进程
         return fg in fg_allowed
 
@@ -12588,8 +12943,7 @@ class GBFROverlayQt(QObject):
             这同时满足两个诉求：切到后台立刻整窗消失；手动隐藏后游戏仍在前台会自动弹回。
 
         判定见 _game_is_foreground()：GetForegroundWindow.PID 单信号（V2021 起由三态收敛为二态）。
-        诊断：每次 tick 把 fg / decision / action 写入
-        overlay_focus_log.txt（最近 200 行环形），便于排查前后台识别是否生效。
+        V2400：V2018 起的焦点诊断日志（写 overlay_focus_log.txt）已整块删除，本函数现为纯逻辑。
         """
         # V2023 改动：去掉「非战斗内容隐藏时 early return」的旧 V2013 行为，
         # 让非战斗状态也跟随前后台隐显（hide() 会让整窗含标题栏一起消失），
@@ -12605,7 +12959,6 @@ class GBFROverlayQt(QObject):
         # 游戏未运行：不动作，复位边沿状态（新进程接入时不误触发）
         if self.pid is None:
             self._prev_is_game_foreground = None
-            self._append_focus_log(action="pid_none")
             return
 
         # V2316：游戏强退→重进的「窗口一直最小化、需手动唤醒」修复。
@@ -12620,13 +12973,9 @@ class GBFROverlayQt(QObject):
             self._force_fg_sync = False
             decision = self._game_is_foreground()
             any_visible = any(w.isVisible() for w in self._all_windows())
-            action = "none"
             if decision and not any_visible:
                 self._show_all_windows()
-                action = "reconnect_fg_show"
             self._prev_is_game_foreground = decision
-            self._append_focus_log(prev=None, fg=getattr(self, "_last_fg", None),
-                                   is_game_fg=decision, action=action)
             return
 
         # V2021：单信号判定（GetForegroundWindow.PID ∈ game_pids）。三态→二态，
@@ -12635,24 +12984,18 @@ class GBFROverlayQt(QObject):
 
         any_visible = any(w.isVisible() for w in self._all_windows())
         prev = self._prev_is_game_foreground
-        action = "none"
 
         # V2023 改动：去掉 V2022 引入的 600ms 防抖（用户实测说"战斗中前后台确实可以"
         # 但防抖让窗口出不来，节奏太慢反而变卡）。回到 V2021 的"边沿触发立即动作"节奏。
         # 同时也不再 early-return _ooc_content_hidden（让非战斗状态也跟随前后台隐显）。
-        action = "none"
 
         if prev is None:
             # 首拍：仅记录 prev、不主动切换（让用户手动 ctrl+h 切或按当前状态自然显示）
             self._prev_is_game_foreground = decision
-            self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
-                                   is_game_fg=decision, action="init_prev")
             return
 
         if decision == prev:
-            # 无边沿（与上一拍一致），仅做诊断日志、不动作
-            self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
-                                   is_game_fg=decision, action="none")
+            # 无边沿（与上一拍一致）→ 不动作
             return
 
         # 边沿变化：立刻切换（V2023 移除 600ms 防抖）
@@ -12660,63 +13003,18 @@ class GBFROverlayQt(QObject):
             if not any_visible:
                 # 游戏在前台但窗口被隐藏 → 无视当前状态强制弹出
                 self._show_all_windows()
-                action = "fg_show"
         else:
             if any_visible:
                 # 游戏在后台但窗口可见 → 强制整窗消失
                 self._hide_all_windows()
-                action = "bg_hide"
         self._prev_is_game_foreground = decision
-        self._append_focus_log(prev=prev, fg=getattr(self, "_last_fg", None),
-                               is_game_fg=decision, action=action)
 
-    def _append_focus_log(self, prev=None, fg=None, is_game_fg=None, action="none"):
-        """V2019 诊断：把每次焦点定时器的状态追加到 overlay_focus_log.txt，最多 200 行环形。
-
-        让用户能直观确认：当前前台窗口 PID（GetForegroundWindow）与 self._game_pids / self.pid 的关系，
-        以及状态同步是否真的触发 fg_show / bg_hide。仅当 self._focus_log_path 已初始化才写文件，
-        且只在「状态真的变化」或「有动作」时写，无变化时每 16 拍（约 4 秒）写一次，避免日志刷屏。
-        """
-        path = self._focus_log_path
-        if not path:
-            return
-        # 仅在状态真正变化 / 触发动作 / 每 16 次（约 4 秒）记录一次，避免日志刷屏
-        last = self._focus_log_ring[-1] if self._focus_log_ring else None
-        sig = (prev, fg, is_game_fg, action)
-        if last is not None and last["sig"] == sig and action == "none":
-            self._focus_log_skip = getattr(self, "_focus_log_skip", 0) + 1
-            if self._focus_log_skip < 16:
-                return
-            self._focus_log_skip = 0
-        else:
-            self._focus_log_skip = 0
-        import time as _t
-        entry = {
-            "ts": _t.strftime("%H:%M:%S"),
-            "ms": int(_t.monotonic() * 1000),
-            "sig": sig,
-            "prev": prev,
-            "fg": fg,
-            "game_pids": sorted(self._game_pids) if self._game_pids else [],
-            "self_pid": self.pid,
-            "is_game_fg": is_game_fg,
-            "action": action,
-        }
-        self._focus_log_ring.append(entry)
-        if len(self._focus_log_ring) > 200:
-            self._focus_log_ring = self._focus_log_ring[-200:]
-        if ENABLE_FOCUS_LOG:
-            try:
-                with open(path, "w", encoding="utf-8") as f:
-                    f.write("# overlay focus diagnostic log (V2020) — last 200 entries, newest at bottom\n")
-                    f.write("# ts | prev | fg(GetForeground PID) | game_pids | self_pid | decision | action\n")
-                    for e in self._focus_log_ring:
-                        f.write("{ts} | prev={prev} | fg={fg} | game_pids={gp} | self_pid={sp} | decision={dec} | action={act}\n".format(
-                            ts=e["ts"], prev=e["prev"], fg=e["fg"],
-                            gp=e["game_pids"], sp=e["self_pid"],
-                            dec=e["is_game_fg"], act=e["action"]))
-            except Exception:
-                logger.debug("swallowed exception", exc_info=True)
+    # ── V2400：已删除 V2019~V2382 的窗口焦点诊断日志 _append_focus_log() ────────
+    # 它把每次焦点判定写入 EXE_DIR/overlay_focus_log.txt（200 行环形），用于排查前后台识别。
+    # V2400 要求「运行期不产生除 overlay_settings.json / ptr_cache.txt 之外的任何文件」，
+    # 故整块移除：方法 + 环形缓冲 + 路径初始化 + 5 个调用点 + self._last_fg。
+    # ⚠️ 前后台显隐逻辑（_game_is_foreground / _sync_visibility_with_game_focus /
+    #    _prev_is_game_foreground / _force_fg_sync）与它**完全无关**，未受影响。
 
     # ── V2304：调试数据注入 ───────────────────────────────────────────────
     def _inject_debug_data(self):
@@ -12745,7 +13043,6 @@ class GBFROverlayQt(QObject):
         self.pl_id = "PL0000"
         self.in_combat = bool(st.get("debug_in_combat", True))
         self.in_training_area = False
-        self.in_quest = bool(st.get("debug_in_combat", True))
         # 调试：取消「模拟战斗中」→ 模拟非战斗 → 触发任务中非战斗隐藏，便于验证
         self.quest_completed = not bool(st.get("debug_in_combat", True))
         self.quest_flow_state = 0
@@ -12932,7 +13229,15 @@ class GBFROverlayQt(QObject):
         # 调用前快照存储值：read_overlay_data 会原地写入 duration_max 同一对象，
         # 学习时必须拿「本帧观察值」比「调用前的存储值」，否则 new_dmax 与 duration_max 是同一对象、自比恒 False。
         prev_dmax = dict(duration_max)
-        snap = read_overlay_data(self.handle, self.pptr, raw_locked=self._raw_locked_addrs, duration_max=duration_max)
+        try:
+            snap = read_overlay_data(self.handle, self.pptr, raw_locked=self._raw_locked_addrs, duration_max=duration_max)
+        except Exception:
+            # V2371：read_overlay_data 抛异常（多为指针链失效导致某次 RPM 读越界）时，
+            # 不当场崩、也不静默吞掉，而是降级成 no_char 让末尾看门狗触发自动重连。
+            logger.warning("read_overlay_data threw, downgrade to no_char for auto-recover", exc_info=True)
+            snap = {"status": "no_char", "dodge": None, "char_type": 0, "charid_hash": 0,
+                    "pl_id": None, "buffs": [], "all_buffs": {}, "all_buffs_list": [],
+                    "raw_locked": self._raw_locked_addrs, "duration_max": duration_max}
         self._raw_locked_addrs = snap.get("raw_locked", {})
 
         # 同步学习到的时间上限（古洛诺斯槽保持 / 团长 Class 倒计时）
@@ -13053,32 +13358,8 @@ class GBFROverlayQt(QObject):
             _ordered.append((pos, buff))
         _ordered.sort(key=lambda t: t[0])
         self.active_buffs = [b for _, b in _ordered]
-        # 检测层数增加 → 新出现尖刺闪光（全局闪光：完成色/放大比例/动画时长；应用模块含尖刺）
-        if bool(self.settings.get("flash_apply_spikes", True)):
-            now_ms = int(time.time() * 1000)
-            new_prev = {}
-            for buff in self.active_buffs:
-                bkey = _bkey(buff['index'], buff.get("group"))
-                cur = int(buff.get("stacks", 0))
-                prev = self._prev_buff_stacks.get(bkey, 0)
-                if cur > prev:
-                    self._spike_flash[bkey] = {"start": now_ms, "from": prev, "to": cur}
-                elif cur < prev:
-                    # 层数回退：消失的尖刺（index 从 cur 到 prev-1）全部闪光。
-                    # from=当前层数(新低)，to=回退前的旧层数；绘制时这些多出来的尖刺以闪光呈现后消失。
-                    self._spike_flash[bkey] = {"start": now_ms, "from": cur, "to": prev}
-                new_prev[bkey] = cur
-            self._prev_buff_stacks = new_prev
-            # 清理已结束的闪光记录
-            dur = int(self.settings.get("flash_duration_ms", 400))
-            expired = [k for k, v in self._spike_flash.items() if now_ms - v["start"] >= dur]
-            for k in expired:
-                del self._spike_flash[k]
-        else:
-            self._prev_buff_stacks = {
-                _bkey(b['index'], b.get("group")): int(b.get("stacks", 0))
-                for b in self.active_buffs
-            }
+        # V2401：尖刺闪光检测已移到本函数末尾（合成 buff 注入之后执行），见下方
+        #        「尖刺闪光检测（合成 buff 注入后）」段。合成 buff 在旧位置尚未进 active_buffs。
         # 读取技能冷却
         if self.status == "ok":
             char_base = read_u64(self.handle, self.pptr + CHAR_PTR_OFF)
@@ -13159,10 +13440,212 @@ class GBFROverlayQt(QObject):
             quest_non_combat = False
         self.in_combat = in_training_area or (in_quest and not quest_non_combat)
         self.in_training_area = in_training_area
-        self.in_quest = in_quest
         self.quest_flow_state = quest_flow_state
         # 复用 quest_completed 标志位驱动「任务中非战斗隐藏」（设置项 hide_on_quest_complete）。
         self.quest_completed = bool(in_quest and quest_non_combat)
+
+        # ── 恩布拉斯科槽（贝阿朵丽丝 PL2600 专属）→ 表现为贝阿朵丽丝单层 buff ──
+        # V2360：把 V1.04 核心「找恩布拉斯克槽数值」逻辑并入主干。
+        # 仅在操作贝阿朵丽丝(PL2600)且战斗中时扫描；命中后每帧直读 + 注入合成单层 buff。
+        # 上行显示百分比，下行显示秒（val=1.0 → 100% / 38s）。
+        # V2361：受「Buff启用/禁用」面板里 PL2600_9 的三专精勾选状态控制（默认全开）。
+        try:
+            # V2367：恩布拉斯科槽注入条件与 in_combat 解耦。
+            #   启用开关 + PL2600 → 始终注入（保证状态栏里永远有圆位，非战斗时显示 0%/0s/up 兜底）。
+            #   reader 仍受 in_combat 控制：非战斗时不启动后台扫描线程（省 CPU），
+            #     reader.found=False 时注入兜底值，不影响「始终显示」目标。
+            _emb_enabled = bool(self.settings.get("PL2600_9", True))
+            _fuse_enabled = bool(self.settings.get("PL2600_10", True))
+            _is_pl2600 = (self.pl_id == "PL2600" or self.charid_hash == _BEATRIX_CHARID_HASH)
+            # V2373：PL2600_9(恩布拉斯科槽) 与 PL2600_10(力+槽) 彻底解耦——任一个启用即驱动 reader
+            #   （融合槽的下方胶囊也需要读数）；非战斗不启动扫描线程（省 CPU）。两者各自独立门控 + 注入，互不依赖。
+            _emb_should_inject = _emb_enabled and _is_pl2600
+            _fuse_should_inject = _fuse_enabled and _is_pl2600
+            _any_enabled = (_emb_enabled or _fuse_enabled) and _is_pl2600
+            _emb_scan_allowed = _any_enabled and bool(self.in_combat) and self.handle and self.module_base
+            if _emb_scan_allowed:
+                self.emblasque.update(self.handle, self.module_base, True)
+            else:
+                self.emblasque.update(None, None, False)
+            # 读数统一计算一次（供两个 buff 共用）；未命中/非战斗兜底 0%/up。
+            if self.emblasque.found and isinstance(self.emblasque.value, (int, float)):
+                _ev = float(self.emblasque.value)
+                _dir = self.emblasque.direction
+            else:
+                _ev = 0.0
+                _dir = "up"
+            if _emb_should_inject:
+                # 与主 buff 循环完全一致的三勾选门控：
+                # 全不选=常关；全选=常显；非全选=仅当 current_mastery 命中（None 降级显）。
+                _emb_mastery = self.settings.get("buff_mastery", {}).get("PL2600_9", {}) or {}
+                _emb_aw = bool(_emb_mastery.get("awakening", False))
+                _emb_tr = bool(_emb_mastery.get("truth", False))
+                _emb_se = bool(_emb_mastery.get("secret", False))
+                _emb_match = False
+                if _emb_aw or _emb_tr or _emb_se:
+                    if _emb_aw and _emb_tr and _emb_se:
+                        _emb_match = True  # 全选=常显
+                    else:
+                        _cur = self.current_mastery
+                        _emb_match = (
+                            _cur is None
+                            or (_cur == "awakening" and _emb_aw)
+                            or (_cur == "truth" and _emb_tr)
+                            or (_cur == "secret" and _emb_se)
+                        )
+                if _emb_match:
+                    # 读数 _ev/_dir 已在 reader 更新后统一计算（见上方），此处直接复用。
+                    _emb_buff = {
+                        "index": -1,
+                        "is_synthetic": True,
+                        "order": 10,  # V2362：按 buff_order=10 自然顺位，不再强制插最前
+                        "zh": "恩布拉斯科槽", "zh_tw": "恩布拉斯科槽",
+                        "en": "Emblasque Gauge", "ja": "アンブラスク槽",
+                        "stacks": 0, "max_stacks": 1,
+                        "timer": _ev * 38.0, "timer_max": 38.0,
+                        "timer_display": "any_stack",
+                        "single_layer": True,
+                        "gauge_mode": "emblasque",
+                        "gauge_value": _ev,
+                        "gauge_dir": _dir,
+                    }
+                    # V2362：active_buffs 已按 buff_order 升序排好（1..9），恩布拉斯科槽 order=10
+                    # 默认追加到末尾即可，不再 insert(0) 抢占 slot0 把恩布拉斯克之力(order=8)
+                    # 挤出 active_buffs[:5]。配合 render_core 在含合成 buff 时窗口扩到 6，
+                    # 恩布拉斯科槽永不被截断、也不挤占真实 buff 名额（修复"恩布拉斯克之力不工作"）。
+                    # V2367：移除 in_combat 门控后，非战斗也注入兜底，确保状态栏括号里始终有该 buff。
+                    self.active_buffs.append(_emb_buff)
+            # ── 融合 buff「恩布拉斯克之力+槽」(PL2600_10) ──
+            # V2368：非单层带倒计时形式（中心层数 + 下方胶囊，与团长 class 等级同构），
+            #   中心 = 恩布拉斯克之力(sid 102) 当前层数；下方胶囊 = 恩布拉斯科槽文本（up→百分比 / down→倒计时）。
+            # V2373：从 PL2600_9 块中拆出为并列独立分支——仅依赖 PL2600_10 启用 + 三专精门控，
+            #   与恩布拉斯科槽(PL2600_9) 完全解耦：关掉恩布拉斯科槽也能单独显示力+槽。
+            if _fuse_should_inject:
+                _fuse_stacks = 0
+                for _fb in all_buffs:
+                    if _fb.get("sid") == 102:
+                        _fuse_stacks = int(_fb.get("stacks", 0) or 0)
+                        break
+                _fuse_mastery = self.settings.get("buff_mastery", {}).get("PL2600_10", {}) or {}
+                _fuse_aw = bool(_fuse_mastery.get("awakening", False))
+                _fuse_tr = bool(_fuse_mastery.get("truth", False))
+                _fuse_se = bool(_fuse_mastery.get("secret", False))
+                _fuse_match = False
+                if _fuse_aw or _fuse_tr or _fuse_se:
+                    if _fuse_aw and _fuse_tr and _fuse_se:
+                        _fuse_match = True  # 全选=常显
+                    else:
+                        _cur = self.current_mastery
+                        _fuse_match = (
+                            _cur is None
+                            or (_cur == "awakening" and _fuse_aw)
+                            or (_cur == "truth" and _fuse_tr)
+                            or (_cur == "secret" and _fuse_se)
+                        )
+                # V2372：常显占位（无层数也显 0层+0.00%），无需先叠出恩布拉斯克之力。
+                if _fuse_match:
+                    _fuse_buff = {
+                        "index": -2,
+                        "is_synthetic": True,
+                        "order": 11,  # 紧跟恩布拉斯科槽(order=10)，append 到 active_buffs 末尾
+                        "zh": "恩布拉斯克之力+槽", "zh_tw": "艾姆布拉斯解放+槽",
+                        "en": "Embrasque Unleashed+Gauge", "ja": "エムブラスク解放+槽",
+                        "stacks": _fuse_stacks, "max_stacks": 10,
+                        "timer": _ev * 38.0, "timer_max": 38.0,
+                        "timer_display": "any_stack",
+                        # V2374（V2377 恢复）：动态形态——恩布拉斯克之力(sid 102) 未生效（层数 0）时，
+                        #   变单层 buff 只显示槽（与恩布拉斯科槽 sid 103 同构，中心不画层数，
+                        #   仅画上升百分比/下降倒计时徽章）；一旦之力生效(层数>0)，
+                        #   自动切回多层 buff 形式（中心层数 + 下方槽胶囊）。
+                        #   ⚠️ 这是用户明确要求的形态切换，不是缺陷。经离屏渲染实证：该单层形态
+                        #   与「始终正常的槽 buff」渲染逐像素完全相同，不会让槽读数变 0。
+                        "single_layer": (_fuse_stacks == 0),
+                        "gauge_mode": "emblasque",
+                        "gauge_value": _ev,
+                        "gauge_dir": _dir,
+                    }
+                    self.active_buffs.append(_fuse_buff)
+        except Exception:
+            logger.debug("emblasque gauge inject failed", exc_info=True)
+        # ── V2401：尖刺闪光检测（必须在全部 buff 装配完成之后）──
+        # 原位置在上面「active_buffs = [真实 buff]」之后，只遍历真实 buff；
+        # 而融合 buff「恩布拉斯克之力+槽」(PL2600_10) 与恩布拉斯科槽(PL2600_9) 是在本函数
+        # 末尾才 append 进 active_buffs 的 → 它们的 bkey 从未写入 _prev_buff_stacks /
+        # _spike_flash，渲染时 _draw_spikes 取到的 flash 恒为 None，
+        # 于是「层数变化时外层尖刺 + 装饰小球不闪光、直接干巴巴出现」。
+        # 移到注入之后，合成 buff 与真实 buff 走同一条闪光通道（恩布拉斯科槽 stacks 恒 0，
+        # cur==prev==0 永不触发；融合块 stacks=0 时为单层形态、本就不画尖刺，闪也无害）。
+        if bool(self.settings.get("flash_apply_spikes", True)):
+            now_ms = int(time.time() * 1000)
+            new_prev = {}
+            for buff in self.active_buffs:
+                bkey = _bkey(buff['index'], buff.get("group"))
+                cur = int(buff.get("stacks", 0))
+                prev = self._prev_buff_stacks.get(bkey, 0)
+                if cur > prev:
+                    self._spike_flash[bkey] = {"start": now_ms, "from": prev, "to": cur}
+                elif cur < prev:
+                    # 层数回退：消失的尖刺（index 从 cur 到 prev-1）全部闪光。
+                    # from=当前层数(新低)，to=回退前的旧层数；绘制时这些多出来的尖刺以闪光呈现后消失。
+                    self._spike_flash[bkey] = {"start": now_ms, "from": cur, "to": prev}
+                new_prev[bkey] = cur
+            self._prev_buff_stacks = new_prev
+            # 清理已结束的闪光记录
+            dur = int(self.settings.get("flash_duration_ms", 400))
+            expired = [k for k, v in self._spike_flash.items() if now_ms - v["start"] >= dur]
+            for k in expired:
+                del self._spike_flash[k]
+        else:
+            self._prev_buff_stacks = {
+                _bkey(b['index'], b.get("group")): int(b.get("stacks", 0))
+                for b in self.active_buffs
+            }
+        # V2371：失效自检看门狗——游戏在跑但指针链失效(status!=ok)时自动重连重定位。
+        self._maybe_auto_recover()
+
+    def _maybe_auto_recover(self, forced=False):
+        """V2371 失效自检：检测到指针链失效时自动重连重定位。
+
+        触发条件：游戏进程仍在(pid 有效、已 attach 到 handle)、且最近曾成功读到过角色
+        (self._last_ok_ts 存在)，但当前 status!=ok（指针链失效，典型表现：打着打着整屏空白）。
+        满足「失败持续 >= RECOVERY_FAIL_TRIGGER_S 秒」且「距上次自愈 >= RECOVERY_COOLDOWN_S 秒」
+        时，调用 close_handle() 清空指针缓存，下一拍 scan() 重连分支会重新定位全部指针。
+
+        forced=True（tick 异常兜底）时把本轮视为已失效，跳过「失败持续时长」门槛，
+        但仍受 _last_ok_ts / 冷却约束，避免无脑每帧重连。
+        """
+        now = time.time()
+        # 仅在「游戏进程存在且已成功 attach」的前提下尝试自愈；
+        # 游戏没开时 scan() 已自行 close_handle + status=no_game，无需这里处理。
+        if not self.handle or self.pid is None:
+            return
+        if forced:
+            lost = True
+        else:
+            lost = (self.status != "ok")
+        if not lost:
+            # 正常：记录最后一次成功读取时间，清空失败窗口。
+            self._last_ok_ts = now
+            self._fail_start_ts = None
+            return
+        # 已失效：必须曾经成功读到过角色，否则可能是还没进战斗/角色未加载，不该重定位。
+        if getattr(self, "_last_ok_ts", None) is None:
+            return
+        if not forced:
+            fs = getattr(self, "_fail_start_ts", None)
+            if fs is None:
+                self._fail_start_ts = now
+                return
+            if now - fs < RECOVERY_FAIL_TRIGGER_S:
+                return
+        # 距上次自愈至少冷却，避免每帧 close+重连抖动。
+        lr = getattr(self, "_recover_ts", None)
+        if lr is not None and (now - lr) < RECOVERY_COOLDOWN_S:
+            return
+        logger.info("auto-recover: char pointer lost (status=%s), forcing re-locate", self.status)
+        self.close_handle()
+        self._recover_ts = now
+        self._fail_start_ts = None
 
     def close_handle(self):
         if self.handle:
